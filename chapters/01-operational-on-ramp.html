@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Learn the minimum model mechanics needed to make a sound first agent-system design, then measure them with one reproducible probe.">
+
+<title>1&nbsp; The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/02-transformer-first-principles.html" rel="next">
+<link href="../preface.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-operational-on-ramp.html">Part I — The On-Ramp and Model Foundations</a></li><li class="breadcrumb-item"><a href="../chapters/01-operational-on-ramp.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch01-prerequisites" id="toc-sec-ch01-prerequisites" class="nav-link active" data-scroll-target="#sec-ch01-prerequisites"><span class="header-section-number">1.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch01-contents" id="toc-sec-ch01-contents" class="nav-link" data-scroll-target="#sec-ch01-contents"><span class="header-section-number">1.2</span> Contents</a></li>
+  <li><a href="#sec-ch01-failure" id="toc-sec-ch01-failure" class="nav-link" data-scroll-target="#sec-ch01-failure"><span class="header-section-number">1.3</span> A Fluent Feature Fails in Three Ways</a></li>
+  <li><a href="#sec-ch01-will-build" id="toc-sec-ch01-will-build" class="nav-link" data-scroll-target="#sec-ch01-will-build"><span class="header-section-number">1.4</span> What you will build</a></li>
+  <li><a href="#sec-ch01-call" id="toc-sec-ch01-call" class="nav-link" data-scroll-target="#sec-ch01-call"><span class="header-section-number">1.5</span> A Model Call Maps Context to a Continuation</a></li>
+  <li><a href="#sec-ch01-context" id="toc-sec-ch01-context" class="nav-link" data-scroll-target="#sec-ch01-context"><span class="header-section-number">1.6</span> Tokens and Context Are Budgets</a></li>
+  <li><a href="#sec-ch01-sampling" id="toc-sec-ch01-sampling" class="nav-link" data-scroll-target="#sec-ch01-sampling"><span class="header-section-number">1.7</span> Sampling Controls a Distribution, Not Truth</a></li>
+  <li><a href="#sec-ch01-confabulation" id="toc-sec-ch01-confabulation" class="nav-link" data-scroll-target="#sec-ch01-confabulation"><span class="header-section-number">1.8</span> Confabulation, Confidence, and Abstention</a></li>
+  <li><a href="#sec-ch01-posttraining" id="toc-sec-ch01-posttraining" class="nav-link" data-scroll-target="#sec-ch01-posttraining"><span class="header-section-number">1.9</span> Post-Training Changes Behavior, Not the Contract</a></li>
+  <li><a href="#sec-ch01-latency" id="toc-sec-ch01-latency" class="nav-link" data-scroll-target="#sec-ch01-latency"><span class="header-section-number">1.10</span> Latency and Cost Have Two Phases</a></li>
+  <li><a href="#sec-ch01-least-autonomous" id="toc-sec-ch01-least-autonomous" class="nav-link" data-scroll-target="#sec-ch01-least-autonomous"><span class="header-section-number">1.11</span> Choose the Least Autonomous Design</a></li>
+  <li><a href="#sec-ch01-agency-budget" id="toc-sec-ch01-agency-budget" class="nav-link" data-scroll-target="#sec-ch01-agency-budget"><span class="header-section-number">1.12</span> Buy Authority One Action at a Time</a></li>
+  <li><a href="#sec-ch01-use-book" id="toc-sec-ch01-use-book" class="nav-link" data-scroll-target="#sec-ch01-use-book"><span class="header-section-number">1.13</span> How to Use This Book</a></li>
+  <li><a href="#sec-ch01-build" id="toc-sec-ch01-build" class="nav-link" data-scroll-target="#sec-ch01-build"><span class="header-section-number">1.14</span> Build</a></li>
+  <li><a href="#sec-ch01-endures" id="toc-sec-ch01-endures" class="nav-link" data-scroll-target="#sec-ch01-endures"><span class="header-section-number">1.15</span> What Endures, What Changes</a></li>
+  <li><a href="#sec-ch01-exercises" id="toc-sec-ch01-exercises" class="nav-link" data-scroll-target="#sec-ch01-exercises"><span class="header-section-number">1.16</span> Exercises</a></li>
+  <li><a href="#sec-ch01-notes" id="toc-sec-ch01-notes" class="nav-link" data-scroll-target="#sec-ch01-notes"><span class="header-section-number">1.17</span> Notes and Sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-operational-on-ramp.html">Part I — The On-Ramp and Model Foundations</a></li><li class="breadcrumb-item"><a href="../chapters/01-operational-on-ramp.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch01" class="quarto-section-identifier"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch01-prerequisites" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="sec-ch01-prerequisites"><span class="header-section-number">1.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, backpropagation, basic Python, and beginner PyTorch.</p>
+<p><strong>From earlier chapters:</strong> nothing. This is the common entry point for both reading routes.</p>
+<p><strong>Not required:</strong> language-model architecture, tokenization, prompting, retrieval, tool calling, agent frameworks, or production serving.</p>
+</blockquote>
+</section>
+<section id="sec-ch01-contents" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="sec-ch01-contents"><span class="header-section-number">1.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch01-failure">A fluent feature fails in three ways</a></li>
+<li><a href="#sec-ch01-will-build">What you will build</a></li>
+<li><a href="#sec-ch01-call">A model call maps context to a continuation</a></li>
+<li><a href="#sec-ch01-context">Tokens and context are budgets</a></li>
+<li><a href="#sec-ch01-sampling">Sampling controls a distribution, not truth</a></li>
+<li><a href="#sec-ch01-confabulation">Confabulation, confidence, and abstention</a></li>
+<li><a href="#sec-ch01-posttraining">Post-training changes behavior, not the contract</a></li>
+<li><a href="#sec-ch01-latency">Latency and cost have two phases</a></li>
+<li><a href="#sec-ch01-least-autonomous">Choose the least autonomous design</a></li>
+<li><a href="#sec-ch01-agency-budget">Buy authority one action at a time</a></li>
+<li><a href="#sec-ch01-use-book">How to use this book</a></li>
+<li><a href="#sec-ch01-build">Build</a></li>
+<li><a href="#sec-ch01-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch01-exercises">Exercises</a></li>
+<li><a href="#sec-ch01-notes">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch01-failure" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="sec-ch01-failure"><span class="header-section-number">1.3</span> A Fluent Feature Fails in Three Ways</h2>
+<p>Consider a composite incident. A support team adds a language-model feature to its internal console. An operator asks, “Can this customer receive a refund after 45 days?” The feature replies in polished prose, cites a plausible-sounding exception, and recommends a refund. There is no such exception. A second operator asks the same question and receives a more cautious answer. A manager now proposes letting the feature issue refunds directly because the prose looks competent.</p>
+<p>One screen has exposed three independent engineering problems.</p>
+<p>First, <strong>linguistic plausibility is not factual grounding</strong>. The model produced a likely continuation of the text it received; the caller supplied neither the governing policy nor a mechanism that could verify the answer. Second, <strong>a model call is a controlled draw from a distribution</strong>. Repeated requests can differ because sampling is intentional and because real inference systems can introduce additional numerical variation. Third, <strong>authority belongs to the surrounding software, not to the model</strong>. The proposal to issue refunds adds permissions, side effects, and blast radius. Better prose does not pay those costs.</p>
+<p>These failures need different remedies. Factual error may require retrieval, evidence, calibration, and abstention. Variation may require sampling controls, measurement across repeated trials, or a deterministic conventional component. Excess authority requires policy enforcement, action budgets, approvals, idempotency, monitoring, and sometimes a decision not to use an agent at all. A larger prompt is not a universal fix.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Symptom</th>
+<th>What was mistaken</th>
+<th>First useful measurement</th>
+<th>Later full treatment</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Fluent but nonexistent policy</td>
+<td>Token likelihood for factual correctness</td>
+<td>Evidence support and abstention behavior</td>
+<td>Chapter 9</td>
+</tr>
+<tr class="even">
+<td>Different answer on repetition</td>
+<td>One completion for the whole distribution</td>
+<td>Outcome distribution across seeds and temperatures</td>
+<td>Chapter 9</td>
+</tr>
+<tr class="odd">
+<td>Proposal to issue refunds</td>
+<td>Model capability for justified authority</td>
+<td>Actions, affected records, reviewer load, and rollback scope</td>
+<td>Chapters 16, 24, and 28</td>
+</tr>
+</tbody>
+</table>
+<p>The operational stance of this book follows from that separation: treat a model as a probabilistic component with a measurable interface; treat an agent as a software system that grants that component bounded opportunities to choose actions. The first task is to understand the component. The second is to decide whether granting it agency is warranted.</p>
+</section>
+<section id="sec-ch01-will-build" class="level2" data-number="1.4">
+<h2 data-number="1.4" class="anchored" data-anchor-id="sec-ch01-will-build"><span class="header-section-number">1.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>The chapter artifact.</strong> You will run one model probe that varies temperature and seed, records token log probabilities, measures time to first token and total time, inspects one confident confabulation, and emits a one-page agency-budget memo. Its default client is a deterministic offline fixture. A thin OpenAI-compatible adapter repeats the same probe against a model hosted by a local vLLM server. Success means that you can explain every output column, distinguish token likelihood from truth, and defend the least-autonomous design for a proposed feature.</p>
+</div>
+</div>
+<p>The complete artifact is <a href="../code/ch01/model_probe.py"><code>model_probe.py</code></a>. It deliberately has one provider-neutral operation and one experiment path. The fixture and real adapter do not reimplement the experiment. This arrangement will matter throughout the book: a deterministic test double owns repeatability, while a thin adapter exposes the real system to the same measurements.</p>
+</section>
+<section id="sec-ch01-call" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="sec-ch01-call"><span class="header-section-number">1.5</span> A Model Call Maps Context to a Continuation</h2>
+<p>A language model exposed through an API accepts a <strong>context</strong> and produces a <strong>continuation</strong>. The context is an ordered token sequence. It may have been assembled from a system instruction, prior messages, retrieved passages, tool results, and the current user message, but the model ultimately receives token identifiers and associated positions. The response is another token sequence.</p>
+<p>Let the input tokens be <span class="math inline">x_{1:n}=(x_1,\ldots,x_n)</span>, and let the output tokens be <span class="math inline">y_{1:m}</span>. An autoregressive model with parameters <span class="math inline">\theta</span> defines</p>
+<p>[ p_(y_{1:m}x_{1:n}) =<em>{t=1}^{m}p</em>(y_tx_{1:n},y_{1:t-1}). ]</p>
+<p>At output position <span class="math inline">t</span>, the network produces a logit for every token in its vocabulary. A decoding policy converts those logits into a choice. The chosen token is appended to the context, and the operation repeats until a stop token, a length limit, or a serving rule ends generation. “Generate an answer” is therefore a sequence of conditional next-token decisions, not a single database lookup.</p>
+<p>The caller does not usually manipulate the raw tensor. It sends an <strong>API envelope</strong>: messages, decoding controls, output limits, perhaps a schema or tool declarations, and request metadata. The serving system tokenizes that envelope, runs inference, decodes tokens, and returns text plus optional measurements such as usage counts and token log probabilities.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    participant C as Caller</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    participant S as Model server</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    participant M as Autoregressive model</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    C-&gt;&gt;S: messages + limits + sampling controls</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    S-&gt;&gt;M: complete tokenized context</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    loop each output position</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        M--&gt;&gt;S: next-token logits</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        S-&gt;&gt;S: apply decoding policy</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        S-&gt;&gt;M: append selected token</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    S--&gt;&gt;C: text + token scores + usage + timing</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch01-call-contract" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch01-call-contract-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch01-call-contract">sequenceDiagram
+    participant C as Caller
+    participant S as Model server
+    participant M as Autoregressive model
+    C-&gt;&gt;S: messages + limits + sampling controls
+    S-&gt;&gt;M: complete tokenized context
+    loop each output position
+        M--&gt;&gt;S: next-token logits
+        S-&gt;&gt;S: apply decoding policy
+        S-&gt;&gt;M: append selected token
+    end
+    S--&gt;&gt;C: text + token scores + usage + timing
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch01-call-contract-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.1: What does the caller control, and what does a model server return?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-ch01-call-contract" class="quarto-xref">Figure&nbsp;<span>1.1</span></a> exposes two boundaries that are easy to blur. The caller controls what context and permissions to provide; the serving system controls how the distribution is decoded and scheduled. The model itself does not retrieve an omitted policy, remember a prior API request, or obtain permission to call a tool merely because the surrounding chat syntax mentions one.</p>
+<p>A <strong>model call</strong> ends when the continuation is returned. A <strong>workflow</strong> makes a predetermined sequence of calls and conventional operations. An <strong>agent</strong> allows model output or a model-derived decision to influence which action occurs next. That distinction is more useful than product labels. If every route is fixed in ordinary code, it remains a workflow even when several model calls are involved. If a model can choose among tools based on intermediate observations, the system has acquired agency.</p>
+<p>This is a survey here; Chapter 2 derives the autoregressive objective, and Chapter 9 develops generation and decoding in full. Chapters 16 and 17 later define the agent loop and tool boundary. No agent loop is needed to learn the contract in this chapter.</p>
+</section>
+<section id="sec-ch01-context" class="level2" data-number="1.6">
+<h2 data-number="1.6" class="anchored" data-anchor-id="sec-ch01-context"><span class="header-section-number">1.6</span> Tokens and Context Are Budgets</h2>
+<p>Text reaches a language model through a tokenizer. A tokenizer maps bytes or text spans to integer token identifiers from a finite vocabulary; a decoder maps identifiers back to text. Tokens need not align with words. A frequent word may be one token, an unfamiliar name may be several, punctuation can have its own tokens, and code or multilingual text can split differently. Character count and word count are therefore poor substitutes for actual token counts.</p>
+<p>The <strong>context window</strong> is the maximum token sequence a particular model invocation can process, including instructions, conversation history, retrieved evidence, tool results, and generated output. It is a hard capacity constraint, but capacity is only the first concern. Every included token also competes for attention, contributes to prefill work, and may distract the model from the evidence that matters. A context that technically fits can still be a badly engineered context.</p>
+<p>Three consequences show up early:</p>
+<ol type="1">
+<li><strong>Context is not durable memory.</strong> Unless the application stores prior state and sends it again, a later call does not possess that state. Conversation products usually reconstruct history for each call.</li>
+<li><strong>Truncation is a semantic decision.</strong> Dropping the oldest tokens may remove the governing instruction; dropping the newest may remove the question; blind summarization may erase an exception. The application must own the policy.</li>
+<li><strong>Untrusted context is still input.</strong> Retrieved pages and tool outputs can contain instructions or misleading claims. Putting text in a “context” field does not make it authoritative. Trust boundaries and instruction-data separation receive full treatment later.</li>
+</ol>
+<p>For this chapter, the useful abstraction is a small provider-neutral result. The complete source contains the following interface:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> TokenScore:</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""A returned token and its log probability under the serving model."""</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    token: <span class="bu">str</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    logprob: <span class="bu">float</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Completion:</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""The small, provider-neutral result used by this chapter's probe."""</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    text: <span class="bu">str</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    token_scores: <span class="bu">tuple</span>[TokenScore, ...]</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    prompt_tokens: <span class="bu">int</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    output_tokens: <span class="bu">int</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    ttft_ms: <span class="bu">float</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    total_ms: <span class="bu">float</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> CompletionClient(Protocol):</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""The one operation needed by the probe."""</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> complete(<span class="va">self</span>, prompt: <span class="bu">str</span>, temperature: <span class="bu">float</span>, seed: <span class="bu">int</span>) <span class="op">-&gt;</span> Completion: ...</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The interface records token counts rather than guessing from characters. It also keeps timing and token scores beside the text so that an attractive response cannot hide the operational measurements. A production interface would include finish reasons, request identifiers, errors, and richer usage metadata, but those additions do not change the contract being taught.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>model_probe.py</code>: result types and client protocol</td>
+<td style="text-align: right;">25 lines</td>
+<td>Fixture and real server expose the same measurable completion contract.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>This is a survey here; Chapter 2 derives tokenization and representations, Chapter 9 opens the sequence-generation loop, and Chapter 13 treats caller-side context construction in depth.</p>
+</section>
+<section id="sec-ch01-sampling" class="level2" data-number="1.7">
+<h2 data-number="1.7" class="anchored" data-anchor-id="sec-ch01-sampling"><span class="header-section-number">1.7</span> Sampling Controls a Distribution, Not Truth</h2>
+<p>Suppose the model emits logits <span class="math inline">z_1,\ldots,z_V</span> over a vocabulary of size <span class="math inline">V</span>. Temperature <span class="math inline">T&gt;0</span> produces the categorical distribution</p>
+<p>[ p_i(T)=. ]</p>
+<p>Lower temperature sharpens differences among logits; higher temperature flattens them. In the limit as <span class="math inline">T</span> approaches zero, decoding selects among the highest-logit tokens rather than drawing broadly. Other controls, such as top-<span class="math inline">k</span> and nucleus or top-<span class="math inline">p</span> sampling, restrict the candidate set before a draw. These controls change which continuations are likely. They do not add evidence and do not turn the distribution into a truth estimator.</p>
+<p>A random seed is best understood as an experimental control, not a universal determinism guarantee. The offline fixture uses a local pseudorandom generator, so the same seed, prompt, and temperature reproduce the same output. A real accelerator-backed server has more state: request batching, parallel reductions, kernel selection, quantization, and hardware arithmetic can affect the logits or their ordering. Some serving stacks make stronger reproducibility guarantees than others. If exact repeatability is a product invariant, test the deployed stack under its real concurrency pattern; do not infer it from one quiet request.</p>
+<p>The probe makes the distribution visible by issuing 12 calls at each of three temperatures. It counts distinct response strings rather than presenting one response as representative.</p>
+<div id="fig-ch01-sampling-diversity" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Bar chart of distinct fixture outputs across 12 calls: one at temperature zero, three at point seven, and four at one point two.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch01-sampling-diversity-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch01/generated/sampling-diversity.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;1.2: The deterministic fixture returns one distinct response at temperature 0.0, three at 0.7, and four at 1.2 across the same 12 seeds."><img src="../code/ch01/generated/sampling-diversity.svg" class="img-fluid figure-img" alt="Bar chart of distinct fixture outputs across 12 calls: one at temperature zero, three at point seven, and four at one point two."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch01-sampling-diversity-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.2: The deterministic fixture returns one distinct response at temperature 0.0, three at 0.7, and four at 1.2 across the same 12 seeds.
+</figcaption>
+</figure>
+</div>
+<p><a href="#fig-ch01-sampling-diversity" class="quarto-xref">Figure&nbsp;<span>1.2</span></a> is not a claim about every model. It is the generated output of a known fixture, designed to establish the experiment before a costly or variable real-model run. Its durable lesson is the method: choose an outcome statistic, repeat calls under controlled settings, and compare distributions. For a classifier-like task the statistic might be label disagreement; for code it might be test-pass rate; for a tool planner it might be action-sequence diversity.</p>
+<p>The same method prevents a common evaluation error. If a prompt succeeds once at temperature zero, you have observed one trajectory under one server condition. You have not shown that the system is stable across inputs, seeds, replicas, load, or model revisions. Chapter 9 develops decoding and distributional behavior in full; Chapter 22 supplies the evaluation design. This section is the survey needed to operate the first probe.</p>
+</section>
+<section id="sec-ch01-confabulation" class="level2" data-number="1.8">
+<h2 data-number="1.8" class="anchored" data-anchor-id="sec-ch01-confabulation"><span class="header-section-number">1.8</span> Confabulation, Confidence, and Abstention</h2>
+<p>The fixture receives the question “What did the 1912 Alpine Berry Treaty establish?” The treaty is invented. The fixture intentionally returns a fluent answer about quotas, mountain cantons, and an inspection council, with high token likelihoods encoded as log probabilities near zero. This is a controlled demonstration, not evidence that any particular real model will produce the same wording.</p>
+<p>Why is such behavior compatible with the modeling objective? The model estimates likely continuations conditioned on supplied text. A false premise can resemble a valid historical question. Tokens such as dates, treaties, councils, quotas, and geographic entities form patterns that occurred in training-like text. Without reliable evidence or a learned abstention behavior, a coherent completion can have high probability even when its referent is nonexistent. The model is not required by next-token prediction alone to run an existence check before continuing.</p>
+<p>Keep three quantities separate:</p>
+<ul>
+<li><strong>Token likelihood</strong> asks how probable a token is under the model given the preceding context. The API may expose its logarithm. If a token has log probability <span class="math inline">\ell</span>, its model probability is <span class="math inline">\exp(\ell)</span>. Sequence log probabilities aggregate token-level terms, but length and tokenization complicate comparisons.</li>
+<li><strong>Semantic confidence</strong> asks whether different plausible generations support the same meaning. Methods based on self-consistency or semantic entropy can estimate this more directly than a single token score, but they remain measurements of model behavior.</li>
+<li><strong>Factual correctness</strong> asks whether a claim agrees with the world or an authoritative source. It requires evidence, a verifier, a trusted database, a human judgment, or some combination. It is not contained in a token log probability.</li>
+</ul>
+<p>Calibration connects a stated confidence to observed frequency. If answers assigned 0.8 confidence are correct about 80 percent of the time on a defined task distribution, the score is calibrated on that distribution. Calibration can shift across topics, prompt formats, model changes, and retrieval conditions. A single global threshold is rarely enough; consequential actions may need category-specific thresholds and an explicit “insufficient evidence” path.</p>
+<p>An <strong>abstention policy</strong> turns uncertainty into system behavior. It defines when the system should decline, ask a clarifying question, retrieve more evidence, route to a specialist, or require human review. The model may help produce a score, but ordinary software must enforce what happens at the threshold. “Only answer when certain” in a prompt is a behavioral request, not an enforcement boundary.</p>
+<p>The generated <code>confabulation.json</code> records both the misleading answer and this warning: token log probabilities are not probabilities that the factual claim is true. That warning is part of the artifact because the schema itself should resist misinterpretation. This is a survey here; Chapter 9 develops confabulation evaluation, calibration, semantic uncertainty, evidence support, and abstention policies.</p>
+</section>
+<section id="sec-ch01-posttraining" class="level2" data-number="1.9">
+<h2 data-number="1.9" class="anchored" data-anchor-id="sec-ch01-posttraining"><span class="header-section-number">1.9</span> Post-Training Changes Behavior, Not the Contract</h2>
+<p>Pretraining teaches a model to predict tokens over a broad corpus. A raw pretrained model can continue text, but it has not necessarily learned the conversational conventions an API user expects. <strong>Post-training</strong> adapts behavior after pretraining. Supervised instruction tuning supplies examples of desired responses. Preference optimization or reinforcement learning can make some responses more likely than others under human- or machine-derived feedback. Additional training can teach tool-call formats, refusal behavior, longer deliberation, domain conventions, or compact answers.</p>
+<p>These stages explain why two models with similar architectures can behave very differently at the same API boundary. They also explain why “the model knows” is too coarse a diagnosis. A model may contain information in its parameters yet fail to express it under a prompt; follow an instruction format yet lack the underlying fact; or produce a tool-shaped JSON object without understanding whether the tool is authorized.</p>
+<p>For operational reasoning, separate three layers:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Layer</th>
+<th>What it changes</th>
+<th>What it cannot guarantee by itself</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Pretraining</td>
+<td>Broad next-token competence and representations</td>
+<td>Instruction following or factual verification</td>
+</tr>
+<tr class="even">
+<td>Instruction/preference post-training</td>
+<td>Response style, helpfulness, refusal, format adherence</td>
+<td>Policy enforcement, perfect calibration, or safe side effects</td>
+</tr>
+<tr class="odd">
+<td>Runtime system</td>
+<td>Context, tools, validators, permissions, budgets, and monitors</td>
+<td>Capabilities absent from the selected model</td>
+</tr>
+</tbody>
+</table>
+<p>The table prevents two opposite errors. One is to treat every behavior difference as a prompting problem when model selection or post-training is decisive. The other is to rely on post-training for properties that require hard runtime controls. A refusal-trained model can reduce unsafe requests, but the tool gateway must still deny an unauthorized write. A tool-trained model can format arguments, but a schema validator must still reject malformed or out-of-range values.</p>
+<p>Some systems expose a “reasoning” mode, hidden deliberation, or extra test-time compute. These can alter accuracy, latency, and token use, but the caller still receives a probabilistic component whose outputs need evaluation and whose actions need constraints. Product surfaces and training recipes will change; the layer boundary endures.</p>
+<p>This is a survey here; Chapter 7 develops post-training objectives and data, Chapter 8 treats inference-time reasoning, Chapter 12 owns structured outputs, and Chapter 13 owns prompting and context engineering.</p>
+</section>
+<section id="sec-ch01-latency" class="level2" data-number="1.10">
+<h2 data-number="1.10" class="anchored" data-anchor-id="sec-ch01-latency"><span class="header-section-number">1.10</span> Latency and Cost Have Two Phases</h2>
+<p>Generation has two visibly different phases. During <strong>prefill</strong>, the server processes the supplied context and constructs the key-value state needed for generation. Work across input positions can be parallelized within the transformer computation. During <strong>decode</strong>, the server produces output tokens one after another; each next token depends on the tokens already generated. Serving engines batch and schedule this work aggressively, but the dependency remains.</p>
+<p>That split motivates two user-facing measurements:</p>
+<ul>
+<li><strong>Time to first token (TTFT)</strong> is the interval from request start until the first output token arrives. It includes queueing, request processing, prefill, and the first decode step.</li>
+<li><strong>Time per output token (TPOT)</strong> summarizes the streaming interval after the first token. For <span class="math inline">N&gt;1</span> output tokens, a useful request-level estimate is <span class="math inline">\mathrm{TPOT}=(t_N-t_1)/(N-1)</span>, where <span class="math inline">t_1</span> is first-token time and <span class="math inline">t_N</span> is last-token time.</li>
+</ul>
+<p>End-to-end latency is approximately TTFT plus the decode interval, with network and application overhead included according to where timestamps are taken. Always record that boundary. Client-observed latency answers a product question; server-only latency answers a capacity question. They are related but not interchangeable.</p>
+<p>Input and output tokens also have different cost dynamics. A longer input increases prefill work and occupies context capacity. A longer output extends serial decoding, keeps accelerator state resident, and delays completion. Providers may bill input and output tokens differently, but prices are commercial policy and change more quickly than the compute mechanism. Optimize the mechanism first: remove irrelevant context, cache reusable prefixes when the stack supports it, cap outputs, and measure the quality lost by each reduction.</p>
+<p>Raw token price is not the final objective. The useful denominator is a successful, policy-compliant outcome. A cheaper model that triggers more retries, human corrections, or failed tool calls can cost more per resolved task. Conversely, a slower model can be economical if it prevents an expensive error. Production comparisons should report at least quality, TTFT, output rate, request volume, and resource or billed cost on the same workload.</p>
+<p>The offline fixture emits synthetic timing so tests remain stable. Those numbers verify data plumbing only. The OpenAI-compatible adapter streams a real response, timestamps the first content token and completion, and records usage reported by the server. Hardware results belong in a dated experiment report with model, quantization, batch/load shape, prompt/output lengths, and software configuration.</p>
+<p>This is a survey here; Chapter 10 derives inference, key-value caching, batching, scheduling, throughput, TTFT/TPOT tradeoffs, and serving economics.</p>
+</section>
+<section id="sec-ch01-least-autonomous" class="level2" data-number="1.11">
+<h2 data-number="1.11" class="anchored" data-anchor-id="sec-ch01-least-autonomous"><span class="header-section-number">1.11</span> Choose the Least Autonomous Design</h2>
+<p>An agent is one option in a larger design space. Start with the shape of the problem, not with the desire to use a model. Ask whether the desired output is determined by stable rules, authoritative data, an explicit objective, or judgment over unstructured evidence.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>flowchart TD</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    Q[Define the measurable outcome] --&gt; R{Stable rules cover it?}</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    R -- yes --&gt; C[Ordinary code or rules]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    R -- no --&gt; D{Authoritative structured data?}</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    D -- yes --&gt; SQL[SQL or typed API query]</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    D -- no --&gt; I{Need matching evidence?}</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    I -- yes --&gt; S[Search or retrieval]</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    I -- no --&gt; O{Explicit objective and constraints?}</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    O -- yes --&gt; V[Solver or optimizer]</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    O -- no --&gt; J{Judgment over text or images?}</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    J -- yes --&gt; M[One model call or fixed workflow]</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    J -- no --&gt; H[Human process or redesign]</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    M --&gt; A{Must the next step depend on observations?}</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    A -- no --&gt; W[Keep the workflow fixed]</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    A -- yes --&gt; B[Consider a bounded agent]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch01-least-autonomous" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch01-least-autonomous-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch01-least-autonomous">flowchart TD
+    Q[Define the measurable outcome] --&gt; R{Stable rules cover it?}
+    R -- yes --&gt; C[Ordinary code or rules]
+    R -- no --&gt; D{Authoritative structured data?}
+    D -- yes --&gt; SQL[SQL or typed API query]
+    D -- no --&gt; I{Need matching evidence?}
+    I -- yes --&gt; S[Search or retrieval]
+    I -- no --&gt; O{Explicit objective and constraints?}
+    O -- yes --&gt; V[Solver or optimizer]
+    O -- no --&gt; J{Judgment over text or images?}
+    J -- yes --&gt; M[One model call or fixed workflow]
+    J -- no --&gt; H[Human process or redesign]
+    M --&gt; A{Must the next step depend on observations?}
+    A -- no --&gt; W[Keep the workflow fixed]
+    A -- yes --&gt; B[Consider a bounded agent]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch01-least-autonomous-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1.3: Which mechanism earns the first implementation attempt?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-ch01-least-autonomous" class="quarto-xref">Figure&nbsp;<span>1.3</span></a> is a starting heuristic, not a ban on hybrid systems. A reliable application often combines several branches: SQL fetches account facts, retrieval supplies policy passages, ordinary code computes eligibility, and a model drafts an explanation. The key move is to assign each mechanism the part it can verify.</p>
+<p>Use <strong>rules or ordinary code</strong> when the mapping is stable and expressible. A long conditional may be inelegant, but it can still beat an agent if every branch is auditable and changes rarely. Use <strong>SQL or a typed API</strong> for exact structured facts; asking a model to infer a balance from prose adds uncertainty without value. Use <strong>search or retrieval</strong> when the main difficulty is locating evidence. Use a <strong>solver</strong> when variables, constraints, and an objective can be stated explicitly. Use a <strong>human</strong> when legitimacy, accountability, novel negotiation, or irreversible judgment dominates.</p>
+<p>A <strong>one-shot model call</strong> earns its place when the task requires semantic judgment over unstructured input and the output can be checked or safely reviewed. A <strong>fixed workflow</strong> is better when the sequence is known: extract fields, validate them, retrieve policy, then draft. A <strong>bounded agent</strong> becomes plausible when the useful next step genuinely depends on an intermediate observation and enumerating all paths is impractical—for example, diagnosing an unfamiliar service fault across several read-only tools.</p>
+<p>Two tests filter many weak agent proposals:</p>
+<ol type="1">
+<li><strong>Counterfactual baseline:</strong> what is the best non-agent design, and on which measured cases does it fail? If no baseline has been built, the value of autonomy is unknown.</li>
+<li><strong>Branch-value test:</strong> what observation can change the next action, and why is a fixed branch insufficient? If the answer is merely “the model will think,” the architecture is underspecified.</li>
+</ol>
+<p>The support-policy incident fails both tests. Eligibility may be an ordinary rule over purchase date, product type, and policy version. Retrieval may be needed to show the governing passage. A model may draft a humane explanation. None of those requirements implies that a model should choose whether to issue money.</p>
+<p>This section is a survey. Chapter 16 builds the minimal agent loop; Chapter 28 revisits the workflow-versus-agent decision with production evidence and failure economics.</p>
+</section>
+<section id="sec-ch01-agency-budget" class="level2" data-number="1.12">
+<h2 data-number="1.12" class="anchored" data-anchor-id="sec-ch01-agency-budget"><span class="header-section-number">1.12</span> Buy Authority One Action at a Time</h2>
+<p>Autonomy is not one switch. A system can draft without sending, read one database without writing it, choose among three tools but not invent a tool, or execute a reversible action while escalating an irreversible one. Treat authority as a property of each action path.</p>
+<p>The following ladder separates <strong>control-flow complexity</strong> from <strong>effect authority</strong>. Moving right adds an incremental budget that must be stated numerically for the deployment, even when the numbers begin as conservative caps.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Rung</th>
+<th>New capability</th>
+<th>Minimum numeric bounds to add</th>
+<th>Evidence owed before promotion</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Conventional component</td>
+<td>Deterministic query, rule, search, or solver</td>
+<td>Query timeout; rows or records returned</td>
+<td>Unit, integration, and load tests</td>
+</tr>
+<tr class="even">
+<td>One model call</td>
+<td>Probabilistic semantic output</td>
+<td>1 call; input/output token caps; deadline</td>
+<td>Repeated-task quality and abstention evaluation</td>
+</tr>
+<tr class="odd">
+<td>Fixed model workflow</td>
+<td>Several known stages</td>
+<td>Maximum calls per request; per-stage deadlines; retry caps</td>
+<td>End-to-end and stage-ablation results</td>
+</tr>
+<tr class="even">
+<td>Bounded agent</td>
+<td>Model chooses next read or action</td>
+<td>Step cap; allowlisted tools; read/write scopes; wall-time and spend caps</td>
+<td>Trajectory, policy, recovery, and adversarial tests</td>
+</tr>
+<tr class="odd">
+<td>Coordinated agents</td>
+<td>Several decision-makers exchange work</td>
+<td>Global step cap; message cap; shared-resource quota; ownership per effect</td>
+<td>Evidence that coordination beats one bounded agent</td>
+</tr>
+<tr class="even">
+<td>Delegated operation</td>
+<td>Continues across sessions or broad objectives</td>
+<td>Time horizon; affected-record cap; approval classes; kill and rollback limits</td>
+<td>Canary evidence, monitoring, incident rehearsal, named owner</td>
+</tr>
+</tbody>
+</table>
+<p>The bounds are deliberately expressed in countable units: calls, tokens, steps, tools, writes, records, messages, elapsed time, retries, and reviewer minutes. “Use reasonable resources” is not a budget. Nor can every dimension be collapsed honestly into one score. A five-step read-only diagnostic and a one-step irreversible transfer have different risk shapes. Keep a vector of limits and identify which one stops the system first.</p>
+<p>Authority has its own levels. At level 0, the model only returns text to software. At level 1, it drafts for a person. At level 2, it reads scoped systems. At level 3, it proposes an effect behind approval. At level 4, it executes a narrow, reversible or compensatable effect. At level 5, it pursues a delegated objective across time or systems. These levels describe permissions, not intelligence. A powerful model can remain at level 0; a modest classifier can trigger a level-4 effect if software wires it that way.</p>
+<p>Each increment creates a characteristic failure. A draft can promise a nonexistent policy. A read tool can cross a tenant boundary. Approval can degrade into habitual clicking. A retried non-idempotent write can duplicate an effect. A long-lived delegate can follow malicious instructions hidden in an artifact. These are composite examples; later chapters derive the enforcement and testing mechanisms. Their shared lesson is that prompt text is not enforcement.</p>
+<p>An <strong>agency-budget memo</strong> makes the trade explicit before implementation. It names the measurable outcome and least-autonomous baseline; lists each action, scope, approval, and reversal path; budgets compute, latency, evaluation, security work, operator attention, and blast radius; and states release evidence, monitoring, escalation, stop, and rollback conditions. The artifact generates a one-page template rather than pretending one set of numbers fits every domain.</p>
+<p>Budget the expected benefit in the same units used to justify the project: resolution rate, analyst minutes saved, defects caught, recovery time, or another outcome. Then charge the autonomy increment for its full operating cost. Include unsuccessful calls, repeated evaluations, human review, security controls, incident response, and variance at peak load. Promotion is warranted only when measured value survives those charges.</p>
+<p>Human oversight is also a system, not a button. “Human in the loop” may mean approval before an effect, review after a sampled effect, escalation on low confidence, or incident intervention. These mechanisms have different latency and failure modes. The book divides their treatment deliberately: Chapter 17 covers approval gates and tool execution, Chapter 24 covers authorization and escalation policy, Chapter 26 covers durable pause and resume, Chapter 27 covers queues and operator load, and Chapter 32 exercises the complete arrangement without reteaching it.</p>
+<p>This section surveys the decision. Chapters 16 and 28 return to the ladder with executable agents and production economics; Chapters 22–27 establish evaluation, security, reliability, deployment, and operations evidence.</p>
+</section>
+<section id="sec-ch01-use-book" class="level2" data-number="1.13">
+<h2 data-number="1.13" class="anchored" data-anchor-id="sec-ch01-use-book"><span class="header-section-number">1.13</span> How to Use This Book</h2>
+<p>Chapter 1 is the shared on-ramp. <strong>Route A—full foundations</strong> continues through Chapters 2–11 before entering model programming at Chapter 12 and agent construction at Chapter 16. Choose it when you want to derive transformers and tokenization; attention, position, and long context; efficient architectures; scaling and data; distributed training; post-training and test-time reasoning; inference; serving; and customization from the neural-network substrate. <strong>Route B—applied agent engineering</strong> goes from this chapter to Chapter 12 and then reads contiguously. Later chapters provide bounded backfill where a model-foundation dependency is load-bearing.</p>
+<p>Both routes use the same learning loop: begin with a failure or measurement, state an invariant, implement the smallest mechanism, break it, measure the break, map it to production, and name what the component does not own. The point of a deterministic fixture is not to avoid reality. It is to debug the experiment before adding model, network, scheduler, and hardware variance. Optional adapters then expose the same interface to real behavior.</p>
+<p>The lab stack grows only when a mechanism requires it:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Layer</th>
+<th>Default role in the book</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Python, NumPy, and PyTorch</td>
+<td>Derive and test model mechanisms</td>
+</tr>
+<tr class="even">
+<td>Raw HTTP and an OpenAI-compatible local server</td>
+<td>Observe the model-call boundary before frameworks</td>
+</tr>
+<tr class="odd">
+<td>Postgres and vector search</td>
+<td>Persist state, evidence, and retrieval artifacts</td>
+</tr>
+<tr class="even">
+<td>Containers and queues</td>
+<td>Reproduce services and asynchronous work</td>
+</tr>
+<tr class="odd">
+<td>OpenTelemetry-compatible traces and metrics</td>
+<td>Connect trajectories to production operations</td>
+</tr>
+<tr class="even">
+<td>Agent frameworks</td>
+<td>Compare orchestration choices after building the underlying loop</td>
+</tr>
+</tbody>
+</table>
+<p>The order is intentional. Frameworks compress mechanisms; they do not remove the need to understand termination, tool schemas, policy gates, state, or traces. Chapter 16 constructs the minimal loop. Chapter 28 asks again whether that loop should exist in the product. Repetition there is a decision checkpoint, not a second introduction.</p>
+<p>Keep the chapter artifacts as a lab notebook. Run the fixture first, commit the generated measurements you rely on, and record configuration beside any real-model result. When a named model, server, benchmark, price, API field, or legal rule matters, verify it at the time of use. Durable reasoning lives in the chapter spine; dated choices belong in an experiment record and Appendix C.</p>
+</section>
+<section id="sec-ch01-build" class="level2" data-number="1.14">
+<h2 data-number="1.14" class="anchored" data-anchor-id="sec-ch01-build"><span class="header-section-number">1.14</span> Build</h2>
+<p>Run the integrated probe from the <code>newbook</code> directory. The default path needs no model, network, API key, or accelerator:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch01<span class="op">/</span>model_probe<span class="op">.</span><span class="fu">py</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>python <span class="op">-</span>m pytest tests<span class="op">/</span>test_ch01_model_probe<span class="op">.</span><span class="fu">py</span> <span class="op">-</span>q</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The command writes four inspectable outputs under <code>code/ch01/generated/</code>:</p>
+<ul>
+<li><code>sampling.csv</code> contains every temperature, seed, response, token count, and timing measurement.</li>
+<li><code>sampling-diversity.svg</code> is generated from the CSV experiment and appears in <a href="#fig-ch01-sampling-diversity" class="quarto-xref">Figure&nbsp;<span>1.2</span></a>.</li>
+<li><code>confabulation.json</code> contains the false-premise prompt, fabricated response, token scores, and interpretation warning.</li>
+<li><code>agency-budget-template.md</code> is the one-page design memo to complete for a proposed agent feature.</li>
+</ul>
+<p>The expected fixture result is one distinct output at temperature 0.0, three at 0.7, and four at 1.2 across 12 fixed seeds. Predict the direction before inspecting the chart. The exact counts follow from this fixture’s candidate logits and seeds; a real model can produce a different pattern.</p>
+<p>To repeat the same experiment against a server-hosted model, start a local vLLM OpenAI-compatible server using its official documentation, then identify the served model name and run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="va">$env</span><span class="op">:</span><span class="va">VLLM_API_KEY</span> <span class="op">=</span> <span class="st">"your-local-key-if-configured"</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch01<span class="op">/</span>model_probe<span class="op">.</span><span class="fu">py</span> `</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">--</span>mode openai-compatible `</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">--</span>base-url http<span class="op">://</span>localhost<span class="op">:</span><span class="dv">8000</span><span class="op">/</span>v1 `</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">--</span>model your-served-model</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The adapter requests streaming chat completions with token log probabilities. It timestamps the first content token, gathers returned token scores and usage, and sends every result through the same CSV, JSON, figure, and memo path as the fixture. If the selected server or model does not support log probabilities, that is a capability mismatch to record, not a reason to silently invent scores.</p>
+<p>Inspect three things. First, group <code>sampling.csv</code> by temperature and compare both distinct strings and task-relevant outcomes. String diversity is easy to count but may overstate semantic variation. Second, open <code>confabulation.json</code>; verify that high per-token likelihood does not validate the treaty. Third, complete the memo for the support refund proposal. The least-autonomous baseline should compute eligibility from authoritative policy and typed account data. If a model drafts the explanation, it can remain a level-1 action while refund issuance stays behind conventional policy and authorization.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>model_probe.py</code>: fixture, real adapter, experiment, and outputs</td>
+<td style="text-align: right;">197 total lines</td>
+<td>One experiment runs offline or against a hosted model without duplicating measurement logic.</td>
+</tr>
+<tr class="even">
+<td><code>test_ch01_model_probe.py</code></td>
+<td style="text-align: right;">5 focused tests</td>
+<td>Fixed controls repeat, temperature zero collapses the fixture choice, scores align with tokens, and every artifact is generated.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Honesty note.</strong> The fixture simulates a categorical sampler and returns synthetic timing; it is not a language model and is not a benchmark. Its invented treaty response is deliberately false. Real output diversity, tokenization, log probabilities, TTFT, and total latency depend on the model and serving configuration. Preserve raw results and configuration metadata whenever you replace the fixture.</p>
+</section>
+<section id="sec-ch01-endures" class="level2" data-number="1.15">
+<h2 data-number="1.15" class="anchored" data-anchor-id="sec-ch01-endures"><span class="header-section-number">1.15</span> What Endures, What Changes</h2>
+<p><strong>What endures.</strong> An autoregressive model exposes a conditional continuation distribution. Tokens and context are capacity and compute budgets. Sampling controls alter a distribution, not factual correctness. Token likelihood, semantic uncertainty, and world-grounded correctness are distinct. Post-training changes behavior but does not replace runtime enforcement. Prefill and serial decoding create different latency pressures. Agency is granted by software at each action boundary. The least-autonomous design is the baseline, and every autonomy increment owes measured value plus explicit limits.</p>
+<p><strong>What changes.</strong> Model families, context sizes, tokenizer details, post-training recipes, supported API fields, deterministic-serving guarantees, hardware, server scheduling, benchmark standings, and token prices will change. Agent frameworks, observability products, and protocol surfaces will also change. Verify those choices against current official sources and a workload-specific experiment; do not revise the durable decision rules merely because a product label moves.</p>
+</section>
+<section id="sec-ch01-exercises" class="level2" data-number="1.16">
+<h2 data-number="1.16" class="anchored" data-anchor-id="sec-ch01-exercises"><span class="header-section-number">1.16</span> Exercises</h2>
+<ol type="1">
+<li><strong>Recover a probability.</strong> Pick three token log probabilities from <code>confabulation.json</code>, exponentiate them, and explain exactly what each resulting number does and does not claim. Why would multiplying them not yield the probability that the answer is factual?</li>
+<li><strong>Predict before running.</strong> Add temperature 0.2 to the fixture experiment. Predict the number of distinct responses across the existing seeds, then run it. Explain the result from the logits and softmax rather than from the wording of the responses.</li>
+<li><strong>Break reproducibility.</strong> Replace the fixture’s local seeded generator with shared mutable randomness. Write a test that exposes order dependence, then restore the invariant without forcing every temperature to zero.</li>
+<li><strong>Measure semantic outcomes.</strong> Replace exact-string diversity with a task-specific label such as <code>release</code>, <code>block</code>, or <code>escalate</code>. Compare string diversity with label diversity and state which is operationally relevant.</li>
+<li><strong>Exercise the real boundary.</strong> Run the adapter against a local compatible server under one request at a time and then under concurrent load. Record model, server configuration, input/output lengths, TTFT, and total latency. Report distributions rather than a single average.</li>
+<li><strong>Defend a non-agent design.</strong> Choose one proposed agent feature and complete the generated agency-budget memo. Build the best rule, query, search, solver, workflow, or human baseline you can. Name the measured failure that would justify promotion to a bounded agent.</li>
+<li><strong>Split authority.</strong> For a customer-support assistant, classify drafting a reply, reading account history, proposing a credit, applying a credit, and monitoring follow-up as authority levels 0–5. Give each action a numeric limit, enforcement owner, and escalation path.</li>
+</ol>
+</section>
+<section id="sec-ch01-notes" class="level2" data-number="1.17">
+<h2 data-number="1.17" class="anchored" data-anchor-id="sec-ch01-notes"><span class="header-section-number">1.17</span> Notes and Sources</h2>
+<ul>
+<li>Vaswani et al., <a href="https://arxiv.org/abs/1706.03762">“Attention Is All You Need”</a>, provides the transformer architecture underlying the later derivation.</li>
+<li>Sennrich, Haddow, and Birch, <a href="https://arxiv.org/abs/1508.07909">“Neural Machine Translation of Rare Words with Subword Units”</a>, and Kudo and Richardson, <a href="https://arxiv.org/abs/1808.06226">“SentencePiece”</a>, are primary sources for subword tokenization approaches.</li>
+<li>Holtzman et al., <a href="https://arxiv.org/abs/1904.09751">“The Curious Case of Neural Text Degeneration”</a>, introduces nucleus sampling and analyzes decoding behavior.</li>
+<li>Ouyang et al., <a href="https://arxiv.org/abs/2203.02155">“Training Language Models to Follow Instructions with Human Feedback”</a>, is a primary reference for supervised instruction tuning and reinforcement learning from human feedback in an instruction-following model.</li>
+<li>Kadavath et al., <a href="https://arxiv.org/abs/2207.05221">“Language Models (Mostly) Know What They Know”</a>, studies model confidence and calibration; Farquhar et al., <a href="https://www.nature.com/articles/s41586-024-07421-0">“Detecting Hallucinations in Large Language Models Using Semantic Entropy”</a>, develops semantic-uncertainty measurement.</li>
+<li>Shanahan, <a href="https://www.nature.com/articles/s41586-023-06647-8">“Talking About Large Language Models”</a>, motivates precise language about model behavior rather than unsupported anthropomorphic claims.</li>
+<li>Zhong et al., <a href="https://arxiv.org/abs/2401.09670">“DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving”</a>, formalizes the importance of distinct prefill/decode service-level objectives including TTFT and TPOT.</li>
+<li>Thinking Machines Lab, <a href="https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/">“Defeating Nondeterminism in LLM Inference”</a>, gives a serving-level account of batch-dependent numerical variation and stronger reproducibility techniques.</li>
+<li>Anthropic, <a href="https://www.anthropic.com/engineering/building-effective-agents">“Building Effective Agents”</a>, distinguishes fixed workflows from systems in which models direct their own process and argues for matching complexity to measured need.</li>
+<li>The vLLM project’s <a href="https://docs.vllm.ai/en/latest/serving/openai_compatible_server/">OpenAI-compatible server documentation</a> is the live source for launching and configuring the optional local adapter. Verify supported fields against the installed server and selected model before running.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../preface.html" class="pagination-link" aria-label="Preface">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Preface</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/02-transformer-first-principles.html" class="pagination-link" aria-label="The Transformer from First Principles [F]">
+        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

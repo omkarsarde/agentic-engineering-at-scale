@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Derive and train a decoder-only Transformer, from byte-pair tokens and causal attention through exact cached decoding.">
+
+<title>2&nbsp; The Transformer from First Principles [F] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/03-attention-position-long-context.html" rel="next">
+<link href="../chapters/01-operational-on-ramp.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-operational-on-ramp.html">Part I — The On-Ramp and Model Foundations</a></li><li class="breadcrumb-item"><a href="../chapters/02-transformer-first-principles.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch02-prerequisites" id="toc-sec-ch02-prerequisites" class="nav-link active" data-scroll-target="#sec-ch02-prerequisites"><span class="header-section-number">2.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch02-contents" id="toc-sec-ch02-contents" class="nav-link" data-scroll-target="#sec-ch02-contents"><span class="header-section-number">2.2</span> Contents</a></li>
+  <li><a href="#sec-ch02-failure" id="toc-sec-ch02-failure" class="nav-link" data-scroll-target="#sec-ch02-failure"><span class="header-section-number">2.3</span> A Suspiciously Good Loss</a></li>
+  <li><a href="#sec-ch02-will-build" id="toc-sec-ch02-will-build" class="nav-link" data-scroll-target="#sec-ch02-will-build"><span class="header-section-number">2.4</span> What you will build</a></li>
+  <li><a href="#sec-ch02-bpe" id="toc-sec-ch02-bpe" class="nav-link" data-scroll-target="#sec-ch02-bpe"><span class="header-section-number">2.5</span> Tokens From Bytes: BPE Essentials</a></li>
+  <li><a href="#sec-ch02-objective" id="toc-sec-ch02-objective" class="nav-link" data-scroll-target="#sec-ch02-objective"><span class="header-section-number">2.6</span> The Next-Token Objective</a></li>
+  <li><a href="#sec-ch02-attention" id="toc-sec-ch02-attention" class="nav-link" data-scroll-target="#sec-ch02-attention"><span class="header-section-number">2.7</span> Attention as a Learned Weighted Lookup</a></li>
+  <li><a href="#sec-ch02-multihead" id="toc-sec-ch02-multihead" class="nav-link" data-scroll-target="#sec-ch02-multihead"><span class="header-section-number">2.8</span> Multi-Head Attention and the Causal Mask</a></li>
+  <li><a href="#sec-ch02-residual" id="toc-sec-ch02-residual" class="nav-link" data-scroll-target="#sec-ch02-residual"><span class="header-section-number">2.9</span> The Residual Stream and a Modern Block</a></li>
+  <li><a href="#sec-ch02-decoder" id="toc-sec-ch02-decoder" class="nav-link" data-scroll-target="#sec-ch02-decoder"><span class="header-section-number">2.10</span> Decoder-Only: From Embeddings to Logits</a></li>
+  <li><a href="#sec-ch02-kv-cache" id="toc-sec-ch02-kv-cache" class="nav-link" data-scroll-target="#sec-ch02-kv-cache"><span class="header-section-number">2.11</span> Cache Past Keys and Values Exactly</a></li>
+  <li><a href="#sec-ch02-accounting" id="toc-sec-ch02-accounting" class="nav-link" data-scroll-target="#sec-ch02-accounting"><span class="header-section-number">2.12</span> Count Parameters, FLOPs, and Bytes</a></li>
+  <li><a href="#sec-ch02-training" id="toc-sec-ch02-training" class="nav-link" data-scroll-target="#sec-ch02-training"><span class="header-section-number">2.13</span> Train It and Read the Loss Curve</a></li>
+  <li><a href="#sec-ch02-build" id="toc-sec-ch02-build" class="nav-link" data-scroll-target="#sec-ch02-build"><span class="header-section-number">2.14</span> Build</a></li>
+  <li><a href="#sec-ch02-endures" id="toc-sec-ch02-endures" class="nav-link" data-scroll-target="#sec-ch02-endures"><span class="header-section-number">2.15</span> What Endures, What Changes</a></li>
+  <li><a href="#sec-ch02-exercises" id="toc-sec-ch02-exercises" class="nav-link" data-scroll-target="#sec-ch02-exercises"><span class="header-section-number">2.16</span> Exercises</a></li>
+  <li><a href="#sec-ch02-notes" id="toc-sec-ch02-notes" class="nav-link" data-scroll-target="#sec-ch02-notes"><span class="header-section-number">2.17</span> Notes and Sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-operational-on-ramp.html">Part I — The On-Ramp and Model Foundations</a></li><li class="breadcrumb-item"><a href="../chapters/02-transformer-first-principles.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch02" class="quarto-section-identifier"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch02-prerequisites" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="sec-ch02-prerequisites"><span class="header-section-number">2.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, backpropagation, basic Python, and beginner PyTorch.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/01-operational-on-ramp.html#sec-ch01-call">Chapter 1, A Model Call Maps Context to a Continuation</a> — a model call returns a continuation by making one conditional next-token decision at a time.</p>
+<p><strong>Not required:</strong> natural-language processing, tokenization, attention, language-model training, positional encodings, or inference serving.</p>
+</blockquote>
+</section>
+<section id="sec-ch02-contents" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="sec-ch02-contents"><span class="header-section-number">2.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch02-failure">A suspiciously good loss</a></li>
+<li><a href="#sec-ch02-will-build">What you will build</a></li>
+<li><a href="#sec-ch02-bpe">Tokens from bytes: BPE essentials</a></li>
+<li><a href="#sec-ch02-objective">The next-token objective</a></li>
+<li><a href="#sec-ch02-attention">Attention as a learned weighted lookup</a></li>
+<li><a href="#sec-ch02-multihead">Multi-head attention and the causal mask</a></li>
+<li><a href="#sec-ch02-residual">The residual stream and a modern block</a></li>
+<li><a href="#sec-ch02-decoder">Decoder-only: from embeddings to logits</a></li>
+<li><a href="#sec-ch02-kv-cache">Cache past keys and values exactly</a></li>
+<li><a href="#sec-ch02-accounting">Count parameters, FLOPs, and bytes</a></li>
+<li><a href="#sec-ch02-training">Train it and read the loss curve</a></li>
+<li><a href="#sec-ch02-build">Build</a></li>
+<li><a href="#sec-ch02-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch02-exercises">Exercises</a></li>
+<li><a href="#sec-ch02-notes">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch02-failure" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="sec-ch02-failure"><span class="header-section-number">2.3</span> A Suspiciously Good Loss</h2>
+<p>A team trains its first tiny language model. Within a few hundred updates, loss collapses and held-out next-token accuracy looks extraordinary. Generated text is incoherent.</p>
+<p>The architecture has no causal mask. At position <span class="math inline">i</span>, attention can read the token at position <span class="math inline">i+1</span>—the exact label the model is asked to predict. Training rewards this shortcut. The low loss is real arithmetic attached to an invalid information path.</p>
+<p>That failure gives us the chapter’s governing invariant:</p>
+<blockquote class="blockquote">
+<p>The logits at position <span class="math inline">i</span> may depend on tokens at positions <span class="math inline">{0}</span> through <span class="math inline">i</span>, but never on a token at a later position.</p>
+</blockquote>
+<p>Every mechanism in a causal language model serves or preserves that invariant. The tokenizer determines the prediction alphabet. The shifted loss defines which token is the label. The attention mask closes the future path. Residual connections let many transformations update the same per-position state. Positional information distinguishes order. The language-model head maps the final state back to the frozen vocabulary. During generation, a key-value cache must produce the same next-token logits as recomputing the whole visible prefix.</p>
+<p>The incident also illustrates why a loss curve is not self-interpreting. A decreasing scalar can mean learning, memorization, label leakage, a broken denominator, or an easier batch. An engineer needs predicted baselines and executable invariants. Before training, a model with near-uniform predictions over a vocabulary of size <span class="math inline">V</span> should have cross-entropy near <span class="math inline">\ln V</span>. After training, changing future tokens must leave all earlier logits unchanged. During cached decoding, reusing states must agree with the uncached computation.</p>
+<p>By the end of the chapter, you will derive those claims, implement them, and test them on one small decoder-only Transformer.</p>
+</section>
+<section id="sec-ch02-will-build" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="sec-ch02-will-build"><span class="header-section-number">2.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>The chapter artifact.</strong> You will train one nanoGPT-style causal language model end to end. <a href="../code/ch02/bpe.py"><code>bpe.py</code></a> learns a frozen byte-level BPE vocabulary with exact round trips and no unknown-token path. <a href="../code/ch02/tinygpt.py"><code>tinygpt.py</code></a> implements masked multi-head attention, pre-RMSNorm residual blocks, QK normalization, SwiGLU, tied embeddings, and cached decoding. <a href="../code/ch02/train.py"><code>train.py</code></a> owns one experiment: train, sample at three temperatures, plot loss, verify cached logits against full-prefix logits, and plot cache growth. The deterministic CPU fixture is the default; a larger run over a supplied public-domain corpus is optional.</p>
+</div>
+</div>
+<p>These are three modules of one build, not competing model implementations. Tokenization is a distinct mechanism with its own round-trip contract. The model has one forward path whether it is training, evaluating, or extending a cache. The trainer calls that path and writes all numeric evidence under <code>code/ch02/generated/</code>.</p>
+</section>
+<section id="sec-ch02-bpe" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="sec-ch02-bpe"><span class="header-section-number">2.5</span> Tokens From Bytes: BPE Essentials</h2>
+<p>A neural network consumes integer indices, not strings. The tokenizer defines the mapping from text to those indices and therefore fixes the embedding table’s rows, the output head’s columns, the loss dimension, and the unit in which context and throughput are measured.</p>
+<p>Whole-word vocabularies fail on an open-ended language. New names, misspellings, source code, and productive word forms keep appearing. A character vocabulary avoids unknown words but makes common strings long. <strong>Byte-pair encoding</strong> (BPE) starts from small units and repeatedly merges frequent adjacent pairs, retaining fallback units for uncommon text.</p>
+<p>This artifact starts from all 256 possible byte values. UTF-8 maps any Unicode string to a byte sequence, so every input is representable before a merge is learned. Training counts adjacent token pairs, chooses the most frequent pair with a deterministic tie break, replaces its non-overlapping occurrences with a new token ID, and repeats until reaching the requested vocabulary size.</p>
+<p>Suppose a training stream contains the byte-token sequence</p>
+<p><span class="math display">
+[t,h,e,\;t,h,e,\;t,h,e,r,e].
+</span></p>
+<p>If <span class="math inline">(t,h)</span> is the most frequent adjacent pair, BPE creates a token <code>th</code> and replaces every non-overlapping occurrence. A later merge may combine <code>th</code> and <code>e</code> into <code>the</code>. Encoding new text replays the learned merges in order. Decoding expands each merged token back to its exact bytes, concatenates them, and runs UTF-8 decoding.</p>
+<p>The core is intentionally small:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># bpe.py — BytePairTokenizer.train() and encode()</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> token <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">256</span>, vocab_size):</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    counts <span class="op">=</span> Counter(<span class="bu">zip</span>(ids, ids[<span class="dv">1</span>:]))</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> counts:</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    pair <span class="op">=</span> <span class="bu">min</span>(counts, key<span class="op">=</span><span class="kw">lambda</span> item: (<span class="op">-</span>counts[item], item))</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    ids <span class="op">=</span> _replace_pair(ids, pair, token)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    tokenizer.merges.append(Merge(<span class="op">*</span>pair, token))</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    tokenizer.token_bytes[token] <span class="op">=</span> (</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        tokenizer.token_bytes[pair[<span class="dv">0</span>]] <span class="op">+</span> tokenizer.token_bytes[pair[<span class="dv">1</span>]]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> encode(<span class="va">self</span>, text: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">int</span>]:</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    ids <span class="op">=</span> <span class="bu">list</span>(text.encode(<span class="st">"utf-8"</span>))</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> merge <span class="kw">in</span> <span class="va">self</span>.merges:</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>        ids <span class="op">=</span> _replace_pair(ids, (merge.left, merge.right), merge.token)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> ids</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Two properties deserve separate tests. <strong>Round-trip correctness</strong> means <code>decode(encode(text)) == text</code> for empty strings, line breaks, emoji, and multilingual text. <strong>Zero OOV</strong> means encoding never needs an “unknown” token: an unseen string may fall back to several bytes, but every byte has an ID. Zero OOV does not mean equal efficiency. A string well represented in tokenizer training may use one merged token; an equally long string from another language or domain may require many. Chapter 5 measures this fertility effect at pretraining scale.</p>
+<p>The tokenizer is <strong>frozen</strong> before model pretraining. Once the model’s input embedding has shape <span class="math inline">V\times d</span> and its output head predicts <span class="math inline">V</span> logits, adding a merge would introduce a new row and output class with untrained parameters. You can continue to encode novel text through bytes, but you cannot silently change the vocabulary without changing and retraining model parameters. This is why tokenization is part of a model’s architecture contract, not a replaceable request-time utility.</p>
+<p>The byte fallback has one more consequence. A model can generate arbitrary byte tokens that do not yet form valid UTF-8. A streaming decoder may need to buffer an incomplete sequence; an undertrained model may emit permanently invalid sequences and require an explicit error policy. The build uses replacement characters only when rendering samples. Its tokenizer round-trip tests remain strict.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>bpe.py</code>: byte base vocabulary and deterministic merges</td>
+<td style="text-align: right;">80 total lines</td>
+<td>Any Unicode input encodes without OOV and valid inputs round-trip exactly.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch02-objective" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="sec-ch02-objective"><span class="header-section-number">2.6</span> The Next-Token Objective</h2>
+<p>Let <span class="math inline">x_{1:T}=(x_1,\ldots,x_T)</span> be a token sequence of length <span class="math inline">T</span>. The probability chain rule factorizes its joint probability as</p>
+<p><span class="math display">
+p_\theta(x_{1:T})=\prod_{t=1}^{T}p_\theta(x_t\mid x_{1:t-1}),
+</span></p>
+<p>where <span class="math inline">\theta</span> denotes all model parameters. A <strong>causal language model</strong> represents each conditional distribution using only the prefix before the target token.</p>
+<p>Training uses <strong>teacher forcing</strong>: every input prefix comes from the observed sequence, even if the model would have generated a different previous token. In code, one contiguous stream produces aligned arrays:</p>
+<p><span class="math display">
+\text{input}=[x_1,x_2,\ldots,x_{T-1}],\qquad
+\text{target}=[x_2,x_3,\ldots,x_T].
+</span></p>
+<p>The model emits logits <span class="math inline">z_{t,v}</span> for every position <span class="math inline">t</span> and vocabulary item <span class="math inline">v\in\{1,\ldots,V\}</span>. Softmax converts logits into probabilities. For a batch with <span class="math inline">B</span> sequences and <span class="math inline">T</span> prediction positions, mean cross-entropy is</p>
+<p><span class="math display">
+\mathcal{L}(\theta)=
+-\frac{1}{BT}\sum_{b=1}^{B}\sum_{t=1}^{T}
+\log p_\theta\!\left(x^{(b)}_{t+1}\mid x^{(b)}_{1:t}\right).
+</span></p>
+<p>Minimizing this loss makes the observed next token more probable. It does not directly reward factuality, helpfulness, or a completed downstream task. Those behaviors can emerge from data and later post-training, but the base objective is conditional likelihood.</p>
+<p><strong>Perplexity</strong> is <span class="math inline">\exp(\mathcal{L})</span>. It can be read as an effective branching factor only when loss is computed with the same tokenizer, masking, and data convention. Comparing perplexities across different vocabularies can mislead because each model predicts different units.</p>
+<p>Before learning, small random logits are often close enough to equal that <span class="math inline">p(v)\approx1/V</span>. The expected target loss is then</p>
+<p><span class="math display">
+-\log(1/V)=\ln V.
+</span></p>
+<p>For the build’s <span class="math inline">V=280</span>, this baseline is <span class="math inline">\ln 280=5.635</span>. The measured initial loss is 5.636. That agreement is not a quality result; it is a plumbing check. A much lower initial value invites an investigation into target leakage, duplicated labels, or a mask error.</p>
+<p>The trainer forms shifted examples explicitly:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># train.py — _batch(), constructing teacher-forced examples</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>starts <span class="op">=</span> torch.randint(</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="dv">0</span>, data.numel() <span class="op">-</span> block_size <span class="op">-</span> <span class="dv">1</span>, (batch_size,), generator<span class="op">=</span>generator</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>inputs <span class="op">=</span> torch.stack([</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    data[start : start <span class="op">+</span> block_size] <span class="cf">for</span> start <span class="kw">in</span> starts</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>targets <span class="op">=</span> torch.stack([</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    data[start <span class="op">+</span> <span class="dv">1</span> : start <span class="op">+</span> block_size <span class="op">+</span> <span class="dv">1</span>] <span class="cf">for</span> start <span class="kw">in</span> starts</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>train.py</code>: shifted batch construction</td>
+<td style="text-align: right;">7 new lines</td>
+<td>Each target is exactly the token one position after its input prefix.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch02-attention" class="level2" data-number="2.7">
+<h2 data-number="2.7" class="anchored" data-anchor-id="sec-ch02-attention"><span class="header-section-number">2.7</span> Attention as a Learned Weighted Lookup</h2>
+<p>At each position, the model needs a content-dependent way to combine earlier states. A fixed-width convolution can only inspect a fixed neighborhood; a recurrent state must compress everything seen so far into one sequentially updated vector. Self-attention instead lets each position perform a learned lookup over visible positions.</p>
+<p>Let <span class="math inline">X\in\mathbb{R}^{T\times d}</span> contain one <span class="math inline">d</span>-dimensional vector per token position. Learned matrices project it into queries, keys, and values:</p>
+<p><span class="math display">
+Q=XW_Q,\qquad K=XW_K,\qquad V=XW_V,
+</span></p>
+<p>with <span class="math inline">Q,K,V\in\mathbb{R}^{T\times d_h}</span> for one head of width <span class="math inline">d_h</span>. A query describes what the current position seeks. A key describes how a source position can be matched. A value contains the information returned when that source is selected.</p>
+<p>The raw compatibility between query position <span class="math inline">i</span> and key position <span class="math inline">j</span> is the dot product <span class="math inline">q_i^\top k_j</span>. Softmax makes the compatible scores nonnegative and sum to one:</p>
+<p><span class="math display">
+a_{ij}=
+\frac{\exp(q_i^\top k_j/\sqrt{d_h})}
+{\sum_{r}\exp(q_i^\top k_r/\sqrt{d_h})},
+\qquad
+o_i=\sum_j a_{ij}v_j.
+</span></p>
+<p>Why divide by <span class="math inline">\sqrt{d_h}</span>? If query and key components are independent, centered, and have unit variance, their dot product sums <span class="math inline">d_h</span> products and has variance proportional to <span class="math inline">d_h</span>. Without scaling, increasing head width drives logits into saturated softmax regions with very small gradients. Dividing by <span class="math inline">\sqrt{d_h}</span> keeps the score scale roughly stable.</p>
+<p>Attention weights are input-dependent routing coefficients, not explanations by default. A high coefficient says that a value vector contributes strongly through this head at this layer. Residual paths, other heads, later layers, and the value/output projections all affect the final prediction. Chapter 25 returns to the residual stream as the more useful coordinate system for causal analysis.</p>
+<p>The dense computation forms a <span class="math inline">T\times T</span> score matrix. Its prefill cost grows quadratically with sequence length, even though the learned projection parameter count is independent of <span class="math inline">T</span>. Chapter 3 develops alternatives and the effective-context tradeoffs; this chapter keeps dense attention so the causal contract is visible.</p>
+</section>
+<section id="sec-ch02-multihead" class="level2" data-number="2.8">
+<h2 data-number="2.8" class="anchored" data-anchor-id="sec-ch02-multihead"><span class="header-section-number">2.8</span> Multi-Head Attention and the Causal Mask</h2>
+<p>One attention map must use one similarity geometry and one value representation. <strong>Multi-head attention</strong> runs <span class="math inline">H</span> such lookups in parallel. With model width <span class="math inline">d</span> and <span class="math inline">H</span> heads, this build uses <span class="math inline">d_h=d/H</span>. It concatenates the <span class="math inline">H</span> head outputs back to width <span class="math inline">d</span> and applies an output projection <span class="math inline">W_O</span>:</p>
+<p><span class="math display">
+\operatorname{MHA}(X)=
+\operatorname{Concat}(O^{(1)},\ldots,O^{(H)})W_O.
+</span></p>
+<p>Heads are not separate networks. They are slices of tensors produced by shared layer input and batched matrix operations. Different learned projections allow different matching patterns, while <span class="math inline">W_O</span> mixes their returned information into one update.</p>
+<p>Causality enters before softmax. Define mask <span class="math inline">M\in\mathbb{R}^{T\times T}</span> as</p>
+<p><span class="math display">
+M_{ij}=
+\begin{cases}
+0,&amp;j\le i,\\
+-\infty,&amp;j&gt;i.
+\end{cases}
+</span></p>
+<p>Then</p>
+<p><span class="math display">
+A=\operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d_h}}+M\right).
+</span></p>
+<p>An exponentiated negative infinity contributes zero probability, so row <span class="math inline">i</span> can mix only values at positions <span class="math inline">{0}</span> through <span class="math inline">i</span>. The triangular structure is easiest to audit directly:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;">Query position</th>
+<th style="text-align: center;">Key 0</th>
+<th style="text-align: center;">Key 1</th>
+<th style="text-align: center;">Key 2</th>
+<th style="text-align: center;">Key 3</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: center;">allow</td>
+<td style="text-align: center;">block</td>
+<td style="text-align: center;">block</td>
+<td style="text-align: center;">block</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: center;">allow</td>
+<td style="text-align: center;">allow</td>
+<td style="text-align: center;">block</td>
+<td style="text-align: center;">block</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: center;">allow</td>
+<td style="text-align: center;">allow</td>
+<td style="text-align: center;">allow</td>
+<td style="text-align: center;">block</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">3</td>
+<td style="text-align: center;">allow</td>
+<td style="text-align: center;">allow</td>
+<td style="text-align: center;">allow</td>
+<td style="text-align: center;">allow</td>
+</tr>
+</tbody>
+</table>
+<p>The implementation constructs absolute query and key positions, which also makes the same mask work when a cache precedes a chunk:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># tinygpt.py — CausalSelfAttention.forward()</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>qkv <span class="op">=</span> <span class="va">self</span>.qkv(x).view(</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    batch, steps, <span class="dv">3</span>, <span class="va">self</span>.n_heads, <span class="va">self</span>.head_dim</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>query, key, value <span class="op">=</span> qkv.permute(<span class="dv">2</span>, <span class="dv">0</span>, <span class="dv">3</span>, <span class="dv">1</span>, <span class="dv">4</span>).unbind(<span class="dv">0</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>query, key <span class="op">=</span> <span class="va">self</span>.q_norm(query), <span class="va">self</span>.k_norm(key)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>past_steps <span class="op">=</span> <span class="dv">0</span> <span class="cf">if</span> past <span class="kw">is</span> <span class="va">None</span> <span class="cf">else</span> past[<span class="dv">0</span>].size(<span class="op">-</span><span class="dv">2</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> past <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    key <span class="op">=</span> torch.cat((past[<span class="dv">0</span>], key), dim<span class="op">=-</span><span class="dv">2</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    value <span class="op">=</span> torch.cat((past[<span class="dv">1</span>], value), dim<span class="op">=-</span><span class="dv">2</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> query <span class="op">@</span> key.transpose(<span class="op">-</span><span class="dv">2</span>, <span class="op">-</span><span class="dv">1</span>) <span class="op">/</span> math.sqrt(<span class="va">self</span>.head_dim)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>query_positions <span class="op">=</span> past_steps <span class="op">+</span> torch.arange(steps, device<span class="op">=</span>x.device)[:, <span class="va">None</span>]</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>key_positions <span class="op">=</span> torch.arange(key.size(<span class="op">-</span><span class="dv">2</span>), device<span class="op">=</span>x.device)[<span class="va">None</span>, :]</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> scores.masked_fill(</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    key_positions <span class="op">&gt;</span> query_positions, <span class="bu">float</span>(<span class="st">"-inf"</span>)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>mixed <span class="op">=</span> scores.softmax(dim<span class="op">=-</span><span class="dv">1</span>) <span class="op">@</span> value</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The test changes only future token IDs and asserts bit-for-bit equality of all earlier logits on the CPU path. This is stronger than checking that a mask tensor looks triangular: it verifies the externally relevant information-flow invariant through the assembled model.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>tinygpt.py</code>: QKV projections, multi-head reshape, and causal mask</td>
+<td style="text-align: right;">31 new lines</td>
+<td>Changing future tokens cannot change earlier logits.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch02-residual" class="level2" data-number="2.9">
+<h2 data-number="2.9" class="anchored" data-anchor-id="sec-ch02-residual"><span class="header-section-number">2.9</span> The Residual Stream and a Modern Block</h2>
+<p>Attention returns one proposed update per position. A feed-forward network returns another. The <strong>residual stream</strong> is the shared width-<span class="math inline">d</span> state that carries the original embedding and every accumulated update through the stack.</p>
+<p>For layer <span class="math inline">\ell</span>, this build uses a pre-normalized block:</p>
+<p><span class="math display">
+X^{\ell+\frac12}
+=X^\ell+
+\operatorname{Attention}\!\left(\operatorname{RMSNorm}(X^\ell)\right),
+</span></p>
+<p><span class="math display">
+X^{\ell+1}
+=X^{\ell+\frac12}+
+\operatorname{SwiGLU}\!\left(
+\operatorname{RMSNorm}(X^{\ell+\frac12})
+\right).
+</span></p>
+<p>The plus signs are load-bearing. A sublayer writes an update rather than replacing the state. This gives gradients a direct identity path and gives analysis a stable question: what information does a component read from the stream, and what direction does it write back?</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    X["Residual stream X(l)"] --&gt; N1["RMSNorm"]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    N1 --&gt; A["Causal multi-head attention"]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    A --&gt; P1["add"]</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    X --&gt; P1</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    P1 --&gt; H["Residual stream X(l+1/2)"]</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    H --&gt; N2["RMSNorm"]</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    N2 --&gt; F["SwiGLU feed-forward"]</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    F --&gt; P2["add"]</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    H --&gt; P2</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    P2 --&gt; Y["Residual stream X(l+1)"]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch02-residual-stream" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch02-residual-stream-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch02-residual-stream">flowchart LR
+    X["Residual stream X(l)"] --&gt; N1["RMSNorm"]
+    N1 --&gt; A["Causal multi-head attention"]
+    A --&gt; P1["add"]
+    X --&gt; P1
+    P1 --&gt; H["Residual stream X(l+1/2)"]
+    H --&gt; N2["RMSNorm"]
+    N2 --&gt; F["SwiGLU feed-forward"]
+    F --&gt; P2["add"]
+    H --&gt; P2
+    P2 --&gt; Y["Residual stream X(l+1)"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch02-residual-stream-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.1: How do attention and the MLP update one shared residual stream?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-ch02-residual-stream" class="quarto-xref">Figure&nbsp;<span>2.1</span></a> shows why attention is not the whole Transformer. Attention moves information among positions. The feed-forward network transforms each position independently using the same weights. Depth alternates communication and per-position computation while the residual stream preserves and combines their updates.</p>
+<p>The feed-forward sublayer expands width <span class="math inline">d</span> to a hidden width <span class="math inline">h</span>, applies a gated nonlinearity, and projects back:</p>
+<p><span class="math display">
+\operatorname{SwiGLU}(x)
+=W_{\text{down}}
+\left[
+\operatorname{SiLU}(W_{\text{gate}}x)
+\odot(W_{\text{value}}x)
+\right].
+</span></p>
+<p>Here <span class="math inline">\odot</span> is elementwise multiplication. The artifact combines gate and value projections into one matrix for efficient code, then splits its output.</p>
+<p>The taught block is modernized without pretending one recipe is universal:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Design surface</th>
+<th>Original Transformer baseline</th>
+<th>Taught block</th>
+<th>Engineering reason</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Normalization placement</td>
+<td>After each residual addition</td>
+<td>Before each sublayer</td>
+<td>A clean identity path and better-behaved initialization gradients</td>
+</tr>
+<tr class="even">
+<td>Normalization statistic</td>
+<td>LayerNorm</td>
+<td>RMSNorm</td>
+<td>Rescaling without mean subtraction</td>
+</tr>
+<tr class="odd">
+<td>Query/key control</td>
+<td>Scale only by <span class="math inline">\sqrt{d_h}</span></td>
+<td>Per-head RMS normalization plus scaling</td>
+<td>Prevent uncontrolled query/key magnitude from dominating scores</td>
+</tr>
+<tr class="even">
+<td>Feed-forward activation</td>
+<td>ReLU</td>
+<td>SwiGLU</td>
+<td>Learned gate over a smooth nonlinear projection</td>
+</tr>
+<tr class="odd">
+<td>Linear biases</td>
+<td>Present</td>
+<td>Omitted</td>
+<td>Smaller, simpler parameter surface</td>
+</tr>
+<tr class="even">
+<td>Output embedding</td>
+<td>Separate matrix</td>
+<td>Tied to input embeddings</td>
+<td>Removes <span class="math inline">Vd</span> parameters and shares token geometry</td>
+</tr>
+</tbody>
+</table>
+<p>These are choices, not laws. Post-LN, LayerNorm, GELU, biases, untied heads, and attention-score controls can still be appropriate. “Often replaced” is more accurate than “retired.” A production architecture is an interacting configuration whose choices must be verified together.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># tinygpt.py — Block.forward()</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>update, present <span class="op">=</span> <span class="va">self</span>.attention(<span class="va">self</span>.attention_norm(x), past)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> x <span class="op">+</span> update</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> x <span class="op">+</span> <span class="va">self</span>.mlp(<span class="va">self</span>.mlp_norm(x)), present</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># tinygpt.py — SwiGLU.forward()</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>gate, value <span class="op">=</span> <span class="va">self</span>.up_gate(x).chunk(<span class="dv">2</span>, dim<span class="op">=-</span><span class="dv">1</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="va">self</span>.down(F.silu(gate) <span class="op">*</span> value)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>tinygpt.py</code>: pre-norm attention and SwiGLU residual updates</td>
+<td style="text-align: right;">25 new lines</td>
+<td>Every sublayer reads and writes width <span class="math inline">d</span>, so residual additions are shape-preserving.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch02-decoder" class="level2" data-number="2.10">
+<h2 data-number="2.10" class="anchored" data-anchor-id="sec-ch02-decoder"><span class="header-section-number">2.10</span> Decoder-Only: From Embeddings to Logits</h2>
+<p>The Transformer originally paired a bidirectional encoder with an autoregressive decoder for sequence-to-sequence translation. A general causal language model can use only the decoder-style stack: represent all conditioning text and desired continuation as one token stream, then apply the next-token objective everywhere.</p>
+<p>The path from token ID to distribution has four stages:</p>
+<ol type="1">
+<li><strong>Token embeddings</strong> look up one vector in <span class="math inline">E\in\mathbb{R}^{V\times d}</span> for each token.</li>
+<li><strong>Position representations</strong> distinguish identical tokens at different sequence locations.</li>
+<li><strong>Decoder blocks</strong> update the residual stream under the causal mask.</li>
+<li><strong>The language-model head</strong> maps each final vector to <span class="math inline">V</span> logits.</li>
+</ol>
+<p>This build uses learned absolute position embeddings so Chapter 2 remains self-contained. That choice imposes a fixed table and does not extrapolate naturally beyond trained positions. Chapter 3 replaces the placeholder with rotary position mechanisms and treats extension in depth.</p>
+<p>The output head would normally require a matrix <span class="math inline">W_{\text{out}}\in\mathbb{R}^{V\times d}</span>. <strong>Weight tying</strong> sets <span class="math inline">W_{\text{out}}=E</span>, interpreting the same row both as the representation read for a token and the direction used to score that token. It saves <span class="math inline">Vd</span> parameters. The test checks storage identity, not merely equal initial values.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># tinygpt.py — TinyGPT.__init__(), embeddings through tied head</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="va">self</span>.token_embedding <span class="op">=</span> nn.Embedding(</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    config.vocab_size, config.d_model</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="va">self</span>.position_embedding <span class="op">=</span> nn.Embedding(</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    config.block_size, config.d_model</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="va">self</span>.blocks <span class="op">=</span> nn.ModuleList(</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    Block(config) <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(config.n_layers)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="va">self</span>.final_norm <span class="op">=</span> nn.RMSNorm(config.d_model)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="va">self</span>.lm_head <span class="op">=</span> nn.Linear(</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    config.d_model, config.vocab_size, bias<span class="op">=</span><span class="va">False</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="va">self</span>.<span class="bu">apply</span>(<span class="va">self</span>._initialize)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="va">self</span>.lm_head.weight <span class="op">=</span> <span class="va">self</span>.token_embedding.weight</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Temperature belongs after the head. If final logits are <span class="math inline">z_v</span>, sampling uses</p>
+<p><span class="math display">
+p(v\mid x_{1:t})=
+\frac{\exp(z_v/\tau)}
+{\sum_{u=1}^{V}\exp(z_u/\tau)},
+</span></p>
+<p>where <span class="math inline">\tau&gt;0</span> is temperature. Greedy decoding takes the maximum logit directly. Chapter 9 owns the full decoding strategy; the build uses three temperatures only to make the learned distribution observable.</p>
+<p>Why did decoder-only become the standard shape for broad generative language modeling? The causal objective accepts raw token streams without task-specific encoder/decoder boundaries; prompts, examples, tool text, and answers share one representation; training can draw examples from any text; and autoregressive inference maps directly to a reusable prefix cache. This is an engineering convergence, not proof that other shapes are inferior. Encoder-only models remain natural when every input position may read both directions and no free-form continuation is needed. Encoder-decoder models retain a useful separation for conditional generation where an input is fully visible before an output begins.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>tinygpt.py</code>: embeddings, stack, norm, and tied LM head</td>
+<td style="text-align: right;">21 new lines</td>
+<td>Every output logit corresponds to exactly one frozen tokenizer ID, with no second output embedding table.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch02-kv-cache" class="level2" data-number="2.11">
+<h2 data-number="2.11" class="anchored" data-anchor-id="sec-ch02-kv-cache"><span class="header-section-number">2.11</span> Cache Past Keys and Values Exactly</h2>
+<p>Autoregressive generation repeatedly extends one prefix. Without caching, producing token <span class="math inline">t+1</span> sends all <span class="math inline">t</span> existing tokens through every layer again. Their projected keys and values are unchanged, so that work is redundant.</p>
+<p>For each layer, cache the tensors</p>
+<p><span class="math display">
+K_{1:t}\in\mathbb{R}^{B\times H\times t\times d_h},
+\qquad
+V_{1:t}\in\mathbb{R}^{B\times H\times t\times d_h}.
+</span></p>
+<p>For the new token, compute only <span class="math inline">q_{t+1}</span>, <span class="math inline">k_{t+1}</span>, and <span class="math inline">v_{t+1}</span>; append the new key and value; then attend the new query over <span class="math inline">K_{1:t+1}</span> and <span class="math inline">V_{1:t+1}</span>. At every layer, the new token’s representation still depends on the attention and MLP computation at that layer. The cache stores intermediate projections, not finished future answers.</p>
+<p>Be precise about complexity. Caching reduces <strong>past-token projection work</strong> per layer from proportional to prefix length to one new projection. It does not make dense attention independent of prefix length: the new query still scores and mixes <span class="math inline">t+1</span> keys and values, so attention work per decoded token is <span class="math inline">O(t)</span>. Cache storage is also <span class="math inline">O(t)</span>. Claims that “KV caching makes decode <span class="math inline">O(1)</span>” are valid only for the avoided re-projection term, not for the complete attention step.</p>
+<p>With bytes per scalar <span class="math inline">s</span>, cache storage for multi-head attention is</p>
+<p><span class="math display">
+\text{KV bytes}=2BLTHd_hs=2BLTds,
+</span></p>
+<p>where <span class="math inline">B</span> is batch size, <span class="math inline">L</span> layers, <span class="math inline">T</span> cached positions, <span class="math inline">H</span> heads, and <span class="math inline">d=Hd_h</span>. The factor 2 is for keys and values. Chapter 3 changes this arithmetic for shared or compressed KV architectures.</p>
+<p>Correctness comes before speed. For a fixed model in evaluation mode, cached and full-prefix decoding represent the same function. They may differ by tiny floating-point roundoff because matrix operation shapes differ, but their logits must agree within a stated tolerance and their selected tokens must agree under a stable decision rule.</p>
+<p>The artifact has one forward method. Passing no cache performs the ordinary masked computation. Passing layer caches concatenates only the new keys and values and offsets positions by the cached length:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># tinygpt.py — TinyGPT.forward(), cache ownership</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>past_steps <span class="op">=</span> <span class="dv">0</span> <span class="cf">if</span> cache <span class="kw">is</span> <span class="va">None</span> <span class="cf">else</span> cache[<span class="dv">0</span>][<span class="dv">0</span>].size(<span class="op">-</span><span class="dv">2</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> past_steps <span class="op">+</span> steps <span class="op">&gt;</span> <span class="va">self</span>.config.block_size:</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"sequence exceeds configured block_size"</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>positions <span class="op">=</span> torch.arange(</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    past_steps, past_steps <span class="op">+</span> steps, device<span class="op">=</span>tokens.device</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="va">self</span>.token_embedding(tokens) <span class="op">+</span> <span class="va">self</span>.position_embedding(positions)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>present: <span class="bu">list</span>[LayerCache] <span class="op">=</span> []</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> index, block <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="va">self</span>.blocks):</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    layer_past <span class="op">=</span> <span class="va">None</span> <span class="cf">if</span> cache <span class="kw">is</span> <span class="va">None</span> <span class="cf">else</span> cache[index]</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    x, layer_present <span class="op">=</span> block(x, layer_past)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    present.append(layer_present)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>In the measured CPU run, the maximum absolute difference between cached and full-prefix logits is <span class="math inline">{9.54\times10^{-7}}</span>, and greedy generation returns exactly the same token IDs. At <span class="math inline">B=1</span>, <span class="math inline">L=2</span>, <span class="math inline">d=48</span>, and four-byte floating-point scalars, each new token adds</p>
+<p><span class="math display">
+2\cdot1\cdot2\cdot48\cdot4=768\text{ bytes}.
+</span></p>
+<div id="fig-ch02-kv-growth" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A straight line of KV-cache bytes against token count, increasing by 768 bytes per token.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch02-kv-growth-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch02/generated/kv-cache-growth.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;2.2: For the tiny two-layer model, measured KV-cache storage grows by exactly 768 bytes for every additional represented token."><img src="../code/ch02/generated/kv-cache-growth.svg" class="img-fluid figure-img" alt="A straight line of KV-cache bytes against token count, increasing by 768 bytes per token."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch02-kv-growth-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.2: For the tiny two-layer model, measured KV-cache storage grows by exactly 768 bytes for every additional represented token.
+</figcaption>
+</figure>
+</div>
+<p><a href="#fig-ch02-kv-growth" class="quarto-xref">Figure&nbsp;<span>2.2</span></a> answers one question: does the implementation’s storage match the formula? It does. It does not predict production memory without substituting the production batch size, layer count, KV-head count, head width, scalar format, allocator overhead, and cache-management policy.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>tinygpt.py</code>: optional per-layer cache</td>
+<td style="text-align: right;">23 new lines</td>
+<td>Cached and uncached logits agree numerically, greedy tokens agree exactly, and storage grows by the derived per-token slice.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch02-accounting" class="level2" data-number="2.12">
+<h2 data-number="2.12" class="anchored" data-anchor-id="sec-ch02-accounting"><span class="header-section-number">2.12</span> Count Parameters, FLOPs, and Bytes</h2>
+<p>Architecture accounting turns a configuration into resource expectations before training. Let <span class="math inline">V</span> be vocabulary size, <span class="math inline">T_{\max}</span> the learned position-table length, <span class="math inline">d</span> model width, <span class="math inline">L</span> block count, and <span class="math inline">h</span> SwiGLU hidden width.</p>
+<p>The tied token embedding contributes <span class="math inline">Vd</span> parameters, the position table contributes <span class="math inline">T_{\max}d</span>, and the final RMSNorm contributes <span class="math inline">d</span>. In each block:</p>
+<ul>
+<li>Q, K, V, and output projections contribute <span class="math inline">{4d^2}</span> weights.</li>
+<li>The SwiGLU gate and value projections plus down projection contribute <span class="math inline">{3dh}</span> weights.</li>
+<li>Two residual-stream RMSNorms contribute <span class="math inline">{2d}</span> scales.</li>
+<li>Per-head QK normalization in this implementation shares one <span class="math inline">d_h</span> scale vector across heads for Q and one for K, contributing <span class="math inline">{2d_h}</span>.</li>
+</ul>
+<p>Ignoring small terms gives</p>
+<p><span class="math display">
+N\approx Vd+T_{\max}d+L(4d^2+3dh).
+</span></p>
+<p>For the actual fixture, <span class="math inline">V=280</span>, <span class="math inline">T_{\max}=32</span>, <span class="math inline">d=48</span>, <span class="math inline">L=2</span>, <span class="math inline">H=4</span>, <span class="math inline">d_h=12</span>, and <span class="math inline">h=128</span>:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Component</th>
+<th style="text-align: right;">Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Tied token embedding / LM head</td>
+<td style="text-align: right;">13,440</td>
+</tr>
+<tr class="even">
+<td>Learned position embedding</td>
+<td style="text-align: right;">1,536</td>
+</tr>
+<tr class="odd">
+<td>QKV and attention outputs, two blocks</td>
+<td style="text-align: right;">18,432</td>
+</tr>
+<tr class="even">
+<td>SwiGLU projections, two blocks</td>
+<td style="text-align: right;">36,864</td>
+</tr>
+<tr class="odd">
+<td>Residual, QK, and final norm scales</td>
+<td style="text-align: right;">288</td>
+</tr>
+<tr class="even">
+<td><strong>Measured total unique parameters</strong></td>
+<td style="text-align: right;"><strong>70,560</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The table is checked against <code>model.parameter_count()</code>. Tying matters: an untied head would add another 13,440 parameters, a 19 percent increase for this tiny model. At large <span class="math inline">V</span>, embeddings can dominate small models even though block weights dominate sufficiently deep and wide ones.</p>
+<p>A rough dense-model FLOP heuristic follows from parameter use. A matrix weight participating once in a forward pass costs about one multiply and one add per token, or approximately <span class="math inline">{2N}</span> floating-point operations. Backpropagation through activations and weights adds roughly twice the forward work, giving the familiar training estimate near <span class="math inline">{6N}</span> FLOPs per token. These are planning approximations, not profiler readings. Attention-score and value-mixing work add terms that scale with sequence length and are not represented by counting learned parameters.</p>
+<p>The <strong>roofline</strong> view compares arithmetic intensity—FLOPs performed per byte moved—with a machine’s ratio of peak compute to memory bandwidth. Prefill applies large matrix-matrix operations across many tokens, reusing weights and often achieving high arithmetic intensity. One-token decoding resembles repeated matrix-vector work: each request uses the weights for little new data, while reading model weights and KV state consumes bandwidth. This is why equal FLOP counts can have very different throughput and why Chapter 10 treats prefill and decode separately.</p>
+<p>Counting is a falsifiable forecast. Parameter totals should match the framework. Cache bytes should match tensor storage. Estimated operations should be labeled with inclusions, such as embeddings, attention-score terms, and backward pass. Measured utilization then reveals kernel, scheduler, and memory effects that the algebra intentionally omits.</p>
+</section>
+<section id="sec-ch02-training" class="level2" data-number="2.13">
+<h2 data-number="2.13" class="anchored" data-anchor-id="sec-ch02-training"><span class="header-section-number">2.13</span> Train It and Read the Loss Curve</h2>
+<p>The build optimizes next-token cross-entropy with AdamW. Adam tracks moving averages of gradients and squared gradients. AdamW applies weight decay as a separate parameter update rather than mixing it into the adaptive gradient term. The tiny run uses one optimizer for all parameters; large training recipes commonly assign different decay treatment to norms, biases, or embeddings.</p>
+<p>Learning rate changes over the run. A short <strong>warmup</strong> increases it linearly from a small value, reducing the shock of noisy early updates when optimizer statistics are empty. A <strong>cosine decay</strong> then lowers it smoothly. Gradient clipping bounds the global norm of one update’s gradient, limiting damage from a rare spike without fixing its underlying cause.</p>
+<p>The loop is ordinary PyTorch:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># train.py — run_build(), one optimizer update</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> step <span class="kw">in</span> <span class="bu">range</span>(steps):</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    inputs, targets <span class="op">=</span> _batch(</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>        encoded, config.block_size, batch_size, generator</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> group <span class="kw">in</span> optimizer.param_groups:</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        group[<span class="st">"lr"</span>] <span class="op">=</span> _schedule(step, steps, <span class="fl">3e-3</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    optimizer.zero_grad(set_to_none<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    _, loss, _ <span class="op">=</span> model(inputs.to(device), targets.to(device))</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> loss <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    loss.backward()</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    torch.nn.utils.clip_grad_norm_(model.parameters(), <span class="fl">1.0</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    optimizer.step()</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    losses.append(loss.item())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="fig-ch02-loss" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Training cross-entropy over forty updates, starting near the horizontal ln vocabulary baseline and falling below it.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch02-loss-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch02/generated/loss-curve.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;2.3: The deterministic fixture begins at the uniform-prediction baseline and descends over forty optimizer updates."><img src="../code/ch02/generated/loss-curve.svg" class="img-fluid figure-img" alt="Training cross-entropy over forty updates, starting near the horizontal ln vocabulary baseline and falling below it."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch02-loss-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.3: The deterministic fixture begins at the uniform-prediction baseline and descends over forty optimizer updates.
+</figcaption>
+</figure>
+</div>
+<p><a href="#fig-ch02-loss" class="quarto-xref">Figure&nbsp;<span>2.3</span></a> is a training-batch curve over a tiny repeated fixture. Its initial agreement with <span class="math inline">\ln V</span> checks initialization and labels. Its descent shows that gradients, optimizer, and model can fit structure in the stream. It does not demonstrate generalization. A serious run splits documents before sampling windows, evaluates a held-out stream without gradient updates, records tokens rather than steps on the horizontal axis, and reports the tokenizer and data version.</p>
+<p>Read loss curves diagnostically:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Trace</th>
+<th>Likely questions</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Starts far below <span class="math inline">\ln V</span></td>
+<td>Can the model see its label? Are targets duplicated in inputs?</td>
+</tr>
+<tr class="even">
+<td>Flat near <span class="math inline">\ln V</span></td>
+<td>Do gradients reach parameters? Is learning rate nonzero? Are labels aligned?</td>
+</tr>
+<tr class="odd">
+<td>Falls, then spikes</td>
+<td>Did data, precision, gradient norm, or learning rate change?</td>
+</tr>
+<tr class="even">
+<td>Training falls, validation rises</td>
+<td>Is the model memorizing? Is the split contaminated or too small?</td>
+</tr>
+<tr class="odd">
+<td>Smooth but samples remain poor</td>
+<td>Is the run undertrained, the tokenizer inefficient, or the sample policy inappropriate?</td>
+</tr>
+</tbody>
+</table>
+<p>The default fixture is intentionally small. After 40 updates its mean loss over the final 10 batches is 3.52, down from 5.636. Its samples contain local fragments and repetition rather than coherent prose. This is an honest result: a 70,560-parameter model trained for seconds on a repetitive micro-corpus establishes the mechanism, not language competence. The optional fuller run is where sample quality becomes a meaningful experiment.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>train.py</code>: AdamW, warmup/cosine schedule, clipping, and metrics</td>
+<td style="text-align: right;">146 total lines</td>
+<td>Loss starts near <span class="math inline">\ln V</span>, decreases on the fixture, and all plotted claims come from saved measurements.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch02-build" class="level2" data-number="2.14">
+<h2 data-number="2.14" class="anchored" data-anchor-id="sec-ch02-build"><span class="header-section-number">2.14</span> Build</h2>
+<p>Run the deterministic CPU path from the <code>newbook</code> directory:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch02<span class="op">/</span>train<span class="op">.</span><span class="fu">py</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>python <span class="op">-</span>m pytest tests<span class="op">/</span>test_ch02_tinygpt<span class="op">.</span><span class="fu">py</span> <span class="op">-</span>q</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The default command trains for 40 optimizer updates and writes:</p>
+<ul>
+<li><code>metrics.json</code> with configuration, unique parameters, initial and final loss, cached-logit error, device, and every cache measurement;</li>
+<li><code>tokenizer.json</code> with the frozen merge sequence;</li>
+<li><code>samples.txt</code> with generations at temperatures 0.0, 0.7, and 1.1;</li>
+<li><code>loss-curve.svg</code>, used in <a href="#fig-ch02-loss" class="quarto-xref">Figure&nbsp;<span>2.3</span></a>;</li>
+<li><code>kv-cache-growth.svg</code>, used in <a href="#fig-ch02-kv-growth" class="quarto-xref">Figure&nbsp;<span>2.2</span></a>.</li>
+</ul>
+<p>Check the build in this order.</p>
+<p>First, open <code>tokenizer.json</code> and confirm that IDs 0–255 remain implicit byte tokens while learned merges begin at 256. Run <code>encode</code> and <code>decode</code> on text absent from the training fixture, including multilingual text and emoji. A new string may tokenize inefficiently, but it must not become unknown.</p>
+<p>Second, compare <code>initial_loss</code> with <code>uniform_loss_ln_vocab</code>. They should be close, not identical. Then inspect the loss curve and samples. The default run is a mechanism test, so do not promote its training loss into a language-quality claim.</p>
+<p>Third, compare cache storage differences. The fixture adds exactly 768 bytes per represented token. Recompute that number from <span class="math inline">{2BLds}</span>. Then inspect <code>max_cached_logit_error</code> and run the greedy cached/uncached test. Storage efficiency is irrelevant if the optimization changes the modeled function.</p>
+<p>To make the experiment substantive rather than merely fast, provide a UTF-8 public-domain corpus and opt into the larger configuration:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch02<span class="op">/</span>train<span class="op">.</span><span class="fu">py</span> <span class="op">--</span>full <span class="op">--</span>text path<span class="op">/</span>to<span class="op">/</span>public-domain-corpus<span class="op">.</span><span class="fu">txt</span> <span class="op">--</span>steps <span class="dv">800</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The fuller mode uses width 128, four layers, eight heads, a 96-token block, a slightly larger BPE vocabulary, and CUDA when available. These defaults are starting points, not a competitive recipe. Record corpus provenance, train/validation split, token count, device, elapsed time, and configuration before interpreting the curve.</p>
+<p><strong>Honesty note.</strong> The learned absolute position table is a didactic placeholder; Chapter 3 owns modern positional methods. The tokenizer omits production features such as normalization policy, reserved special tokens, parallel training, and a serialized compatibility identifier. The model omits dropout, distributed training, mixed precision, fused kernels, checkpointing, and evaluation suites. The KV cache is append-only and single-request; it does not implement paging, sharing, eviction, or serving concurrency. The build proves causal isolation, trainability, accounting, BPE round trips, and cached-decoding equivalence—no more.</p>
+</section>
+<section id="sec-ch02-endures" class="level2" data-number="2.15">
+<h2 data-number="2.15" class="anchored" data-anchor-id="sec-ch02-endures"><span class="header-section-number">2.15</span> What Endures, What Changes</h2>
+<p><strong>What endures.</strong> A causal language model factorizes sequence probability into next-token conditionals. Its tokenizer fixes the vocabulary and prediction units. Byte fallback can eliminate OOV while still producing unequal token efficiency. Scaled dot-product attention is a content-dependent weighted lookup; the causal mask enforces the information boundary. Attention and an MLP write updates into a shared residual stream. Embeddings, positions, decoder blocks, normalization, and the LM head form one differentiable path. Weight tying shares the vocabulary geometry. A KV cache must preserve full-prefix logits while trading avoided projections for linearly growing state. Parameter, FLOP, loss, and byte estimates are predictions to verify.</p>
+<p><strong>What changes.</strong> Tokenizer algorithms and vocabulary sizes, positional mechanisms, normalization placement, attention variants, MLP activations, optimizer recipes, precision formats, kernels, hardware balance, and cache layouts change. Some architectures untie embeddings, share KV heads, interleave local attention, or replace parts of dense attention. Those choices alter constants and sometimes scaling terms, but they do not relax the need to state the objective, information boundary, tensor shapes, and equivalence tests.</p>
+</section>
+<section id="sec-ch02-exercises" class="level2" data-number="2.16">
+<h2 data-number="2.16" class="anchored" data-anchor-id="sec-ch02-exercises"><span class="header-section-number">2.16</span> Exercises</h2>
+<ol type="1">
+<li><strong>Derive the mask.</strong> For a three-token input and a two-token existing cache, write the full Boolean mask for a two-token appended chunk. Match its query and key position arrays to <code>CausalSelfAttention.forward</code>.</li>
+<li><strong>Expose cheating.</strong> Remove the causal <code>masked_fill</code> line, train for a few updates, and add a test that changes future tokens. Explain why a lower loss is now evidence of a broken model.</li>
+<li><strong>Audit BPE.</strong> Train separate 272-token vocabularies on a prose file and a source-code file. Compare the first 16 merges, token counts on the opposite domain, and exact round trips. Defend where the tokenizer should be frozen.</li>
+<li><strong>Change the head count budget-neutrally.</strong> Double <span class="math inline">H</span> while holding <span class="math inline">d</span> fixed. Predict which parameter counts and cache-byte terms change, then verify in code. Explain what changes even when the totals do not.</li>
+<li><strong>Untie the head.</strong> Replace weight tying with an independently initialized output matrix. Predict the added parameters as <span class="math inline">Vd</span>, verify the count, and compare early loss over several seeds.</li>
+<li><strong>Account for a larger model.</strong> Given <span class="math inline">V=32{,}000</span>, <span class="math inline">d=4{,}096</span>, <span class="math inline">h=11{,}008</span>, and <span class="math inline">L=32</span>, estimate embeddings, attention, MLP, and total parameters. State every term you omit and why the exact configuration can differ.</li>
+<li><strong>Defend cached decoding.</strong> In a design review, respond to the claim “KV caching makes every generated token constant-time.” Separate projection work, dense attention work, memory growth, and measured end-to-end latency; name the experiment that would settle each claim.</li>
+</ol>
+</section>
+<section id="sec-ch02-notes" class="level2" data-number="2.17">
+<h2 data-number="2.17" class="anchored" data-anchor-id="sec-ch02-notes"><span class="header-section-number">2.17</span> Notes and Sources</h2>
+<ul>
+<li>Sennrich, Haddow, and Birch, <a href="https://arxiv.org/abs/1508.07909">“Neural Machine Translation of Rare Words with Subword Units”</a>, introduces the subword BPE approach. The chapter’s byte base is an engineering adaptation that makes its no-OOV and round-trip contracts explicit.</li>
+<li>Vaswani et al., <a href="https://arxiv.org/abs/1706.03762">“Attention Is All You Need”</a>, is the primary source for scaled dot-product attention, multi-head attention, causal decoder masking, residual sublayers, and the original encoder-decoder Transformer.</li>
+<li>Press and Wolf, <a href="https://arxiv.org/abs/1608.05859">“Using the Output Embedding to Improve Language Models”</a>, analyzes and evaluates tying input and output embeddings.</li>
+<li>Zhang and Sennrich, <a href="https://arxiv.org/abs/1910.07467">“Root Mean Square Layer Normalization”</a>, introduces RMSNorm; Xiong et al., <a href="https://arxiv.org/abs/2002.04745">“On Layer Normalization in the Transformer Architecture”</a>, analyzes Post-LN and Pre-LN gradient behavior.</li>
+<li>Shazeer, <a href="https://arxiv.org/abs/2002.05202">“GLU Variants Improve Transformer”</a>, evaluates gated feed-forward variants including SwiGLU. Henry et al., <a href="https://arxiv.org/abs/2010.04245">“Query-Key Normalization for Transformers”</a>, studies controlling query/key norms before attention softmax.</li>
+<li>Loshchilov and Hutter, <a href="https://arxiv.org/abs/1711.05101">“Decoupled Weight Decay Regularization”</a>, introduces AdamW’s separation of weight decay from adaptive gradient updates.</li>
+<li>Brown et al., <a href="https://arxiv.org/abs/2005.14165">“Language Models are Few-Shot Learners”</a>, is a primary example of scaling a decoder-only autoregressive objective into a general text interface.</li>
+<li>Pope et al., <a href="https://arxiv.org/abs/2211.05102">“Efficiently Scaling Transformer Inference”</a>, develops analytical models for Transformer inference and KV-memory tradeoffs.</li>
+<li>Williams, Waterman, and Patterson, <a href="https://escholarship.org/uc/item/3qf383m0">“Roofline: An Insightful Visual Performance Model for Multicore Architectures”</a>, provides the arithmetic-intensity framework used for the prefill/decode intuition.</li>
+<li>Karpathy’s <a href="https://github.com/karpathy/nanoGPT">nanoGPT repository</a> is the code-lineage inspiration for a compact, inspectable GPT training loop; this chapter implements a smaller modernized teaching model and adds explicit tokenizer and cache-correctness contracts.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/01-operational-on-ramp.html" class="pagination-link" aria-label="The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/03-attention-position-long-context.html" class="pagination-link" aria-label="Attention, Position, and Long Context [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

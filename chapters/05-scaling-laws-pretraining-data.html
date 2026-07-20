@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Fit joint parameter-data scaling laws, monitor a base-model run, and engineer a governed pretraining corpus from acquisition through mid-training.">
+
+<title>5&nbsp; Scaling Laws and Pretraining Data [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/06-distributed-frontier-training.html" rel="next">
+<link href="../chapters/04-moe-efficient-architectures.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/05-scaling-laws-pretraining-data.html">Part II — Training and Post-Training</a></li><li class="breadcrumb-item"><a href="../chapters/05-scaling-laws-pretraining-data.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch05-prerequisites" id="toc-sec-ch05-prerequisites" class="nav-link active" data-scroll-target="#sec-ch05-prerequisites"><span class="header-section-number">5.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch05-contents" id="toc-sec-ch05-contents" class="nav-link" data-scroll-target="#sec-ch05-contents"><span class="header-section-number">5.2</span> Contents</a></li>
+  <li><a href="#sec-ch05-budget-failure" id="toc-sec-ch05-budget-failure" class="nav-link" data-scroll-target="#sec-ch05-budget-failure"><span class="header-section-number">5.3</span> The Budget Fails Before Training Starts</a></li>
+  <li><a href="#sec-ch05-will-build" id="toc-sec-ch05-will-build" class="nav-link" data-scroll-target="#sec-ch05-will-build"><span class="header-section-number">5.4</span> What you will build</a></li>
+  <li><a href="#sec-ch05-power-laws" id="toc-sec-ch05-power-laws" class="nav-link" data-scroll-target="#sec-ch05-power-laws"><span class="header-section-number">5.5</span> Power Laws You Can Fit</a></li>
+  <li><a href="#sec-ch05-chinchilla" id="toc-sec-ch05-chinchilla" class="nav-link" data-scroll-target="#sec-ch05-chinchilla"><span class="header-section-number">5.6</span> Chinchilla Makes Size and Data a Joint Decision</a></li>
+  <li><a href="#sec-ch05-after-chinchilla" id="toc-sec-ch05-after-chinchilla" class="nav-link" data-scroll-target="#sec-ch05-after-chinchilla"><span class="header-section-number">5.7</span> Scaling Laws Are Decision Tools, Not Deployment Commandments</a>
+  <ul class="collapse">
+  <li><a href="#apparent-emergence" id="toc-apparent-emergence" class="nav-link" data-scroll-target="#apparent-emergence"><span class="header-section-number">5.7.1</span> Apparent emergence</a></li>
+  <li><a href="#new-resource-axes" id="toc-new-resource-axes" class="nav-link" data-scroll-target="#new-resource-axes"><span class="header-section-number">5.7.2</span> New resource axes</a></li>
+  </ul></li>
+  <li><a href="#sec-ch05-base-eval" id="toc-sec-ch05-base-eval" class="nav-link" data-scroll-target="#sec-ch05-base-eval"><span class="header-section-number">5.8</span> Base-Model Evaluation While the Run Is Alive</a></li>
+  <li><a href="#sec-ch05-supply-chain" id="toc-sec-ch05-supply-chain" class="nav-link" data-scroll-target="#sec-ch05-supply-chain"><span class="header-section-number">5.9</span> Data Is a Governed Supply Chain</a></li>
+  <li><a href="#sec-ch05-curation" id="toc-sec-ch05-curation" class="nav-link" data-scroll-target="#sec-ch05-curation"><span class="header-section-number">5.10</span> Filter, Deduplicate, and Decontaminate</a>
+  <ul class="collapse">
+  <li><a href="#near-duplicate-mechanics" id="toc-near-duplicate-mechanics" class="nav-link" data-scroll-target="#near-duplicate-mechanics"><span class="header-section-number">5.10.1</span> Near-duplicate mechanics</a></li>
+  <li><a href="#evaluation-decontamination" id="toc-evaluation-decontamination" class="nav-link" data-scroll-target="#evaluation-decontamination"><span class="header-section-number">5.10.2</span> Evaluation decontamination</a></li>
+  </ul></li>
+  <li><a href="#sec-ch05-mixtures" id="toc-sec-ch05-mixtures" class="nav-link" data-scroll-target="#sec-ch05-mixtures"><span class="header-section-number">5.11</span> Mixtures, Fertility, and Curriculum</a>
+  <ul class="collapse">
+  <li><a href="#fertility-is-a-compute-allocation" id="toc-fertility-is-a-compute-allocation" class="nav-link" data-scroll-target="#fertility-is-a-compute-allocation"><span class="header-section-number">5.11.1</span> Fertility is a compute allocation</a></li>
+  <li><a href="#mid-training-is-staged-base-model-work" id="toc-mid-training-is-staged-base-model-work" class="nav-link" data-scroll-target="#mid-training-is-staged-base-model-work"><span class="header-section-number">5.11.2</span> Mid-training is staged base-model work</a></li>
+  </ul></li>
+  <li><a href="#sec-ch05-synthetic" id="toc-sec-ch05-synthetic" class="nav-link" data-scroll-target="#sec-ch05-synthetic"><span class="header-section-number">5.12</span> Synthetic Data at the Data Wall</a></li>
+  <li><a href="#sec-ch05-landscape" id="toc-sec-ch05-landscape" class="nav-link" data-scroll-target="#sec-ch05-landscape"><span class="header-section-number">5.13</span> Landscape 2026 (dated)</a></li>
+  <li><a href="#sec-ch05-build" id="toc-sec-ch05-build" class="nav-link" data-scroll-target="#sec-ch05-build"><span class="header-section-number">5.14</span> Build</a></li>
+  <li><a href="#sec-ch05-endures" id="toc-sec-ch05-endures" class="nav-link" data-scroll-target="#sec-ch05-endures"><span class="header-section-number">5.15</span> What Endures, What Changes</a></li>
+  <li><a href="#sec-ch05-exercises" id="toc-sec-ch05-exercises" class="nav-link" data-scroll-target="#sec-ch05-exercises"><span class="header-section-number">5.16</span> Exercises</a></li>
+  <li><a href="#sec-ch05-notes" id="toc-sec-ch05-notes" class="nav-link" data-scroll-target="#sec-ch05-notes"><span class="header-section-number">5.17</span> Notes and Sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/05-scaling-laws-pretraining-data.html">Part II — Training and Post-Training</a></li><li class="breadcrumb-item"><a href="../chapters/05-scaling-laws-pretraining-data.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch05" class="quarto-section-identifier"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch05-prerequisites" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="sec-ch05-prerequisites"><span class="header-section-number">5.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, gradient-based optimization, basic probability, basic Python, and beginner PyTorch.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/02-transformer-first-principles.html#sec-ch02-objective">Chapter 2, The Training Objective</a> supplies next-token cross-entropy and perplexity; <a href="../chapters/02-transformer-first-principles.html#sec-ch02-bpe">Chapter 2, Build a Byte-Fallback BPE</a> supplies the frozen tokenizer reused here; <a href="../chapters/02-transformer-first-principles.html#sec-ch02-accounting">Chapter 2, The Accounting Ledger</a> supplies the toy decoder; and <a href="../chapters/04-moe-efficient-architectures.html#sec-ch04-two-curves">Chapter 4, Two Curves, One Config</a> separates stored from active parameters.</p>
+<p><strong>Not required:</strong> distributed-training collectives, custom accelerator kernels, post-training data construction, RL with verifiable rewards, or legal training. Chapter 6 owns execution of the distributed run; Chapters 7, 8, and 11 own post-training and customization.</p>
+</blockquote>
+</section>
+<section id="sec-ch05-contents" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="sec-ch05-contents"><span class="header-section-number">5.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch05-budget-failure">The budget fails before training starts</a></li>
+<li><a href="#sec-ch05-will-build">What you will build</a></li>
+<li><a href="#sec-ch05-power-laws">Power laws you can fit</a></li>
+<li><a href="#sec-ch05-chinchilla">Chinchilla makes size and data a joint decision</a></li>
+<li><a href="#sec-ch05-after-chinchilla">Scaling laws are decision tools, not deployment commandments</a></li>
+<li><a href="#sec-ch05-base-eval">Base-model evaluation while the run is alive</a></li>
+<li><a href="#sec-ch05-supply-chain">Data is a governed supply chain</a></li>
+<li><a href="#sec-ch05-curation">Filter, deduplicate, and decontaminate</a></li>
+<li><a href="#sec-ch05-mixtures">Mixtures, fertility, and curriculum</a></li>
+<li><a href="#sec-ch05-synthetic">Synthetic data at the data wall</a></li>
+<li><a href="#sec-ch05-landscape">Landscape 2026 (dated)</a></li>
+<li><a href="#sec-ch05-build">Build</a></li>
+<li><a href="#sec-ch05-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch05-exercises">Exercises</a></li>
+<li><a href="#sec-ch05-notes">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch05-budget-failure" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="sec-ch05-budget-failure"><span class="header-section-number">5.3</span> The Budget Fails Before Training Starts</h2>
+<p>A team has enough accelerator time for one base-model run. The first proposal is a three-billion-parameter decoder trained on twenty billion tokens. The second doubles the parameters and halves the tokens. Both use roughly the same dense-Transformer training compute. Neither proposal states the expected loss, whether the dataset contains enough unique text, how much of that text survives rights and quality gates, or how the team will notice a bad data mixture before the budget is gone.</p>
+<p>This is first a model-and-data allocation problem. Parameter count <span class="math inline">N</span> controls one source of error; training-token count <span class="math inline">D</span> controls another; the token distribution determines what loss means. A run can be compute-optimal for one distribution yet commercially poor, repeat low-quality data, or hide a rare-language, code, or factual regression behind smooth aggregate loss.</p>
+<p>A <strong>scaling law</strong> is an empirical response surface over model size, data, and sometimes other resource axes. A <strong>pretraining data pipeline</strong> produces the <span class="math inline">D</span> entering that surface. The fit is conditional on architecture, optimizer, tokenizer, corpus, and measurement protocol; treating it as physics while treating data as file preparation creates false precision.</p>
+<p>You will fit a joint law to a proxy ladder, derive the compute-optimal allocation, and attach an interval to a tenfold extrapolation. Then a synthetic WET-style corpus passes extraction, rights and quality gates, near-deduplication, decontamination, and mixture selection before paired Chapter 2 models compare raw with cleaned text. The laptop result is not a frontier forecast; it makes assumptions inspectable before scale makes them expensive.</p>
+</section>
+<section id="sec-ch05-will-build" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="sec-ch05-will-build"><span class="header-section-number">5.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>The chapter artifact.</strong> <a href="../code/ch05/scaling_fit.py"><code>scaling_fit.py</code></a> fits</p>
+<p><span class="math display">
+L(N,D)=E+A\left(\frac{N}{N_0}\right)^{-\alpha}
+       +B\left(\frac{D}{D_0}\right)^{-\beta}
+</span></p>
+<p>to twelve synthetic proxy runs. <a href="../code/ch05/scaling_model.py"><code>scaling_model.py</code></a> solves the compute-constrained optimum; <a href="../code/ch05/scaling_uncertainty.py"><code>scaling_uncertainty.py</code></a> residual-bootstraps fit and predictive intervals. The data path separates extraction and policy, deduplication, and mixture logic into <a href="../code/ch05/data_records.py"><code>data_records.py</code></a>, <a href="../code/ch05/deduplication.py"><code>deduplication.py</code></a>, and <a href="../code/ch05/mixture.py"><code>mixture.py</code></a>. The thin <a href="../code/ch05/run_build.py"><code>run_build.py</code></a> composes them, imports Chapter 2’s BPE and TinyGPT, generates about 50 MiB of synthetic text, and writes plotted values to CSV or JSON.</p>
+<p>Success means the fit recovers the proxy generator’s parameter and data exponents, the optimum satisfies <span class="math inline">C=6ND</span>, every document has a final decision, near duplicates share a cluster, the evaluation needle is absent, exact mixture quotas are inspectable, and the cleaned-data condition has lower loss on an independently worded held-out slice across paired initializations. The frozen tokenizer is calibrated on text independent of both conditions. The experiment is a mechanism test, not a frontier forecast, web-corpus release, or throughput benchmark.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch05-power-laws" class="level2" data-number="5.5">
+<h2 data-number="5.5" class="anchored" data-anchor-id="sec-ch05-power-laws"><span class="header-section-number">5.5</span> Power Laws You Can Fit</h2>
+<p>Language-model loss often improves smoothly with resources. Kaplan and colleagues documented approximate power laws: reducible loss falls as a resource raised to a negative exponent. For one resource <span class="math inline">x</span>,</p>
+<p><span class="math display">
+L(x)=L_\infty+Kx^{-\gamma},
+</span></p>
+<p>where <span class="math inline">L_\infty</span> is a fitted floor, <span class="math inline">K&gt;0</span> is a scale coefficient, and <span class="math inline">\gamma&gt;0</span> is an exponent. Subtract the floor and take logarithms:</p>
+<p><span class="math display">
+\log\bigl(L(x)-L_\infty\bigr)=\log K-\gamma\log x.
+</span></p>
+<p>This is linear in log-log coordinates only when the floor and regime fit. The slope is <span class="math inline">-\gamma</span>; a small exponent means multiplying resources yields modest improvement.</p>
+<p>Three qualifications matter. Omitting a nonzero floor bends the slope. A law is local to its architecture, tokenizer, data, optimizer, and regime. Resource axes interact: a parameter-only law fitted to varying token budgets confounds capacity with exposure. The build therefore fits</p>
+<p><span class="math display">
+L(N,D)=E+A\left(\frac{N}{N_0}\right)^{-\alpha}
+       +B\left(\frac{D}{D_0}\right)^{-\beta}.
+</span></p>
+<p><span class="math inline">E</span> is a fitted floor; <span class="math inline">A,B</span> and <span class="math inline">\alpha,\beta</span> are positive coefficients and exponents; <span class="math inline">N_0,D_0</span> are fixed reference units for numerical conditioning and do not change predictions.</p>
+<p>The artifact constrains positive quantities in log space and constrains <span class="math inline">E</span> below the smallest observed loss. Its public fit is deliberately small:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>rows <span class="op">=</span> load_observations(Path(<span class="st">"fixtures/proxy_ladder.csv"</span>))</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>law <span class="op">=</span> fit_scaling_law(rows)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> row <span class="kw">in</span> rows:</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    predicted <span class="op">=</span> law.loss(row.parameters, row.tokens)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    residual <span class="op">=</span> row.loss <span class="op">-</span> predicted</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Twelve observations are enough to exercise the mechanics, not enough to license a production budget. The proxy points were generated around <span class="math inline">\alpha=0.34</span> and <span class="math inline">\beta=0.28</span> with small deterministic perturbations. The fitted values are <span class="math inline">{0.332}</span> and <span class="math inline">{0.287}</span>. That agreement verifies the implementation against a known generator. It says nothing about the exponents of an unmeasured architecture or corpus.</p>
+<p>Inspect residuals by model size and data ratio. Structure or growth at one end signals misspecification or regime change; low average error can still overstate larger models. Reserve whole ladder points for validation.</p>
+<p>The artifact keeps the ladder fixed, resamples centered residuals, refits, and recomputes the optimum. Fitted-optimum quantiles form a fit interval; one additional sampled residual forms a predictive interval under an i.i.d. residual model. Neither covers distribution shift, failures, optimizer changes, or wrong functional form. Report uncertainty <strong>inside</strong> the law and scenarios <strong>about</strong> it.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>scaling_model.py</code></td>
+<td style="text-align: right;">173 lines</td>
+<td>positive coefficients and exponents fit both resource axes</td>
+</tr>
+<tr class="even">
+<td><code>scaling_uncertainty.py</code></td>
+<td style="text-align: right;">64 lines</td>
+<td>the 10× forecast carries a finite-ladder interval</td>
+</tr>
+</tbody>
+</table>
+<p>The fitted surface is a compact summary of experiments. Its authority cannot exceed the ladder, controls, and held-out checks from which it was estimated.</p>
+</section>
+<section id="sec-ch05-chinchilla" class="level2" data-number="5.6">
+<h2 data-number="5.6" class="anchored" data-anchor-id="sec-ch05-chinchilla"><span class="header-section-number">5.6</span> Chinchilla Makes Size and Data a Joint Decision</h2>
+<p>Hoffmann and colleagues revisited allocation under fixed compute and found parameters and data should grow together more nearly than earlier work implied. The durable contribution is the <strong>IsoFLOP experiment</strong>, not one token ratio: hold compute fixed, vary <span class="math inline">N,D</span>, and find minimum loss.</p>
+<p>For a dense decoder-only Transformer, a useful first-order training estimate is</p>
+<p><span class="math display">
+C\approx 6ND,
+</span></p>
+<p>where <span class="math inline">C</span> is floating-point operations, <span class="math inline">N</span> is non-embedding trainable parameters used per token, and <span class="math inline">D</span> is training tokens seen. The factor six approximates a forward pass plus gradients with respect to weights and activations. It is not a device invoice. Attention terms, embeddings, sparsity, sequence length, recomputation, padding, optimizer work, and kernel efficiency produce deviations. Use measured step FLOPs when available and state which parameter ledger an MoE uses; <a href="../chapters/04-moe-efficient-architectures.html#sec-ch04-two-curves">Chapter 4</a> explains why total stored parameters are not the correct active-compute count.</p>
+<p>The Chinchilla paper used three complementary approaches:</p>
+<ol type="1">
+<li>Train several fixed model sizes for different durations, then infer the lower envelope of loss over compute.</li>
+<li>At several fixed compute budgets, fit the IsoFLOP curve over model size and locate its minimum.</li>
+<li>Fit the global parametric surface <span class="math inline">L(N,D)</span> across all runs, then solve its compute-constrained optimum.</li>
+</ol>
+<p>Agreement reduces dependence on one fit; disagreement is diagnostic. Because finite-run noise and fitting procedure bias the apparent optimum, reproduce at least a global surface and held-out IsoFLOP profiles.</p>
+<p>The optimum of the joint form can be derived. Define normalized variables <span class="math inline">n=N/N_0</span>, <span class="math inline">d=D/D_0</span>, and normalized compute <span class="math inline">c=C/(6N_0D_0)</span>. The constraint is <span class="math inline">nd=c</span>, so <span class="math inline">d=c/n</span>. Ignoring the constant floor, minimize</p>
+<p><span class="math display">
+f(n)=An^{-\alpha}+Bc^{-\beta}n^{\beta}.
+</span></p>
+<p>Set the derivative to zero:</p>
+<p><span class="math display">
+-\alpha A n^{-\alpha-1}
++\beta Bc^{-\beta}n^{\beta-1}=0.
+</span></p>
+<p>Therefore</p>
+<p><span class="math display">
+n^*=\left(\frac{\alpha A}{\beta B}c^\beta\right)^{1/(\alpha+\beta)},
+\qquad
+d^*=\frac{c}{n^*}.
+</span></p>
+<p>Model size scales with compute as <span class="math inline">C^{\beta/(\alpha+\beta)}</span> and tokens as <span class="math inline">C^{\alpha/(\alpha+\beta)}</span>. With similarly sized exponents, both grow approximately as the square root of compute. The build’s tenfold extrapolation chooses approximately <span class="math inline">{2.21}</span> billion parameters and <span class="math inline">{79.2}</span> billion tokens, satisfying <span class="math inline">{6ND=1.05\times10^{21}}</span> FLOPs. Its predicted synthetic loss is <span class="math inline">{2.223}</span>, with a 5th-to-95th percentile residual-bootstrap predictive interval of <span class="math inline">[2.220,2.225]</span>. Again, this tight conditional interval reflects a clean synthetic generator; a real planning interval should include broader scenarios.</p>
+<p>Compute must become wall time before it becomes a schedule. If <span class="math inline">P_\text{peak}</span> is peak FLOP/s per accelerator, <span class="math inline">G</span> is accelerator count, and <span class="math inline">u</span> is measured model FLOP utilization (MFU), then</p>
+<p><span class="math display">
+t_\text{wall}\approx\frac{C}{G\,u\,P_\text{peak}}.
+</span></p>
+<p>MFU is configuration-specific. Using peak throughput silently assumes <span class="math inline">u=1</span>. Record the FLOP convention, measured MFU range, checkpoint and retry overhead, and a sensitivity table; Chapter 6 handles execution mechanics.</p>
+<div id="fig-ch05-scaling-fit" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two-panel plot. Synthetic fitted losses closely follow observed losses. A U-shaped fixed-compute profile has an optimum near 2.2 billion parameters with a narrow conditional predictive interval.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch05-scaling-fit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch05/generated/scaling-law-fit.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;5.1: The left panel checks fitted versus observed loss for twelve synthetic proxy runs. The right panel holds compute at ten times the largest proxy run, varies model size, and marks the fitted optimum with a 90 percent residual-bootstrap predictive interval. Data are synthetic and generated locally."><img src="../code/ch05/generated/scaling-law-fit.svg" class="img-fluid figure-img" alt="Two-panel plot. Synthetic fitted losses closely follow observed losses. A U-shaped fixed-compute profile has an optimum near 2.2 billion parameters with a narrow conditional predictive interval."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch05-scaling-fit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5.1: The left panel checks fitted versus observed loss for twelve synthetic proxy runs. The right panel holds compute at ten times the largest proxy run, varies model size, and marks the fitted optimum with a 90 percent residual-bootstrap predictive interval. Data are synthetic and generated locally.
+</figcaption>
+</figure>
+</div>
+<p>The curve’s U shape is the decision. Too small a model spends the budget repeatedly exposing insufficient capacity; too large a model spends it on parameters that do not receive enough data. The minimum belongs to a training objective and budget, not automatically to deployment.</p>
+</section>
+<section id="sec-ch05-after-chinchilla" class="level2" data-number="5.7">
+<h2 data-number="5.7" class="anchored" data-anchor-id="sec-ch05-after-chinchilla"><span class="header-section-number">5.7</span> Scaling Laws Are Decision Tools, Not Deployment Commandments</h2>
+<p>“Chinchilla-optimal” asks which <span class="math inline">N,D</span> allocation minimizes fitted loss under fixed training compute; it does not minimize an agent product’s lifetime cost. With large serving demand, a smaller model trained longer can cost more once and save on every request. Inference-aware scaling therefore adds deployment demand, latency, batch shape, hardware, quantization, caching, and quality value to the objective.</p>
+<p>Intentional <strong>overtraining</strong> means using more tokens than a chosen loss-optimal baseline, not necessarily harmful optimization. A small, long-lived model may justify extra training because weight and memory costs recur during serving. Yet ordinary-regime ratios may extrapolate poorly to thousands of tokens per parameter. Run overtraining ladders rather than promoting a ratio to law.</p>
+<p>Other constraints change the response surface:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Constraint or method</th>
+<th>Additional axis</th>
+<th>Durable planning implication</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Limited unique data</td>
+<td>reuse count and source diversity</td>
+<td>several repeats can be useful, but marginal value falls; track unique and tokens-seen separately</td>
+</tr>
+<tr class="even">
+<td>Lower numerical precision</td>
+<td>training precision and post-training quantization</td>
+<td>precision can change effective capacity and optimization; an overtrained checkpoint may be more quantization-sensitive</td>
+</tr>
+<tr class="odd">
+<td>Distillation</td>
+<td>teacher quality, teacher cost, student count</td>
+<td>an existing teacher or many students can justify distillation; training one teacher solely for one student changes the comparison</td>
+</tr>
+<tr class="even">
+<td>Mixture of experts</td>
+<td>active parameters, total experts, selected experts</td>
+<td>active compute and stored capacity need separate laws; gains from adding experts can saturate</td>
+</tr>
+<tr class="odd">
+<td>Inference demand</td>
+<td>lifetime served tokens and latency</td>
+<td>the training-loss optimum can differ from the deployment-economic optimum</td>
+</tr>
+</tbody>
+</table>
+<p>These laws are empirical families, not algebraic add-ons to Chinchilla. A precision law fitted to one bit-width schedule or a distillation law fitted to one teacher family is a prior for experiment design. It is not a transferable constant. For MoE, fit active compute and expert count as separate variables if the program needs that decision; this chapter does not hide a second MoE fit inside the dense artifact.</p>
+<section id="apparent-emergence" class="level3" data-number="5.7.1">
+<h3 data-number="5.7.1" class="anchored" data-anchor-id="apparent-emergence"><span class="header-section-number">5.7.1</span> Apparent emergence</h3>
+<p>Some benchmark curves appear flat and then jump at a model scale, producing claims of emergent capability. A genuine phase change is possible, but the metric can manufacture one. Suppose the underlying probability assigned to a correct answer rises smoothly. Exact-match accuracy remains zero until the correct string becomes the top choice; multiple-choice accuracy changes only when a ranking flips; pass/fail thresholds discretize a continuous score. Schaeffer and colleagues demonstrated that changing to continuous metrics can turn apparent discontinuities into smooth improvement.</p>
+<p>The operational response is not to deny every threshold. Preserve continuous observables—answer log likelihood, margin over alternatives, calibration, partial credit, verifier score, and task success by difficulty—alongside headline accuracy. Then a launch threshold can remain discrete while the learning curve stays diagnosable. If a capability matters for safety, do not assume that a flat thresholded metric proves absence below the observed jump.</p>
+</section>
+<section id="new-resource-axes" class="level3" data-number="5.7.2">
+<h3 data-number="5.7.2" class="anchored" data-anchor-id="new-resource-axes"><span class="header-section-number">5.7.2</span> New resource axes</h3>
+<p>Pretraining compute is no longer the sole scaling axis. Reinforcement-learning compute can improve a policy after base pretraining, and test-time compute can trade more sampled or deliberative work for better answers. <a href="../chapters/08-reasoning-test-time-compute.html#sec-ch08">Chapter 8</a> derives reasoning and test-time allocation; <a href="../chapters/23-training-agents-rl.html#sec-ch23">Chapter 23</a> owns agent-policy RL. In a full product budget, the axes interact: pretraining creates representations, post-training shapes behavior, inference-time search extracts more performance, and serving demand prices every extra token. Keep their ledgers separate before optimizing the portfolio.</p>
+<p>A scaling fit earns trust through interventions: change one axis, hold the comparison contract stable, predict a withheld point, and inspect residuals. The law is useful when it can reject a bad allocation before the expensive run—not when it merely explains completed runs.</p>
+</section>
+</section>
+<section id="sec-ch05-base-eval" class="level2" data-number="5.8">
+<h2 data-number="5.8" class="anchored" data-anchor-id="sec-ch05-base-eval"><span class="header-section-number">5.8</span> Base-Model Evaluation While the Run Is Alive</h2>
+<p>A base model is a next-token predictor, not an instruction-following product. A chat wrapper confounds pretraining quality with templates, post-training, sampling, and defaults. Pretraining measurements must be repeatable, checkpoint-comparable, and sliced to expose distribution failures.</p>
+<p>Cross-entropy is the first instrument. For target tokens <span class="math inline">x_1,\ldots,x_T</span> and model probabilities <span class="math inline">p_\theta</span>, the mean negative log likelihood is</p>
+<p><span class="math display">
+\mathcal{L}=-\frac{1}{T}\sum_{t=1}^{T}\log p_\theta(x_t\mid x_{&lt;t}),
+\qquad
+\operatorname{PPL}=e^{\mathcal{L}}.
+</span></p>
+<p>Perplexity is exponentiated token-average surprise. Compare it only under the same tokenizer, normalization, context and document-boundary policy, and corpus: changing segmentation changes the averaging unit. Across tokenizers, add a byte or character denominator such as bits per byte and document normalization.</p>
+<p>Aggregate loss can hide incidents. Maintain immutable slices for web prose, code, mathematics, target languages, long documents, sensitive tails, and trusted sources; report token-weighted and per-slice values. <strong>In-flight evaluation</strong> runs while training continues and asks whether optimization is healthy, the mixture produces intended capabilities, and checkpoints remain inside the fitted learning curve’s uncertainty.</p>
+<p>A useful checkpoint contract includes:</p>
+<ul>
+<li>training and held-out cross-entropy with exact token counts;</li>
+<li>per-domain and per-language losses on versioned, contamination-audited slices;</li>
+<li>gradient norm, update norm, learning rate, token throughput, and non-finite-event counters;</li>
+<li>a compact set of conditional-likelihood tasks, with prompt text and few-shot examples pinned;</li>
+<li>the residual between observed loss and the scaling-law prediction at actual <span class="math inline">N,D,C</span>;</li>
+<li>a checkpoint, tokenizer, data-manifest, code, and evaluator version that reconstructs every number.</li>
+</ul>
+<p>The few-shot harness should score candidates by conditional log likelihood rather than sample one answer and hope decoding noise is representative. For prompt <span class="math inline">q</span> and candidate completion <span class="math inline">a</span>, compute</p>
+<p><span class="math display">
+s(a\mid q)=\frac{1}{|a|}\sum_{t\in a}\log p_\theta(a_t\mid q,a_{&lt;t}).
+</span></p>
+<p>Length normalization prevents shorter candidates from winning automatically, but can change rankings. Pin separators, whitespace, labels, demonstrations and order, and continuation punctuation. MMLU- or HellaSwag-class names do not make a harness reproducible; documented setup sensitivity makes raw scores without configuration weak evidence.</p>
+<p>The build’s five cloze items use two demonstrations, rotate answers across three positions, save first-seed completions, and report constant-position and shortest-candidate baselines. They cannot estimate general capability; they verify prompt construction, continuation scoring, baselines, and qualitative inspection. Chapter 22 supplies statistical evaluation; this section supplies its base-model telemetry.</p>
+<p>Alert on trajectories, not one loss threshold. A mixture-boundary spike differs from a residual growing across checkpoints; a code gain with language forgetting is acceptable only if planned and recovered. Preserve the checkpoint and data window before changing controls. Exact token-interval replay is part of observability.</p>
+</section>
+<section id="sec-ch05-supply-chain" class="level2" data-number="5.9">
+<h2 data-number="5.9" class="anchored" data-anchor-id="sec-ch05-supply-chain"><span class="header-section-number">5.9</span> Data Is a Governed Supply Chain</h2>
+<p><span class="math inline">D</span> is not the size of a folder. It is the number of tokens the optimizer consumes after acquisition, extraction, eligibility policy, filtering, deduplication, mixture sampling, and repetition. A corpus ledger should distinguish at least <strong>raw bytes</strong>, <strong>extracted documents</strong>, <strong>eligible documents</strong>, <strong>near-unique tokens</strong>, <strong>mixture tokens</strong>, and <strong>tokens seen during training</strong>. Reporting “three trillion tokens” without the stage and tokenizer prevents comparison.</p>
+<p>Common Crawl illustrates the transition. WARC stores responses and metadata, WAT computed metadata, and WET extracted plaintext. WET is convenient but has discarded structure and embedded extraction decisions. Retain WARC coordinates or equivalent locators for later quality, rights, and deletion work. Boilerplate removal, decoding, segmentation, language identification, and metadata preservation all alter the training distribution.</p>
+<p>The reference <code>Document</code> keeps six fields because policy needs them:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Document:</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    doc_id: <span class="bu">str</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    url: <span class="bu">str</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    source: <span class="bu">str</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    language: <span class="bu">str</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    rights: <span class="bu">str</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    text: <span class="bu">str</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A production record also needs crawl and extraction versions, retrieval time, hash, jurisdiction, declared license, contractual basis, robots and opt-out observations, PII class, transformations, parents, and deletion status. Do not collapse these into <code>safe</code>: crawler directives are not copyright licenses, public accessibility is not permission for every use, and an open-dataset wrapper does not guarantee uniform rights.</p>
+<p>Rights policy varies by jurisdiction and contract. Store raw evidence, apply a versioned eligibility policy, record decision and reason, and keep descendants discoverable so removal can identify dependent extracts, synthetic transforms, mixtures, checkpoints, and adapters. Chapter 18 owns agent-memory deletion; the lineage principle begins here.</p>
+<p>Privacy is connected to duplication: rare repeated strings receive more gradient exposure, and extraction risk grows with capacity, duplication, and context. Deduplication reduces waste and one memorization pressure, not all privacy risk. Apply explicit PII policy, restrict raw access, audit samples and exceptions, and measure extraction and redaction. A hashed email is still a stable identifier.</p>
+<p>Acquisition creates representation errors: language ID rejects short or code-switched text, HTML tables become nonsense, PDF columns interleave, and deduplication clusters boilerplate. Audit every stage by source and language and preserve rejections. Counts show that a gate acted; samples show what it did.</p>
+<p>The invariant is end-to-end lineage: every token admitted to a mixture has a source record, transformation history, policy decision, and reproducible text hash. This does not settle a legal question. It makes the organization’s decision inspectable and correctable.</p>
+</section>
+<section id="sec-ch05-curation" class="level2" data-number="5.10">
+<h2 data-number="5.10" class="anchored" data-anchor-id="sec-ch05-curation"><span class="header-section-number">5.10</span> Filter, Deduplicate, and Decontaminate</h2>
+<p>Extraction maximizes recall; curation chooses what should train the model. A <strong>filter</strong> scores or rejects individual documents. <strong>Deduplication</strong> finds repeated or near-repeated content within or across sources. <strong>Decontamination</strong> checks training candidates against evaluation material. They solve different problems and should write different reason codes.</p>
+<p>Early corpora such as C4 and Gopher used transparent heuristics for language, length, character ratios, punctuation, repetition, stop words, and blocked terms. They are cheap and debuggable but encode cultural assumptions. The C4 audit found identity-term blocklists disproportionately removed minority-associated documents; a mainstream-English quality score can erase dialect, community discussion, or rare languages.</p>
+<p>Model filters rank documents using a learned quality concept. DCLM and FineWeb-Edu showed strong controlled results, but label source is policy: “encyclopedic” differs from “educational,” “reliable code,” or “serves target users.” Evaluator preferences can hide behind a score. Retain distributions, threshold sweeps, source-language curves, and reviewed false positives. The artifact intentionally implements only transparent features.</p>
+<section id="near-duplicate-mechanics" class="level3" data-number="5.10.1">
+<h3 data-number="5.10.1" class="anchored" data-anchor-id="near-duplicate-mechanics"><span class="header-section-number">5.10.1</span> Near-duplicate mechanics</h3>
+<p>Exact hashes catch byte-identical records. Web duplicates often differ by a menu, timestamp, punctuation, or one inserted paragraph. Convert normalized text into a set of word shingles—overlapping sequences of, say, five words. For shingle sets <span class="math inline">A</span> and <span class="math inline">B</span>, Jaccard similarity is</p>
+<p><span class="math display">
+J(A,B)=\frac{|A\cap B|}{|A\cup B|}.
+</span></p>
+<p>Comparing every document pair is quadratic. MinHash builds a compact signature whose agreement probability estimates Jaccard similarity. For each random permutation-like hash <span class="math inline">h_k</span>, record the minimum hashed shingle. Two documents with similarity <span class="math inline">s</span> match one MinHash component with probability <span class="math inline">s</span>. Locality-sensitive hashing (LSH) divides a signature into <span class="math inline">b</span> bands of <span class="math inline">r</span> rows. A pair becomes a candidate if any band matches, with approximate probability</p>
+<p><span class="math display">
+P(\text{candidate}\mid s)=1-(1-s^r)^b.
+</span></p>
+<p>More bands raise recall and candidate count; more rows sharpen the threshold and can miss paraphrases. The artifact samples bottom-<span class="math inline">k</span> stable shingle hashes, uses LSH only for candidates, then confirms Jaccard before unioning clusters. At web scale, stream shingles, control bucket skew, and measure false positives and negatives. Semantic methods such as SemDeDup catch lexical misses but can collapse legitimate viewpoints; review by language and source.</p>
+<p>Exemplar choice matters: first can be truncated and longest can preserve boilerplate. The lab selects the highest transparent quality score and records membership, similarity, and cluster size. Production may add trust, recency, rights, extraction quality, and canonical URL. Redundancy never justifies deleting lineage.</p>
+<p>Dedup changes learning. Lee and colleagues found that duplicated sequences contribute to memorized generations and train-test overlap; deduplication can improve efficiency and evaluation validity. It also changes domain weights. If a reference paragraph appears on a thousand sites, raw frequency makes it a thousand times more influential. Removing copies changes the empirical distribution, not only the bill.</p>
+</section>
+<section id="evaluation-decontamination" class="level3" data-number="5.10.2">
+<h3 data-number="5.10.2" class="anchored" data-anchor-id="evaluation-decontamination"><span class="header-section-number">5.10.2</span> Evaluation decontamination</h3>
+<p>The lab normalizes whitespace and case, then removes long exact evaluation substrings. Production combines hashes, substrings or n-grams, canaries, and cautious semantic matching; keeps prompts, answers, rationales, and mirrors separate; and rechecks transformed and synthetic descendants. Paraphrases evade exact matching, while broad semantic detection can delete legitimate knowledge.</p>
+<p>Do not tune on the only clean set. Maintain a private final slice, date-bounded or source-bounded holdouts, and contamination controls where deliberate leakage quantifies score inflation. Public benchmark performance is useful only with a contamination statement. If a benchmark is discovered in the training corpus after a run, label the score; do not retroactively call the data clean.</p>
+<div id="fig-ch05-data-pipeline" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two-panel plot. Document counts fall at policy, deduplication, and mixture gates. There are more singleton clusters than two-document near-duplicate clusters.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch05-data-pipeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch05/generated/data-pipeline.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;5.2: The left panel counts synthetic documents after extraction, rights and quality filters, near-deduplication, exact evaluation decontamination, and mixture selection. The right panel shows the number of singleton and two-document near-duplicate clusters. Values come from a deterministic 50 MiB WET-style fixture, not scraped web data."><img src="../code/ch05/generated/data-pipeline.svg" class="img-fluid figure-img" alt="Two-panel plot. Document counts fall at policy, deduplication, and mixture gates. There are more singleton clusters than two-document near-duplicate clusters."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch05-data-pipeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5.2: The left panel counts synthetic documents after extraction, rights and quality filters, near-deduplication, exact evaluation decontamination, and mixture selection. The right panel shows the number of singleton and two-document near-duplicate clusters. Values come from a deterministic 50 MiB WET-style fixture, not scraped web data.
+</figcaption>
+</figure>
+</div>
+<p>The count drop is not proof of quality. The evidence is the paired ledger: stage counts, per-reason rejections, reviewed samples, cluster membership, and downstream equal-compute evaluation.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>data_records.py</code></td>
+<td style="text-align: right;">141 lines</td>
+<td>every rejected record has a policy or quality reason</td>
+</tr>
+<tr class="even">
+<td><code>deduplication.py</code></td>
+<td style="text-align: right;">109 lines</td>
+<td>candidate generation and exact confirmation are separate</td>
+</tr>
+<tr class="odd">
+<td><code>mixture.py</code></td>
+<td style="text-align: right;">66 lines</td>
+<td>benchmark matches are removed before deterministic source quotas</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="sec-ch05-mixtures" class="level2" data-number="5.11">
+<h2 data-number="5.11" class="anchored" data-anchor-id="sec-ch05-mixtures"><span class="header-section-number">5.11</span> Mixtures, Fertility, and Curriculum</h2>
+<p>A curated corpus is still not a training distribution until source weights are chosen. Let domain <span class="math inline">i</span> contain eligible documents and let <span class="math inline">p_i</span> be its sampling probability, with <span class="math inline">\sum_i p_i=1</span>. Sampling proportional to available tokens reproduces corpus volume. That is rarely the desired objective: crawl abundance overweights repeated commercial pages; high-quality books or code may be scarce; low-resource languages may disappear. Mixture weights are model hyperparameters with governance consequences. The lab converts weights to exact document quotas and raises when a source cannot supply its quota; it never silently fills a zero-weight or missing source from leftovers.</p>
+<p>The corpus lineage shows changing experimental styles:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Release</th>
+<th>Historical contribution</th>
+<th>Comparison caution</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>C4</td>
+<td>roughly 750 GB of cleaned English text from one Common Crawl snapshot for T5</td>
+<td>bytes after one recipe; English-only and audited for filter bias</td>
+</tr>
+<tr class="even">
+<td>The Pile</td>
+<td>825 GiB across 22 named English components</td>
+<td>explicit heterogeneous domains and weights, not one web dump</td>
+</tr>
+<tr class="odd">
+<td>RedPajama</td>
+<td>V1 reproduced a seven-domain recipe; V2 exposed a much larger web pool plus quality and duplicate signals</td>
+<td>distinguish the raw annotated pool from a selected training mixture</td>
+</tr>
+<tr class="even">
+<td>Dolma</td>
+<td>a three-trillion-token English mixture with curation toolkit and intermediate analyses</td>
+<td>released recipe and tools make ablations reconstructible</td>
+</tr>
+<tr class="odd">
+<td>FineWeb / FineWeb-Edu</td>
+<td>multi-snapshot web curation and a learned educational subset</td>
+<td>exact token counts depend on tokenizer; classifier creates a specialized view</td>
+</tr>
+<tr class="even">
+<td>DCLM</td>
+<td>a controlled testbed separating a huge raw pool, fixed training scales, evaluations, and selected baselines</td>
+<td>distinguish pool size, filtered dataset, added domains, and tokens actually seen</td>
+</tr>
+<tr class="odd">
+<td>Nemotron-CC</td>
+<td>a 6.3-trillion-token release combining globally deduplicated original and synthetic tokens</td>
+<td>quality and unique-token yield are a frontier; synthetic provenance remains part of the count</td>
+</tr>
+</tbody>
+</table>
+<p>These sizes are not a leaderboard. Some report bytes, some tokenizer-specific tokens; some are raw pools, others deduplicated selections; training tokens can include repeats. The durable progress is methodological: named sources, reproducible transformations, quality signals, controlled ablations, and explicit mixtures.</p>
+<p>DoReMi treats mixture selection as a group-robust optimization problem. A small proxy model learns domain weights that reduce excess loss relative to reference losses, then a larger model trains on the resulting mixture. RegMix trains many small proxy models on sampled mixtures and fits a regression from mixture weights to downstream performance. Both replace intuition-only weighting with experiments. Neither removes the transfer question: proxy rankings can change with model size, token budget, or evaluation target. Validate candidate weights at several budgets and on the integrated mixture.</p>
+<p>Mixture objectives need a target. Minimize token-weighted validation loss and large web domains dominate. Minimize worst-domain excess loss and small difficult domains receive more weight. Optimize a downstream suite and benchmark selection becomes the objective. A production proposal should show a Pareto table: aggregate loss, critical-domain losses, language coverage, unique tokens, rights cost, and expected serving value. One scalar score hides who pays for the compromise.</p>
+<section id="fertility-is-a-compute-allocation" class="level3" data-number="5.11.1">
+<h3 data-number="5.11.1" class="anchored" data-anchor-id="fertility-is-a-compute-allocation"><span class="header-section-number">5.11.1</span> Fertility is a compute allocation</h3>
+<p>Chapter 2’s byte-fallback BPE can encode every Unicode string, but coverage does not imply equal efficiency. <strong>Tokenizer fertility</strong> is the number of tokens used per word or per character. If language <span class="math inline">\ell</span> has character count <span class="math inline">Q_\ell</span> and fertility <span class="math inline">f_\ell</span> tokens per character, its token allocation is</p>
+<p><span class="math display">
+D_\ell=f_\ell Q_\ell.
+</span></p>
+<p>Training and serving cost scale with tokens. A tokenizer trained mostly on English may require more byte-level pieces for Arabic or Hindi, giving those users less semantic content per context window and a higher cost per character. Word-based fertility is linguistically confounded because languages segment and inflect differently; report both tokens per Unicode character and tokens per whitespace word, plus task-relevant units such as code characters or document pages.</p>
+<p>Do not “correct” high fertility only by reducing a language’s sampling probability. That saves tokens by withholding content. Options include retraining the shared tokenizer with representative text, allocating more training tokens, using byte- or character-aware architectures, and evaluating quality per unit of source content. Tokenizer changes break direct perplexity comparisons and checkpoint compatibility, so make this decision before the major run when possible.</p>
+</section>
+<section id="mid-training-is-staged-base-model-work" class="level3" data-number="5.11.2">
+<h3 data-number="5.11.2" class="anchored" data-anchor-id="mid-training-is-staged-base-model-work"><span class="header-section-number">5.11.2</span> Mid-training is staged base-model work</h3>
+<p>Broad pretraining need not flow directly into instruction tuning. <strong>Mid-training</strong> is a base-model stage that keeps a language-model objective while changing data quality, domains, formats, sequence lengths, or learning-rate schedule. <strong>Continued pretraining</strong> resumes from a checkpoint on a new or updated distribution. <strong>Annealing</strong> or <strong>cooldown</strong> is the optimizer intervention, usually lowering learning rate toward zero; it is not a synonym for high-quality data. A stage may combine both, but its controls should separate them.</p>
+<p>A common program has broad pretraining, a high-quality or capability-targeted mixture, then a long-context stage that includes genuinely long documents while retaining shorter high-quality material. Simply changing a RoPE configuration does not teach long-document use; <a href="../chapters/03-attention-position-long-context.html#sec-ch03-scaling">Chapter 3</a> owns positional extension. Long-context training needs length distribution, domain balance, and evaluations beyond a single needle task. <a href="../chapters/11-customization.html#sec-ch11">Chapter 11</a> owns domain customization after a base model exists.</p>
+<p>A <strong>microanneal</strong> branches a small, compute-matched run from a shared checkpoint: candidate source or mixture versus control, followed by targeted base-model evaluations. It is a screening experiment, not a miniature proof. Data-source utility can change rank with scale. Test promising sources at more than one small budget, include a web-only or incumbent-mixture control, and confirm winners inside the final mixture. Log both the data change and the learning-rate path so a gain is not attributed to the wrong intervention.</p>
+<div id="fig-ch05-training" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two-panel plot. Across three paired seeds, the cleaned-text toy condition has lower mean clean-domain held-out loss than raw. Token counts per character differ substantially across five language samples.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch05-training-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch05/generated/data-quality-training.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Figure&nbsp;5.3: The left panel compares paired-seed TinyGPT training means on raw and cleaned synthetic text; shaded ranges span three seeds and horizontal lines mark mean loss on a disjoint clean-domain holdout. Dashed lines are raw and solid lines are cleaned, so condition survives grayscale. The right panel measures tokens per Unicode character for five short language samples under one independently calibrated English-leaning Chapter 2 BPE. These are local CPU toy measurements, not model or language benchmarks."><img src="../code/ch05/generated/data-quality-training.svg" class="img-fluid figure-img" alt="Two-panel plot. Across three paired seeds, the cleaned-text toy condition has lower mean clean-domain held-out loss than raw. Token counts per character differ substantially across five language samples."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch05-training-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5.3: The left panel compares paired-seed TinyGPT training means on raw and cleaned synthetic text; shaded ranges span three seeds and horizontal lines mark mean loss on a disjoint clean-domain holdout. Dashed lines are raw and solid lines are cleaned, so condition survives grayscale. The right panel measures tokens per Unicode character for five short language samples under one independently calibrated English-leaning Chapter 2 BPE. These are local CPU toy measurements, not model or language benchmarks.
+</figcaption>
+</figure>
+</div>
+<p>The two panels expose one shared rule: “one token” is not a content-neutral unit. Cleaning changes which examples a token represents; fertility changes how much source content fits in the token budget.</p>
+</section>
+</section>
+<section id="sec-ch05-synthetic" class="level2" data-number="5.12">
+<h2 data-number="5.12" class="anchored" data-anchor-id="sec-ch05-synthetic"><span class="header-section-number">5.12</span> Synthetic Data at the Data Wall</h2>
+<p>“Synthetic data” combines mechanisms with different failure modes. Separate at least four:</p>
+<ol type="1">
+<li>A grounded transformation of an authentic document, such as reformatting, summarization, rephrasing, or question generation while retaining the parent.</li>
+<li>Fresh generation from prompts, simulations, or procedural environments.</li>
+<li>Generated data accepted only after an executable, retrieval, human, or stronger-model verifier.</li>
+<li>Recursive self-consumption in which model outputs replace or overwhelm the authentic distribution across generations.</li>
+</ol>
+<p>Shumailov and colleagues studied the fourth case and showed <strong>model collapse</strong>: indiscriminate recursive replacement can lose distribution tails and eventually distort the learned distribution. Rare modes are sampled less often, then appear still less often in the next generation. The feedback loop narrows support. “A model wrote this token” is not by itself the collapse condition. Gerstgrasser and colleagues reproduced collapse under replacement but found that accumulating generated data alongside the original real data avoided it in their studied settings. WRAP showed that purposeful synthetic rephrasing mixed with real web documents can improve efficiency.</p>
+<p>The engineering rule is an <strong>authentic anchor</strong>, not a universal synthetic percentage. Preserve an immutable, provenance-tagged corpus from the target distribution and authentic held-out slices. Compare real-only, synthetic-only, and mixed conditions at equal compute. Track tail slices, diversity, duplication, calibration, and general-domain retention. Version generator checkpoint, prompt, sampler, parent document, verifier, acceptance threshold, and generation number. A synthetic descendant inherits rights and deletion questions from its parent; lineage should not stop at the generator.</p>
+<p>Verification changes the failure, not necessarily removes it. An executable test can strongly validate code outputs inside its coverage. A learned judge can reward its own stylistic preferences. An ICLR 2026 study found that an external verifier prevented collapse in several experimental settings but pulled long-run behavior toward the verifier’s knowledge center. The verifier becomes a ceiling and a bias source. Maintain verifier-disagreement slices and human or environment-grounded checks.</p>
+<p>The “data wall” is better treated as a constraint curve than a calendar deadline. Unique, eligible, high-quality tokens in a target distribution are finite; extraction, multilingual sources, multimodal transcription, licensed collections, domain partnerships, repetition, and synthetic transformations change the available supply and its cost. A model can consume more tokens than exist uniquely by repeating data, but tokens seen are not unique information. Track marginal gain per additional unique token and per repeat. When the same documents recur, randomized order does not make them new evidence.</p>
+<p>Synthetic data is most defensible when it supplies a known missing intervention—worked examples, rare failure cases, executable programs, counterfactual environments—and when acceptance is measured against an authentic target. It is least defensible when a generator fills a volume quota and average loss is the only guardrail.</p>
+</section>
+<section id="sec-ch05-landscape" class="level2" data-number="5.13">
+<h2 data-number="5.13" class="anchored" data-anchor-id="sec-ch05-landscape"><span class="header-section-number">5.13</span> Landscape 2026 (dated)</h2>
+<p>The durable spine above remains fitting, controlled data experiments, provenance, and held-out evaluation. The examples below show how those mechanisms are currently composed; they are not universal recipes.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Verify live: 2026-07-19.</strong> The <a href="https://arxiv.org/abs/2512.13961">OLMo 3 technical report, v2 dated 2026-04-14</a> describes a staged base-model program with up to 5.9 trillion broad-pretraining tokens, a 100-billion-token mid-training stage, then model-size-dependent long-context stages. Its standard microanneal compares a candidate source plus web text against a compute-matched web-only control, promotes candidates to larger integration tests, retains natural web/PDF anchors to limit distribution shift, and evaluates long context with more than one suite. These are current implementation choices, not constants.</p>
+<p>A <a href="https://arxiv.org/abs/2603.22339">2026 analysis of IsoFLOP fitting</a> reports that a common parabolic fitting approach can be biased by finite observations and noise. The current action is durable: fit multiple ways, hold out runs, report uncertainty, and treat method disagreement as a planning risk.</p>
+<p>The moving frontier now treats reinforcement-learning compute and test-time compute as additional scaling axes. Those mechanisms are quarantined to Chapters 8 and 23 rather than mixed into this dense-pretraining fit. Current evidence also contradicts the slogan that “pretraining is over”: staged acquisition, mixture search, mid-training, context extension, and synthetic-data verification remain active base-model engineering programs.</p>
+<p>An <a href="https://arxiv.org/abs/2510.16657">ICLR 2026 synthetic-data study</a> reports that external verification can prevent collapse and produce near-term gains in its regression, VAE, and small-language-model settings, while long-run behavior moves toward verifier bias. Recheck scope before generalizing to frontier training.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch05-build" class="level2" data-number="5.14">
+<h2 data-number="5.14" class="anchored" data-anchor-id="sec-ch05-build"><span class="header-section-number">5.14</span> Build</h2>
+<p>Run the integrated build from the <code>newbook</code> directory:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch05/run_build.py</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pytest</span> <span class="at">-q</span> tests/test_ch05_scaling_pretraining.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The default command creates a temporary WET-style file of at least 50 MiB inside the output directory, processes it, then removes the raw fixture. The committed outputs are small: <a href="../code/ch05/generated/metrics.json"><code>metrics.json</code></a>, six CSV ledgers including <a href="../code/ch05/generated/document-ledger.csv"><code>document-ledger.csv</code></a>, <a href="../code/ch05/generated/samples.txt"><code>samples.txt</code></a>, and three SVG figures. No network or GPU is required.</p>
+<p>The scaling side reads <a href="../code/ch05/fixtures/proxy_ladder.csv"><code>proxy_ladder.csv</code></a>, fits the five parameters, checks every residual, and residual-bootstraps the tenfold forecast. The checked-in run recovers <span class="math inline">\alpha=0.332</span> and <span class="math inline">\beta=0.287</span>. Its normalized coefficients, floor, fit interval, predictive interval, and residual-model limitation are recorded rather than rounded into the code. The experiment contract in <code>metrics.json</code> states that the data are synthetic.</p>
+<p>The corpus side generated 885 records. Of those, 354 passed rights and quality gates, 265 remained after near-deduplication, 264 remained after removing the planted evaluation substring, and the exact 50/30/20 source mixture selected 60 documents. Inspect <a href="../code/ch05/generated/pipeline-stages.csv"><code>pipeline-stages.csv</code></a>, <a href="../code/ch05/generated/dedup-clusters.csv"><code>dedup-clusters.csv</code></a>, and the document ledger; every extracted ID retains URL, source, language, rights, content hash, policy version, cluster exemplar, final decision, and reason.</p>
+<p>Each TinyGPT has 22,640 parameters. Within each of three paired seeds, raw and cleaned conditions share the initial state, optimizer, batch size, context length, and 80 update steps. Their tokenizer is frozen from independent calibration text, and the held-out facts and sentence template do not occur in either sampled training condition. Mean held-out loss is <span class="math inline">{3.796}</span> for raw and <span class="math inline">{3.672}</span> for cleaned. Raw-minus-cleaned improvement averages <span class="math inline">{0.124}</span> nats/token; a paired-seed 90 percent bootstrap interval is <span class="math inline">[0.056,0.192]</span>, and cleaned wins in all three seeds. Both mean cloze accuracies are <span class="math inline">{0.60}</span> against <span class="math inline">{0.40}</span> constant-position and shortest-candidate baselines, so the loss result does not establish a qualitative capability difference. Read <a href="../code/ch05/generated/training-curves.csv"><code>training-curves.csv</code></a>, reproducibility hashes and runtime settings in <code>metrics.json</code>, and the saved completions. This fixture validates a controlled intervention; it does not estimate the gain from a named public corpus.</p>
+<p>Deliberately break the build in three ways. Set all source weights to web volume and watch the curated domains disappear. Lower the LSH candidate recall by using too many rows per band and inspect missed planted duplicates. Add the evaluation needle after decontamination and observe that a one-time gate cannot protect downstream synthetic transforms. Each break should change a ledger or assertion before it changes a headline score.</p>
+<p>The focused tests enforce the chapter’s claims: exponent recovery, exact compute constraint, ordered forecast interval, extraction metadata, rejection reasons, near-duplicate preservation, decontamination, mixture quotas, multilingual fertility, build outputs, and lower clean-held-out loss for the cleaned condition. This is the minimum evidence required to promote either the scaling surface or data recipe to a larger proxy ladder.</p>
+</section>
+<section id="sec-ch05-endures" class="level2" data-number="5.15">
+<h2 data-number="5.15" class="anchored" data-anchor-id="sec-ch05-endures"><span class="header-section-number">5.15</span> What Endures, What Changes</h2>
+<p>The durable ideas are empirical allocation, not a sacred ratio; joint measurement of model and data; multiple fitting views; explicit uncertainty; tokenizer- and corpus-controlled base evaluation; immutable held-out slices; provenance through every transformation; separate filtering, deduplication, and decontamination; mixture weights as optimized policy; fertility as compute allocation; staged mid-training with controls; and authentic anchors for synthetic feedback loops.</p>
+<p>The values will change. Fitted exponents and floors change with architecture, optimizer, precision, corpus, and regime. The serving demand that justifies overtraining changes with products and hardware. Quality classifiers, public corpora, licenses, opt-out mechanisms, model reports, context lengths, and synthetic generators change. Current mid-training token counts and mixture ratios are examples, not defaults.</p>
+<p>When those values move, rerun the ladder and pipeline rather than editing a constant in prose. The next chapter takes the budget, data manifest, checkpoints, and in-flight evaluation contract produced here and turns them into a training run.</p>
+</section>
+<section id="sec-ch05-exercises" class="level2" data-number="5.16">
+<h2 data-number="5.16" class="anchored" data-anchor-id="sec-ch05-exercises"><span class="header-section-number">5.16</span> Exercises</h2>
+<ol type="1">
+<li><p><strong>Stress the extrapolation.</strong> Refit the law after dropping the two largest proxy runs. Predict the original tenfold target, compare it with the full-ladder prediction and interval, and explain how much error came from extrapolation rather than optimizer noise.</p></li>
+<li><p><strong>Price two allocations.</strong> Compute tokens needed for a three-billion-parameter model under the fitted compute-optimal allocation and under a ten-times-overtrained allocation. Convert both to FLOPs, MFU-adjusted accelerator-hours, and cost using a dated current $/GPU-hour rate card. State hardware, MFU, and which costs the estimate omits.</p></li>
+<li><p><strong>Expose filter bias.</strong> Add a rare-language slice to the synthetic WET fixture. Design a filter that raises average quality score while deleting much of that slice; quantify retention, tokens, and held-out loss by language. Then propose a gate that makes the failure visible without forcing every domain to identical statistics.</p></li>
+<li><p><strong>Measure contamination inflation.</strong> Insert the toy evaluation prompts and answers into a controlled fraction of training documents, bypass decontamination, and retrain under equal steps. Measure cloze and held-out changes as contamination rises. Distinguish memorization from legitimate general-domain improvement.</p></li>
+<li><p><strong>Design a mid-training curriculum.</strong> Propose three base-model stages for a code-assistant model. Specify source mixture, unique and repeated tokens, sequence-length distribution, learning-rate intervention, control branch, promotion metric, general-domain retention gate, and why each stage belongs before post-training.</p></li>
+<li><p><strong>Defend a licensed-data purchase.</strong> Use the power-law and Chinchilla math to argue for or against paying for a licensed high-quality corpus instead of acquiring more crawl. Include unique-token yield, expected surface shift, rights and deletion costs, proxy-run design, inference lifetime, and the evidence that would reverse your decision.</p></li>
+</ol>
+</section>
+<section id="sec-ch05-notes" class="level2" data-number="5.17">
+<h2 data-number="5.17" class="anchored" data-anchor-id="sec-ch05-notes"><span class="header-section-number">5.17</span> Notes and Sources</h2>
+<p>The scaling-law spine comes from <a href="https://arxiv.org/abs/2001.08361">Kaplan et al., <em>Scaling Laws for Neural Language Models</em></a> and <a href="https://arxiv.org/abs/2203.15556">Hoffmann et al., <em>Training Compute-Optimal Large Language Models</em></a>. Extensions and cautions include <a href="https://arxiv.org/abs/2401.00448">inference-aware scaling</a>, <a href="https://arxiv.org/abs/2305.16264">data-constrained scaling</a>, <a href="https://arxiv.org/abs/2411.04330">precision-aware scaling</a>, <a href="https://arxiv.org/abs/2502.08606">distillation scaling</a>, and <a href="https://arxiv.org/abs/2202.01169">MoE scaling</a>. The emergence discussion uses <a href="https://arxiv.org/abs/2206.07682">Wei et al.</a> and the metric critique by <a href="https://arxiv.org/abs/2304.15004">Schaeffer et al.</a>. Base-evaluation setup sensitivity follows the <a href="https://arxiv.org/abs/2405.14782">Language Model Evaluation Harness lessons</a>.</p>
+<p>For acquisition, see the Common Crawl <a href="https://commoncrawl.org/faq">file-format documentation and FAQ</a> and the <a href="https://arxiv.org/abs/2310.16787">Data Provenance Initiative</a>. Corpus history and curation evidence come from <a href="https://www.jmlr.org/papers/v21/20-074.html">T5/C4</a>, the <a href="https://arxiv.org/abs/2104.08758">C4 audit</a>, <a href="https://arxiv.org/abs/2101.00027">The Pile</a>, <a href="https://proceedings.neurips.cc/paper_files/paper/2024/hash/d34497330b1fd6530f7afd86d0df9f76-Abstract-Datasets_and_Benchmarks_Track.html">RedPajama</a>, <a href="https://arxiv.org/abs/2402.00159">Dolma</a>, <a href="https://arxiv.org/abs/2406.17557">FineWeb</a>, <a href="https://arxiv.org/abs/2406.11794">DCLM</a>, and <a href="https://aclanthology.org/2025.acl-long.123/">Nemotron-CC</a>.</p>
+<p>Deduplication and memorization sources are <a href="https://arxiv.org/abs/2107.06499">Lee et al.</a>, <a href="https://arxiv.org/abs/2303.09540">SemDeDup</a>, <a href="https://arxiv.org/abs/2202.06539">Kandpal et al.</a>, and <a href="https://arxiv.org/abs/2202.07646">Carlini et al.</a>. Mixture and fertility evidence comes from <a href="https://arxiv.org/abs/2305.10429">DoReMi</a>, <a href="https://arxiv.org/abs/2407.01492">RegMix</a>, and <a href="https://arxiv.org/abs/2305.13707">Ahia et al.&nbsp;on language tokenization cost</a>.</p>
+<p>For staged training, see <a href="https://aclanthology.org/2020.acl-main.740/">domain-adaptive continued pretraining</a>, <a href="https://arxiv.org/abs/2501.00656">OLMo 2</a>, <a href="https://arxiv.org/abs/2507.22250">scaling laws for data-source utility</a>, <a href="https://arxiv.org/abs/2402.10171">long-context data engineering</a>, and <a href="https://arxiv.org/abs/2410.02660">ProLong</a>. Synthetic-data claims are grounded in <a href="https://www.nature.com/articles/s41586-024-07566-y">Shumailov et al.</a>, <a href="https://arxiv.org/abs/2404.01413">Gerstgrasser et al.</a>, and <a href="https://arxiv.org/abs/2401.16380">WRAP</a>. Current examples remain isolated in the dated landscape box.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/04-moe-efficient-architectures.html" class="pagination-link" aria-label="Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/06-distributed-frontier-training.html" class="pagination-link" aria-label="Distributed and Frontier Training [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

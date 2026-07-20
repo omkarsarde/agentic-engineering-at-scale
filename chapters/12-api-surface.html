@@ -1,0 +1,2165 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Turn a language model into a typed software component by owning message semantics, application validation, tool-call correlation, and failure boundaries.">
+
+<title>12&nbsp; The API Surface: Messages, Structured Outputs, and Tool Calling [F] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/13-prompting-context-engineering.html" rel="next">
+<link href="../chapters/11-customization.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/12-api-surface.html">Part IV — Programming with Models and Retrieval</a></li><li class="breadcrumb-item"><a href="../chapters/12-api-surface.html"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch12-prerequisites" id="toc-sec-ch12-prerequisites" class="nav-link active" data-scroll-target="#sec-ch12-prerequisites"><span class="header-section-number">12.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch12-contents" id="toc-sec-ch12-contents" class="nav-link" data-scroll-target="#sec-ch12-contents"><span class="header-section-number">12.2</span> Contents</a></li>
+  <li><a href="#sec-ch12-wire" id="toc-sec-ch12-wire" class="nav-link" data-scroll-target="#sec-ch12-wire"><span class="header-section-number">12.3</span> The wire format is semantics</a></li>
+  <li><a href="#sec-ch12-will-build" id="toc-sec-ch12-will-build" class="nav-link" data-scroll-target="#sec-ch12-will-build"><span class="header-section-number">12.4</span> What you will build</a></li>
+  <li><a href="#sec-ch12-messages" id="toc-sec-ch12-messages" class="nav-link" data-scroll-target="#sec-ch12-messages"><span class="header-section-number">12.5</span> Messages compile into tokens</a></li>
+  <li><a href="#sec-ch12-controls" id="toc-sec-ch12-controls" class="nav-link" data-scroll-target="#sec-ch12-controls"><span class="header-section-number">12.6</span> Sampling controls belong to the request contract</a></li>
+  <li><a href="#sec-ch12-spectrum" id="toc-sec-ch12-spectrum" class="nav-link" data-scroll-target="#sec-ch12-spectrum"><span class="header-section-number">12.7</span> Structured output is a spectrum of guarantees</a></li>
+  <li><a href="#sec-ch12-constraint-tax" id="toc-sec-ch12-constraint-tax" class="nav-link" data-scroll-target="#sec-ch12-constraint-tax"><span class="header-section-number">12.8</span> Constrained decoding has coverage and quality costs</a></li>
+  <li><a href="#sec-ch12-validation" id="toc-sec-ch12-validation" class="nav-link" data-scroll-target="#sec-ch12-validation"><span class="header-section-number">12.9</span> Application validation is the guarantee you own</a></li>
+  <li><a href="#sec-ch12-schema-design" id="toc-sec-ch12-schema-design" class="nav-link" data-scroll-target="#sec-ch12-schema-design"><span class="header-section-number">12.10</span> Schemas should make mistakes hard to express</a></li>
+  <li><a href="#sec-ch12-tool-loop" id="toc-sec-ch12-tool-loop" class="nav-link" data-scroll-target="#sec-ch12-tool-loop"><span class="header-section-number">12.11</span> A tool call is a proposal, not an execution</a></li>
+  <li><a href="#sec-ch12-advanced-calls" id="toc-sec-ch12-advanced-calls" class="nav-link" data-scroll-target="#sec-ch12-advanced-calls"><span class="header-section-number">12.12</span> Forcing, parallel calls, and streaming change the boundary</a></li>
+  <li><a href="#sec-ch12-errors" id="toc-sec-ch12-errors" class="nav-link" data-scroll-target="#sec-ch12-errors"><span class="header-section-number">12.13</span> Errors are observations with different owners</a></li>
+  <li><a href="#sec-ch12-landscape" id="toc-sec-ch12-landscape" class="nav-link" data-scroll-target="#sec-ch12-landscape"><span class="header-section-number">12.14</span> Landscape 2026 (dated)</a></li>
+  <li><a href="#sec-ch12-build" id="toc-sec-ch12-build" class="nav-link" data-scroll-target="#sec-ch12-build"><span class="header-section-number">12.15</span> Build</a></li>
+  <li><a href="#sec-ch12-endures" id="toc-sec-ch12-endures" class="nav-link" data-scroll-target="#sec-ch12-endures"><span class="header-section-number">12.16</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch12-exercises" id="toc-sec-ch12-exercises" class="nav-link" data-scroll-target="#sec-ch12-exercises"><span class="header-section-number">12.17</span> Exercises</a></li>
+  <li><a href="#sec-ch12-sources" id="toc-sec-ch12-sources" class="nav-link" data-scroll-target="#sec-ch12-sources"><span class="header-section-number">12.18</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/12-api-surface.html">Part IV — Programming with Models and Retrieval</a></li><li class="breadcrumb-item"><a href="../chapters/12-api-surface.html"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch12" class="quarto-section-identifier"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch12-prerequisites" class="level2" data-number="12.1">
+<h2 data-number="12.1" class="anchored" data-anchor-id="sec-ch12-prerequisites"><span class="header-section-number">12.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, basic Python, and production-backend basics: HTTP requests, JSON, exceptions, tests, and the distinction between authentication and authorization.</p>
+<p><strong>Route A:</strong> Chapters 7 and 9 already established chat templates, decoding, and the reproducibility boundary. This chapter moves those mechanisms to the caller side of an API.</p>
+<p><strong>Not required:</strong> a provider SDK, an API key, a GPU, an agent framework, or prior experience with tool calling. The default build is deterministic and offline. An optional seam can call any local OpenAI-compatible server over raw HTTP.</p>
+</blockquote>
+<div class="callout callout-style-default callout-note callout-titled" title="Route B backfill — required, about eight pages">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Route B backfill — required, about eight pages
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Route B arrives here from Chapter 1. Before continuing, read <a href="../chapters/09-inference-behavior.html#sec-ch09-decoding">Chapter 9, “Decoding turns logits into a choice”</a>, <a href="../chapters/09-inference-behavior.html#sec-ch09-truncation">“Truncation shapes the candidate support”</a>, and <a href="../chapters/09-inference-behavior.html#sec-ch09-determinism">“Seeded is not batch invariant”</a>, about five pages together. Then read the <strong>“Chat templates are a model ABI”</strong> subsection inside <a href="../chapters/07-post-training.html#sec-ch07-sft">Chapter 7, “Supervised fine-tuning makes the first policy”</a>, about three pages. The first backfill explains sampling and the limit of determinism; the second explains how messages become the token sequence a model actually receives.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch12-contents" class="level2" data-number="12.2">
+<h2 data-number="12.2" class="anchored" data-anchor-id="sec-ch12-contents"><span class="header-section-number">12.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch12-wire">The wire format is semantics</a></li>
+<li><a href="#sec-ch12-will-build">What you will build</a></li>
+<li><a href="#sec-ch12-messages">Messages compile into tokens</a></li>
+<li><a href="#sec-ch12-controls">Sampling controls belong to the request contract</a></li>
+<li><a href="#sec-ch12-spectrum">Structured output is a spectrum of guarantees</a></li>
+<li><a href="#sec-ch12-constraint-tax">Constrained decoding has coverage and quality costs</a></li>
+<li><a href="#sec-ch12-validation">Application validation is the guarantee you own</a></li>
+<li><a href="#sec-ch12-schema-design">Schemas should make mistakes hard to express</a></li>
+<li><a href="#sec-ch12-tool-loop">A tool call is a proposal, not an execution</a></li>
+<li><a href="#sec-ch12-advanced-calls">Forcing, parallel calls, and streaming change the boundary</a></li>
+<li><a href="#sec-ch12-errors">Errors are observations with different owners</a></li>
+<li><a href="#sec-ch12-landscape">Landscape 2026 (dated)</a></li>
+<li><a href="#sec-ch12-build">Build</a></li>
+<li><a href="#sec-ch12-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch12-exercises">Exercises</a></li>
+<li><a href="#sec-ch12-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch12-wire" class="level2" data-number="12.3">
+<h2 data-number="12.3" class="anchored" data-anchor-id="sec-ch12-wire"><span class="header-section-number">12.3</span> The wire format is semantics</h2>
+<p>A support assistant asks for order <code>O-0042</code>. The model proposes <code>lookup_order</code>, the application runs it, and the database returns <code>{"status":"shipped"}</code>. A developer appends that result as a plain user message: “The order shipped.” Sometimes the model answers. Sometimes it calls the tool again. Sometimes it invents a delivery date. The database and model are both functioning; the conversation is malformed.</p>
+<p>The missing fact is not English phrasing. A tool result is a typed observation correlated to a particular proposal ID. When the caller discards the type and ID, it changes the meaning of the transcript. <strong>The wire format is semantics, not plumbing.</strong></p>
+<p>A common chat-completions request is an HTTP <code>POST</code> to <code>/v1/chat/completions</code>. Its body names a model and carries an ordered <code>messages</code> list. It may also carry sampling controls, an output schema, and tool declarations. The response contains one or more choices; each choice has an assistant message and a finish reason. Usage fields report token accounting. A model server can expose this shape without using any vendor SDK.</p>
+<p>The chapter uses that OpenAI-compatible shape as a teaching language because local servers implement it and its key ideas transfer: ordered input, typed output parts, correlation identifiers, a terminal reason, and usage. “Compatible” does not mean identical behavior. Provider deltas belong in the dated section; the durable spine depends only on those five ideas.</p>
+<p>The reference artifact starts with <code>chat()</code> in <a href="../code/ch12/chat_api.py"><code>code/ch12/chat_api.py</code></a>. The function constructs JSON, sends raw HTTP, and extracts the fields the caller must inspect:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch12/chat_api.py — changed region: chat request and response</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>body <span class="op">=</span> {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"model"</span>: model,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"messages"</span>: messages,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"temperature"</span>: temperature,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"top_p"</span>: top_p,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"max_tokens"</span>: max_tokens,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>endpoint <span class="op">=</span> <span class="ss">f"</span><span class="sc">{</span>base_url<span class="sc">.</span>rstrip(<span class="st">'/'</span>)<span class="sc">}</span><span class="ss">/v1/chat/completions"</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>wire <span class="op">=</span> (transport <span class="kw">or</span> _http_transport)(endpoint, body)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>choice <span class="op">=</span> wire[<span class="st">"choices"</span>][<span class="dv">0</span>]</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> {</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">"message"</span>: choice[<span class="st">"message"</span>],</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">"finish_reason"</span>: choice.get(<span class="st">"finish_reason"</span>),</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">"usage"</span>: wire.get(<span class="st">"usage"</span>, {}),</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">"request_id"</span>: wire.get(<span class="st">"id"</span>),</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The production seam uses <code>httpx.post</code>; the test seam accepts a function with the same URL-and-body contract. This is dependency inversion at one boundary, not a provider abstraction layer. Chapter 26 owns gateways, routing, fallback, and multi-provider ports.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>chat_api.py</code> after <code>chat()</code></td>
+<td style="text-align: right;">46 lines</td>
+<td>Every call exposes the assistant message, finish reason, usage, and request ID instead of returning text alone.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The SDK is not the API. An SDK can add retries, object models, streaming helpers, and authentication, but the network still carries a versioned contract. Inspecting that contract once makes later framework behavior easier to debug.</p>
+</section>
+<section id="sec-ch12-will-build" class="level2" data-number="12.4">
+<h2 data-number="12.4" class="anchored" data-anchor-id="sec-ch12-will-build"><span class="header-section-number">12.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled" title="One typed model boundary">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>One typed model boundary
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will build a strict-schema refund-ticket extractor and a hand-rolled single-tool round trip rooted at <a href="../code/ch12/chat_api.py"><code>chat_api.py</code></a>. The same functions can use raw HTTP against a local OpenAI-compatible server or a deterministic transport in CI.</p>
+<p>The offline experiment in <a href="../code/ch12/chapter_build.py"><code>chapter_build.py</code></a> sends 50 messy tickets through three simulated guarantee levels, applies bounded application repair, and executes 20 <code>lookup_order</code> turns. It measures schema-validity rate, schema-valid but business-invalid records, repair frequency, tokens per success, and tool-loop termination. <a href="../code/ch12/render_metrics.py"><code>render_metrics.py</code></a> generates the numeric SVG from those measurements.</p>
+<p>Success means that every accepted extraction passes Draft 2020-12 validation and the order-existence rule; every tool proposal receives exactly one result carrying the same call ID; no streamed proposal becomes actionable before both call-close and response-terminal events; and all 20 tool loops terminate.</p>
+</div>
+</div>
+<p>This build is one boundary grown by mechanism. It is not an agent loop. The model may propose one tool once; Chapter 16 adds repeated observation and stopping, while Chapter 17 adds approval, authorization, and a production tool harness.</p>
+</section>
+<section id="sec-ch12-messages" class="level2" data-number="12.5">
+<h2 data-number="12.5" class="anchored" data-anchor-id="sec-ch12-messages"><span class="header-section-number">12.5</span> Messages compile into tokens</h2>
+<p>An API message is structured input. Its <code>role</code> says who or what produced the turn; its <code>content</code> may be text or a list of typed blocks. Four roles are useful in the chat-completions teaching shape:</p>
+<ul>
+<li><code>system</code> carries caller-controlled operating instructions when the surface supports that role;</li>
+<li><code>user</code> carries user-originated input;</li>
+<li><code>assistant</code> preserves model output, including tool-call proposals;</li>
+<li><code>tool</code> carries an application-produced result correlated to one assistant proposal.</li>
+</ul>
+<p>Do not assume that <code>message["content"]</code> is always a string. An assistant message can have <code>content: null</code> and a <code>tool_calls</code> array. A multimodal message can contain text and media parts. A refusal may arrive in a field distinct from ordinary text. Walking typed parts is more robust than taking “the first string that looks like an answer.”</p>
+<p>Roles are not words the network reads by magic. Before inference, the server applies the checkpoint’s <strong>chat template</strong>: a tokenizer-owned program that renders messages, tools, and control metadata into one token sequence. A conceptual rendering might surround each turn with role markers and append an assistant-start marker. Another checkpoint may use different markers, whitespace, order, or tool syntax. Supplying the wrong template is an input-distribution change even when the visible messages are identical.</p>
+<p>Figure <a href="#fig-ch12-message-compiler" class="quarto-xref">Figure&nbsp;<span>12.1</span></a> answers the question hidden by a convenient API: what happens between a JSON body and a typed response?</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    J["JSON messages, tools, and controls"] --&gt; T["Pinned chat template"]</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    T --&gt; I["Tokenizer: token IDs"]</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    I --&gt; M(["Model logits"])</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    M --&gt; S["Sampling and structural masks"]</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    S --&gt; D["Detokenizer and tool parser"]</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    D --&gt; P["Typed assistant parts"]</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    P --&gt; C{"Caller checks finish reason and types"}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch12-message-compiler" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch12-message-compiler-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch12-message-compiler">flowchart LR
+    J["JSON messages, tools, and controls"] --&gt; T["Pinned chat template"]
+    T --&gt; I["Tokenizer: token IDs"]
+    I --&gt; M(["Model logits"])
+    M --&gt; S["Sampling and structural masks"]
+    S --&gt; D["Detokenizer and tool parser"]
+    D --&gt; P["Typed assistant parts"]
+    P --&gt; C{"Caller checks finish reason and types"}
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch12-message-compiler-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;12.1: How does a structured chat request become the token continuation returned to the caller?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The invariant is that the template and tokenizer are part of the model’s application binary interface. Pin them with the model revision, render a golden conversation in tests, and reconcile local counts with server-reported usage. A message list by itself does not determine the prompt tokens.</p>
+<p>The artifact’s <code>count_tokens()</code> deliberately delegates to the real tokenizer rather than approximating characters:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch12/chat_api.py — changed region: count_tokens</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>token_ids <span class="op">=</span> tokenizer.apply_chat_template(</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    messages,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    tools<span class="op">=</span>tools,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    tokenize<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    add_generation_prompt<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="bu">len</span>(token_ids)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Some templates support <strong>assistant prefilling</strong>: the caller supplies a partial final assistant turn and asks the model to continue it. This can steer a prefix, but it is not a portable structured-output guarantee. A template may distinguish “start a new assistant message” from “continue the final message,” and a hosted surface may reject prefilling. Use a native schema feature for structure and treat prefill support as a dated capability.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>chat_api.py</code> after <code>count_tokens()</code></td>
+<td style="text-align: right;">10 lines</td>
+<td>Token budgeting uses the same tokenizer and chat template that construct the model input.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch12-controls" class="level2" data-number="12.6">
+<h2 data-number="12.6" class="anchored" data-anchor-id="sec-ch12-controls"><span class="header-section-number">12.6</span> Sampling controls belong to the request contract</h2>
+<p>The caller does not merely send prose. It chooses a decoding policy. Chapter 9 derived that policy; this section records the API consequence.</p>
+<p>For logits <span class="math inline">z_i</span> and temperature <span class="math inline">T&gt;0</span>, the next-token distribution is</p>
+<p><span class="math display">
+p_i(T)=\frac{\exp(z_i/T)}{\sum_j \exp(z_j/T)}.
+</span></p>
+<p>Smaller <span class="math inline">T</span> concentrates probability; larger <span class="math inline">T</span> spreads it. Nucleus sampling then keeps the smallest probability-ranked prefix whose cumulative mass reaches <code>top_p</code>, and renormalizes. Thus <code>top_p=0.7</code> does not keep 70 percent of the vocabulary. It may retain two tokens, two hundred, or one, depending on the distribution.</p>
+<p>Put these values in versioned request configuration rather than hiding them in prompt prose. They affect behavior, replay evidence, and evaluation:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Control</th>
+<th>What it controls</th>
+<th>What it does not guarantee</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>temperature</code></td>
+<td>relative sharpness before sampling</td>
+<td>factuality or identical future output</td>
+</tr>
+<tr class="even">
+<td><code>top_p</code></td>
+<td>eligible probability mass</td>
+<td>a fixed number of candidates</td>
+</tr>
+<tr class="odd">
+<td>maximum output tokens</td>
+<td>generation budget</td>
+<td>task completion or valid closing syntax</td>
+</tr>
+<tr class="even">
+<td>stop sequence</td>
+<td>termination on a matching sequence</td>
+<td>a valid object or semantic stopping condition</td>
+</tr>
+<tr class="odd">
+<td>seed, when exposed</td>
+<td>pseudorandom draws under some conditions</td>
+<td>identity across model, hardware, kernel, or batch changes</td>
+</tr>
+<tr class="even">
+<td>schema constraint</td>
+<td>structurally legal continuations</td>
+<td>correct field values or authorization</td>
+</tr>
+</tbody>
+</table>
+<p>Always read <code>finish_reason</code>. A normal stop means the server observed one of its terminal conditions. A tool-call finish means the model is waiting for observations. A length finish means the configured output budget interrupted generation; accepting a partially emitted object as complete is an application bug. A refusal or content-filter outcome is also not ordinary text.</p>
+<p><code>temperature=0</code> commonly selects a highest-scoring token, but it is not a system invariant. Model aliases move. Chat templates change. Parallel reductions can perturb nearly tied logits. Dynamic batching can select a different legal kernel. Record the exact model revision when available, template and schema versions, endpoint, controls, request ID, and provider fingerprint when exposed. For hermetic CI, replay a scripted transport and assert types and invariants. For live drift, compare a versioned evaluation distribution rather than one golden sentence.</p>
+<p>Token accounting follows the same discipline. Compare the local rendered count with the response’s prompt-token usage. A delta often exposes a template mismatch, server-added tool instructions, or different tokenizer revision. Budgeting by characters hides all three.</p>
+</section>
+<section id="sec-ch12-spectrum" class="level2" data-number="12.7">
+<h2 data-number="12.7" class="anchored" data-anchor-id="sec-ch12-spectrum"><span class="header-section-number">12.7</span> Structured output is a spectrum of guarantees</h2>
+<p>“The model returns JSON” can describe four different contracts. Ordering them prevents a syntactic convenience from becoming a false business guarantee.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 23%">
+<col style="width: 23%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">Level</th>
+<th>Mechanism</th>
+<th>Guarantee</th>
+<th>Typical failure</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td>prompt-only instruction</td>
+<td>none beyond model behavior</td>
+<td>prose fences, malformed JSON, wrong shape</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td>JSON mode</td>
+<td>syntactically parseable JSON</td>
+<td>missing fields, extra fields, invalid enums</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td>schema-constrained decoding</td>
+<td>conformance to the engine’s supported schema subset</td>
+<td>unsupported schema, legal but wrong value</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td>application validation</td>
+<td>checks implemented and versioned by your code</td>
+<td>a missing business rule in your validator</td>
+</tr>
+</tbody>
+</table>
+<p>At level 1, the model may answer “Here is the result” and then an object. A tolerant parser can extract that object, but tolerance is not enforcement. At level 2, every response may parse while <code>currency: "usd"</code> violates the application enum. JSON syntax knows objects and strings; it does not know the refund contract.</p>
+<p>At level 3, a decoding engine converts the schema into a grammar or state machine. Before each token, it masks continuations that cannot lead to a legal output. The model still scores the remaining tokens. If both <code>O-0042</code> and nonexistent <code>O-9042</code> fit a string pattern, the grammar permits both. Constrained decoding therefore moves validation earlier without turning a language model into a database.</p>
+<p>The artifact sends a strict JSON-Schema request using the common chat-completions shape:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch12/chat_api.py — changed region: schema_response_format</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> {</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"type"</span>: <span class="st">"json_schema"</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"json_schema"</span>: {</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"name"</span>: name,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"schema"</span>: schema,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"strict"</span>: <span class="va">True</span>,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Level 4 is different in kind. It runs inside the application release boundary. The caller chooses the JSON Schema draft and validator version, checks values against current state, decides whether a retry is safe, and returns a typed failure when the attempt budget ends. Provider-side enforcement can reduce how often that layer rejects; it cannot replace ownership of it.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>chat_api.py</code> after <code>schema_response_format()</code></td>
+<td style="text-align: right;">8 lines</td>
+<td>The request distinguishes JSON syntax from one named, strict application schema.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch12-constraint-tax" class="level2" data-number="12.8">
+<h2 data-number="12.8" class="anchored" data-anchor-id="sec-ch12-constraint-tax"><span class="header-section-number">12.8</span> Constrained decoding has coverage and quality costs</h2>
+<p>A JSON Schema is a language; a decoding engine implements some of that language. Those sets are not automatically equal. Recursion, references, unions, numeric bounds, string formats, regular-expression dialects, and interactions among object keywords require different compiler and runtime support. An application schema can be valid under Draft 2020-12 yet rejected by a provider, accepted but only partially enforced, or compiled differently by another engine.</p>
+<p>Call this the <strong>schema-coverage gap</strong>. Test it at deployment time with the exact schema and engine. A portable design has two explicit targets: the canonical application schema used by the validator, and a provider schema compiled from it. The compiler may flatten references or move a bound to application validation, but it must report lost constraints. Silently deleting keywords creates a guarantee gap no test can name.</p>
+<p>Constrained decoding also changes the distribution. If <span class="math inline">C(x_{&lt;t})</span> is the set of tokens that remain structurally legal after prefix <span class="math inline">x_{&lt;t}</span>, a masked distribution is</p>
+<p><span class="math display">
+p_i^{C}=\frac{p_i\mathbf{1}[i\in C(x_{&lt;t})]}
+{\sum_j p_j\mathbf{1}[j\in C(x_{&lt;t})]}.
+</span></p>
+<p>Every symbol has a concrete role: <span class="math inline">p_i</span> is the model’s unconstrained probability for token <span class="math inline">i</span>; the indicator is one only for legal tokens; the denominator renormalizes surviving mass. If the intended answer lies outside the grammar because the schema is wrong, masking makes it unreachable. If the model planned to reason in free text before writing an object, a grammar that requires <code>{</code> immediately removes that route.</p>
+<p>This is the <strong>constraint tax</strong>, but its sign is workload-dependent. A 2024 study reported reasoning degradation under restrictive formats. Later critiques argued that prompt and task construction confounded format with reasoning and showed benefits from separating unconstrained reasoning from constrained answers. The engineering conclusion is not that constraints always hurt or always help. Measure semantic task quality, latency, compile time, first-request warmup, schema coverage, and validity together.</p>
+<p>Three patterns are useful:</p>
+<ol type="1">
+<li>For extraction and classification, constrain the final object directly and score field correctness, not only parse rate.</li>
+<li>For reasoning-heavy work, let the model reason in a permitted region and constrain only the answer region, or use a second extraction call.</li>
+<li>For tool proposals, keep the argument schema small and validate it again before policy and execution.</li>
+</ol>
+<p>The mask can guarantee a structural property only within the engine’s implemented subset. It cannot guarantee that the schema expresses the product’s intent.</p>
+</section>
+<section id="sec-ch12-validation" class="level2" data-number="12.9">
+<h2 data-number="12.9" class="anchored" data-anchor-id="sec-ch12-validation"><span class="header-section-number">12.9</span> Application validation is the guarantee you own</h2>
+<p>The application boundary has two jobs. <strong>Structural validation</strong> checks types, required fields, enum membership, patterns, ranges, and extra properties. <strong>Semantic validation</strong> checks facts and policy that the schema cannot know: whether an order exists, whether the extracted amount matches the ticket, whether the actor may refund it, and whether the currency belongs to that account.</p>
+<p>The reference artifact uses <code>Draft202012Validator</code>, gathers specific complaints, and feeds only those complaints back within a fixed attempt budget. It never retries forever:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch12/chat_api.py — changed region: bounded extract loop</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> attempt <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, max_attempts <span class="op">+</span> <span class="dv">1</span>):</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> invoke(</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        transcript,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        response_format<span class="op">=</span>schema_response_format(</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">"refund_decision"</span>, schema</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    tokens <span class="op">+=</span> <span class="bu">int</span>(result.get(<span class="st">"usage"</span>, {}).get(<span class="st">"total_tokens"</span>, <span class="dv">0</span>))</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> result[<span class="st">"message"</span>].get(<span class="st">"content"</span>) <span class="kw">or</span> <span class="st">""</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        value <span class="op">=</span> parse_object(text)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        complaint <span class="op">=</span> _complaint(value, validator, semantic_check)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">ValueError</span> <span class="im">as</span> exc:</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        complaint <span class="op">=</span> <span class="bu">str</span>(exc)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> complaint <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> Extraction(value<span class="op">=</span>value, attempts<span class="op">=</span>attempt, total_tokens<span class="op">=</span>tokens)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    transcript.extend([</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        {<span class="st">"role"</span>: <span class="st">"assistant"</span>, <span class="st">"content"</span>: text},</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        {<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: (</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"The candidate failed validation: </span><span class="sc">{</span>complaint<span class="sc">}</span><span class="ss">. "</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Return only one object matching the supplied schema."</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        )},</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    ])</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="cf">raise</span> StructuredOutputFailed(<span class="ss">f"no valid object after </span><span class="sc">{</span>max_attempts<span class="sc">}</span><span class="ss"> attempts"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The important behavior is observable: each rejection produces one exact complaint, each new attempt adds token cost, and exhaustion becomes <code>StructuredOutputFailed</code> rather than a half-valid dictionary.</p>
+<p>Figure <a href="#fig-ch12-repair-loop" class="quarto-xref">Figure&nbsp;<span>12.2</span></a> shows where trust ends. The model may repair a candidate; only code may accept it.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>flowchart TD</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    R["Receive typed assistant content"] --&gt; P{"JSON object parses?"}</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    P --&gt;|"no"| E["Create specific complaint"]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    P --&gt;|"yes"| S{"Canonical schema passes?"}</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    S --&gt;|"no"| E</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    S --&gt;|"yes"| B{"Business rules pass?"}</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    B --&gt;|"no"| E</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    B --&gt;|"yes"| A(["Accept typed value"])</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    E --&gt; Q{"Attempt budget remains?"}</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    Q --&gt;|"yes"| M["Append candidate + complaint"]</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    M --&gt; R</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    Q --&gt;|"no"| F(["StructuredOutputFailed"])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch12-repair-loop" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch12-repair-loop-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch12-repair-loop">flowchart TD
+    R["Receive typed assistant content"] --&gt; P{"JSON object parses?"}
+    P --&gt;|"no"| E["Create specific complaint"]
+    P --&gt;|"yes"| S{"Canonical schema passes?"}
+    S --&gt;|"no"| E
+    S --&gt;|"yes"| B{"Business rules pass?"}
+    B --&gt;|"no"| E
+    B --&gt;|"yes"| A(["Accept typed value"])
+    E --&gt; Q{"Attempt budget remains?"}
+    Q --&gt;|"yes"| M["Append candidate + complaint"]
+    M --&gt; R
+    Q --&gt;|"no"| F(["StructuredOutputFailed"])
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch12-repair-loop-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;12.2: Where does a bounded repair loop stop trusting model output?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The loop retries a model call, not an external effect. Extraction is safe to recompute because it changes no account state. If a model produced a tool proposal that might already have executed, replay requires an idempotency record; Chapter 26 owns that durable-effect machinery.</p>
+<p>Repair is not automatically the best fallback. A syntax error may be locally repairable. An unknown order ID may require clarification or a fresh state read. A refusal should remain a typed refusal, not be bullied through repeated prompts. Treat the complaint class as a routing signal.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>chat_api.py</code> after <code>extract()</code></td>
+<td style="text-align: right;">53 lines</td>
+<td>No extraction crosses the boundary until parsing, canonical schema, and optional semantic checks all pass within a finite budget.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch12-schema-design" class="level2" data-number="12.10">
+<h2 data-number="12.10" class="anchored" data-anchor-id="sec-ch12-schema-design"><span class="header-section-number">12.10</span> Schemas should make mistakes hard to express</h2>
+<p>A schema is both a machine contract and model context. Property names, descriptions, enums, nesting, and optionality change what the model must infer. Design it for one decision, not for every future use case.</p>
+<p>Prefer fields whose invalid states are unrepresentable. An enum such as <code>refund | deny | escalate</code> is safer than an unconstrained <code>decision</code> string followed by fuzzy normalization. Require every property when the engine’s strict mode expects it; represent genuine absence explicitly with <code>null</code> or a separate status. Set <code>additionalProperties: false</code> at every object boundary so misspellings do not become silent features. Keep identifiers as strings when leading zeros or formatting matter.</p>
+<p>Descriptions should state purpose and non-use, not repeat the field name. Compare these declarations:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"name"</span><span class="fu">:</span> <span class="st">"lookup"</span><span class="fu">,</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"description"</span><span class="fu">:</span> <span class="st">"Looks things up"</span><span class="fu">,</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"parameters"</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">"type"</span><span class="fu">:</span> <span class="st">"object"</span><span class="fu">,</span> <span class="dt">"properties"</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">"q"</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">"type"</span><span class="fu">:</span> <span class="st">"string"</span><span class="fu">}}}</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"name"</span><span class="fu">:</span> <span class="st">"lookup_order"</span><span class="fu">,</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"description"</span><span class="fu">:</span> <span class="st">"Read one order by exact ID; do not use for product search."</span><span class="fu">,</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"parameters"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"object"</span><span class="fu">,</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"properties"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"order_id"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"string"</span><span class="fu">,</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"description"</span><span class="fu">:</span> <span class="st">"Order ID printed in the ticket, for example O-0042"</span><span class="fu">,</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"pattern"</span><span class="fu">:</span> <span class="st">"^O-[0-9]{4}$"</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">},</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"required"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"order_id"</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"additionalProperties"</span><span class="fu">:</span> <span class="kw">false</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The second name states the resource and operation. Its description provides a negative boundary. The argument name carries meaning, and the pattern blocks a class of malformed IDs. It still cannot prove existence or access rights; those remain application checks.</p>
+<p>Flat schemas usually require fewer dependent decisions than deeply nested unions. Split two semantically different operations into two tools instead of a <code>mode</code> field that changes the meaning of ten optional fields. Conversely, do not create dozens of tiny overlapping tools whose selection boundaries the model cannot distinguish. Chapter 17 develops tool-surface design; here the rule is narrower: make one proposed call easy to validate and hard to misread.</p>
+<p>Version schemas as code. Give each a stable name and digest, record that identity in traces, and add examples that should pass and fail. A provider rejecting a valid application keyword is a compile-time deployment failure, not a reason to weaken the canonical validator.</p>
+</section>
+<section id="sec-ch12-tool-loop" class="level2" data-number="12.11">
+<h2 data-number="12.11" class="anchored" data-anchor-id="sec-ch12-tool-loop"><span class="header-section-number">12.11</span> A tool call is a proposal, not an execution</h2>
+<p>A tool declaration tells the model which action shape it may propose. It does not grant credentials, call a function, or authorize an effect. One complete tool-calling round trip requires at least two model requests:</p>
+<ol type="1">
+<li>The application sends messages plus tool declarations.</li>
+<li>The model returns an assistant turn containing a call ID, tool name, and serialized arguments. Its finish reason indicates <code>tool_calls</code> in this teaching shape.</li>
+<li>The application parses and validates arguments, applies policy, and either executes or refuses.</li>
+<li>The application appends the original assistant turn and a typed tool result carrying the same call ID.</li>
+<li>The application sends the second model request; the model can now answer from the observation.</li>
+</ol>
+<p>Figure <a href="#fig-ch12-tool-sequence" class="quarto-xref">Figure&nbsp;<span>12.3</span></a> places authority on the only arrow that can reach the tool.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    participant App as Application</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    participant API as Model API</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    participant Tool as Application tool</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    App-&gt;&gt;API: request 1: messages + declaration</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    API--&gt;&gt;App: assistant tool_call id=call_0042, arguments as JSON string</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    App-&gt;&gt;App: parse, validate, authorize</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    App-&gt;&gt;Tool: lookup_order(order_id="O-0042")</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    Tool--&gt;&gt;App: status="shipped"</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    App-&gt;&gt;API: request 2: assistant turn + tool result id=call_0042</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    API--&gt;&gt;App: final assistant text, finish=stop</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch12-tool-sequence" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch12-tool-sequence-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch12-tool-sequence">sequenceDiagram
+    participant App as Application
+    participant API as Model API
+    participant Tool as Application tool
+    App-&gt;&gt;API: request 1: messages + declaration
+    API--&gt;&gt;App: assistant tool_call id=call_0042, arguments as JSON string
+    App-&gt;&gt;App: parse, validate, authorize
+    App-&gt;&gt;Tool: lookup_order(order_id="O-0042")
+    Tool--&gt;&gt;App: status="shipped"
+    App-&gt;&gt;API: request 2: assistant turn + tool result id=call_0042
+    API--&gt;&gt;App: final assistant text, finish=stop
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch12-tool-sequence-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;12.3: Who actually invokes a tool, and how is its result correlated to the proposal?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The invariant is worth stating without qualification: <strong>the provider never calls your application tool.</strong> The application owns the credentials and the only execution arrow. A managed provider-side tool is a different architecture and must be labeled as such.</p>
+<p>In chat completions, function arguments commonly arrive as a JSON string inside <code>tool_calls[*].function.arguments</code>. Parse at the boundary. A truncated string should raise near the response, not travel two layers until a handler fails on the wrong type. Verify that the proposed name is on the allowed list and validate the parsed object against that tool’s schema before invoking a handler.</p>
+<p>The artifact’s <code>run_tool_turn()</code> admits exactly one proposal, executes one injected handler, and echoes the identifier:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch12/chat_api.py — changed region: one tool-call round trip</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>calls <span class="op">=</span> first[<span class="st">"message"</span>].get(<span class="st">"tool_calls"</span>, [])</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">len</span>(calls) <span class="op">!=</span> <span class="dv">1</span>:</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"this boundary permits exactly one tool proposal"</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>call <span class="op">=</span> calls[<span class="dv">0</span>]</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>arguments <span class="op">=</span> json.loads(call[<span class="st">"function"</span>][<span class="st">"arguments"</span>])</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>argument_errors <span class="op">=</span> <span class="bu">list</span>(</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    Draft202012Validator(</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        tool[<span class="st">"function"</span>][<span class="st">"parameters"</span>]</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    ).iter_errors(arguments)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> argument_errors:</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"tool arguments failed validation: </span><span class="sc">{</span>argument_errors[<span class="dv">0</span>]<span class="sc">.</span>message<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>output <span class="op">=</span> handler(<span class="op">**</span>arguments)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>result_message <span class="op">=</span> {</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">"role"</span>: <span class="st">"tool"</span>,</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">"tool_call_id"</span>: call[<span class="st">"id"</span>],</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">"content"</span>: json.dumps(output, sort_keys<span class="op">=</span><span class="va">True</span>),</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>assert_all_calls_answered(calls, [result_message])</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> invoke(</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>    [<span class="op">*</span>messages, first[<span class="st">"message"</span>], result_message],</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>    tools<span class="op">=</span>[tool],</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>    parallel_tool_calls<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Preserve the complete assistant tool-call turn. Reconstructing only its visible name and arguments can drop provider metadata needed on the next request. Treat tool results as untrusted observations when they can contain external text; Chapter 24 develops indirect prompt injection and protocol-neutral action security.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>chat_api.py</code> after <code>run_tool_turn()</code></td>
+<td style="text-align: right;">40 lines</td>
+<td>Only application code invokes the handler, and the second request answers every admitted proposal ID exactly once.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch12-advanced-calls" class="level2" data-number="12.12">
+<h2 data-number="12.12" class="anchored" data-anchor-id="sec-ch12-advanced-calls"><span class="header-section-number">12.12</span> Forcing, parallel calls, and streaming change the boundary</h2>
+<p>The common <code>tool_choice</code> control changes which proposal shapes the decoder may emit:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Choice</th>
+<th>Intended contract</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>auto</code></td>
+<td>model may answer or propose an allowed tool</td>
+</tr>
+<tr class="even">
+<td><code>required</code></td>
+<td>model must propose at least one allowed tool</td>
+</tr>
+<tr class="odd">
+<td>named tool</td>
+<td>model must propose that particular tool</td>
+</tr>
+<tr class="even">
+<td><code>none</code></td>
+<td>model must not propose a tool</td>
+</tr>
+</tbody>
+</table>
+<p>Use forcing to express a route contract, not to rescue a poor tool description. A classification endpoint may require one classifier tool. A conversational answer route may use <code>auto</code>. A stage after an irreversible effect may use <code>none</code> to prevent another proposal. Current spellings and model support belong to capability tests.</p>
+<p>Parallel tool calls are parallel <strong>proposals</strong>. Each carries its own ID. Execute independent reads concurrently only after validating all calls and preserving their IDs. Do not match results by list position: completion order can differ from proposal order. Return one result per ID, including typed errors. Two proposed payments are not safe merely because the model emitted them in one response; concurrency policy and effect idempotency remain code responsibilities.</p>
+<p>Streaming splits one assistant turn into deltas. Tool argument strings can arrive across chunks: <code>{"order_</code> followed by <code>id":"O-0042"}</code>. A prefix may be invalid JSON because it is incomplete; a later prefix may parse by coincidence while the server has not committed the turn. This creates two boundaries:</p>
+<ul>
+<li><strong>parseable</strong> means a closed call block contains decodable arguments;</li>
+<li><strong>actionable</strong> means the whole response reached a valid terminal event and application policy admitted the proposal.</li>
+</ul>
+<p>Figure <a href="#fig-ch12-stream-state" class="quarto-xref">Figure&nbsp;<span>12.4</span></a> prevents those states from collapsing.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>stateDiagram-v2</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    [*] --&gt; Collecting</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    Collecting --&gt; Collecting: argument delta</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    Collecting --&gt; CallClosed: call-close event</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    CallClosed --&gt; ParseFailed: JSON decode or schema failure</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    CallClosed --&gt; Parsed: parse + schema pass</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    Parsed --&gt; Eligible: response-terminal event</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    Collecting --&gt; Incomplete: transport ends</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    CallClosed --&gt; Incomplete: response never terminal</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    Eligible --&gt; [*]</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    ParseFailed --&gt; [*]</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    Incomplete --&gt; [*]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch12-stream-state" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch12-stream-state-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch12-stream-state">stateDiagram-v2
+    [*] --&gt; Collecting
+    Collecting --&gt; Collecting: argument delta
+    Collecting --&gt; CallClosed: call-close event
+    CallClosed --&gt; ParseFailed: JSON decode or schema failure
+    CallClosed --&gt; Parsed: parse + schema pass
+    Parsed --&gt; Eligible: response-terminal event
+    Collecting --&gt; Incomplete: transport ends
+    CallClosed --&gt; Incomplete: response never terminal
+    Eligible --&gt; [*]
+    ParseFailed --&gt; [*]
+    Incomplete --&gt; [*]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch12-stream-state-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;12.4: When may a streamed tool proposal become eligible for application policy?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The text equivalent is short: collect bytes, observe call closure, parse and validate, then wait for response termination before exposing the proposal to policy. Any missing close or terminal event fails closed.</p>
+<p><code>assemble_tool_stream()</code> implements that rule. It accumulates by call index, remembers the provider ID, and returns parsed proposals only when every call is closed and the response is terminal. The focused test deletes the terminal event and expects <code>IncompleteToolStream</code>.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>chat_api.py</code> after stream assembly</td>
+<td style="text-align: right;">25 lines</td>
+<td>Parseability alone cannot make an interrupted streamed proposal actionable.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch12-errors" class="level2" data-number="12.13">
+<h2 data-number="12.13" class="anchored" data-anchor-id="sec-ch12-errors"><span class="header-section-number">12.13</span> Errors are observations with different owners</h2>
+<p>“Retry on error” is not a policy until the error has a class and an owner. A transport timeout, rejected HTTP request, truncated generation, refusal, invalid argument string, and tool failure describe different states.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Observation</th>
+<th>What knows enough to handle it</th>
+<th>Safe next move at this boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>connection timeout before a response</td>
+<td>application transport</td>
+<td>retry the model call under an outer budget</td>
+</tr>
+<tr class="even">
+<td>HTTP 429 or retryable 5xx</td>
+<td>application transport</td>
+<td>bounded retry or route decision; Chapter 26 owns full policy</td>
+</tr>
+<tr class="odd">
+<td>HTTP 400 schema rejection</td>
+<td>application deployment/configuration</td>
+<td>stop; compile or fix the provider schema</td>
+</tr>
+<tr class="even">
+<td><code>finish_reason: length</code></td>
+<td>application plus model</td>
+<td>retry generation without claiming an effect occurred</td>
+</tr>
+<tr class="odd">
+<td>refusal/content filter</td>
+<td>product policy</td>
+<td>preserve a typed refusal or escalate through an approved path</td>
+</tr>
+<tr class="even">
+<td>arguments fail JSON/schema validation</td>
+<td>application model boundary</td>
+<td>bounded repair, typed tool error, or reject</td>
+</tr>
+<tr class="odd">
+<td>tool returns a domain error</td>
+<td>tool handler</td>
+<td>return a correlated, structured error observation when useful</td>
+</tr>
+<tr class="even">
+<td>tool effect status is unknown</td>
+<td>durable effect system</td>
+<td>do not ask the model to guess; reconcile by idempotency record</td>
+</tr>
+</tbody>
+</table>
+<p>Suppose a streamed proposal stops after <code>{"order_id":"O-00</code>. The JSON decoder raises. That is useful proximity: the failure occurs before a handler sees anything. If the model emits a complete object but the response lacks a terminal event, the stream assembler still fails closed. If the tool ran and the network failed before its result was recorded, this chapter cannot safely retry the effect; that is precisely why production runtimes need durable execution.</p>
+<p>Some errors belong in the next model observation. “Order not found” may help the model ask for a corrected ID. “Actor is not authorized” should remain a policy denial and may be summarized without exposing sensitive details. A provider authentication failure, timeout, or internal stack trace does not help the model reason; code owns it.</p>
+<p>The artifact’s small <code>classify_failure()</code> makes only this chapter’s distinction. It does not implement backoff, deadlines, hedging, circuit breakers, or fallback. Those mechanisms interact with cost, overload, model behavior, and externally visible effects, so Chapter 26 treats them together.</p>
+<p>The Berkeley Function Calling Leaderboard (BFCL) and related tool-use scores are evaluated as part of the broader statistical evaluation system in Chapter 22; one aggregate score is not a substitute for testing the exact schemas, correlations, refusals, and failure paths used by an application.</p>
+</section>
+<section id="sec-ch12-landscape" class="level2" data-number="12.14">
+<h2 data-number="12.14" class="anchored" data-anchor-id="sec-ch12-landscape"><span class="header-section-number">12.14</span> Landscape 2026 (dated)</h2>
+<div class="landscape-2026">
+<p><strong>Verified on 2026-07-19.</strong> Provider surfaces now converge on typed tool proposals and structured outputs while differing in transcript rules and state ownership. The table is an interoperability checklist, not a normalized contract.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Surface</th>
+<th>Instruction and conversation shape</th>
+<th>Tool proposal and result</th>
+<th>State detail that bites</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>OpenAI Chat Completions</td>
+<td>ordered <code>messages</code>; system/developer behavior depends on model and reference</td>
+<td><code>tool_calls</code>; function arguments are serialized JSON; result commonly uses a <code>tool</code> message with <code>tool_call_id</code></td>
+<td>caller resends transcript; inspect <code>finish_reason</code> and usage</td>
+</tr>
+<tr class="even">
+<td>OpenAI Responses</td>
+<td>typed input/output items rather than only chat messages</td>
+<td>function-call and function-call-output items correlated by call ID</td>
+<td>can be stateless or chained by reference; stored-state choices affect replay and data handling</td>
+</tr>
+<tr class="odd">
+<td>Anthropic Messages</td>
+<td>system instruction is outside the <code>messages</code> array; content is typed blocks</td>
+<td>assistant <code>tool_use</code> contains object input; results are <code>tool_result</code> blocks inside the next user message and refer to <code>tool_use_id</code></td>
+<td>results for parallel calls belong together in that next user message, before extra text; <code>stop_reason</code> names differ</td>
+</tr>
+<tr class="even">
+<td>Gemini Interactions / Generate Content</td>
+<td>typed steps or content parts, depending on surface</td>
+<td>function-call arguments are objects and results correlate by call ID on current surfaces</td>
+<td>stateful interactions can carry state by reference; stateless reasoning/tool turns must preserve returned thought signatures exactly</td>
+</tr>
+<tr class="odd">
+<td>vLLM OpenAI-compatible server</td>
+<td>Chat Completions and Responses are exposed for supported model classes</td>
+<td>named, required, auto, and none tool modes have model/parser/backend conditions</td>
+<td>chat template, tool parser, reasoning parser, structured-output backend, and supported fields are deployment configuration</td>
+</tr>
+</tbody>
+</table>
+<p>OpenAI’s current <a href="https://developers.openai.com/api/docs/guides/structured-outputs">Structured Outputs guide</a> distinguishes schema-conforming output from ordinary JSON and documents supported-schema constraints; its <a href="https://developers.openai.com/api/docs/guides/function-calling">function-calling guide</a>, <a href="https://developers.openai.com/api/reference/resources/chat">Chat API reference</a>, and <a href="https://developers.openai.com/api/docs/guides/migrate-to-responses">Responses migration guide</a> define the live field shapes. Anthropic’s <a href="https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/implement-tool-use">tool-use implementation guide</a> documents content-block ordering and tool-result correlation. Google’s <a href="https://ai.google.dev/gemini-api/docs/function-calling">function-calling guide</a> and <a href="https://ai.google.dev/gemini-api/docs/thought-signatures">thought-signature guide</a> document current state and signature rules. vLLM’s <a href="https://docs.vllm.ai/en/stable/serving/openai_compatible_server/">OpenAI-compatible server</a>, <a href="https://docs.vllm.ai/en/stable/features/tool_calling/">tool-calling</a>, and <a href="https://docs.vllm.ai/en/stable/features/structured_outputs/">structured-output</a> pages document the local serving path.</p>
+<p>No provider SDK appears in the reference artifact. That choice keeps the wire visible; it is not a recommendation to avoid maintained clients in production. A production adapter should preserve provider-native metadata, refusals, reasoning signatures, and usage even when it maps them into an application contract. vLLM has exposed <code>continue_final_message</code> for template-level assistant continuation, while hosted prefill support has changed across model generations; neither should be treated as the structured-output contract.</p>
+<p><strong>Verify live:</strong> endpoint and field names; current model support; role and instruction placement; content-part types; function-argument string versus object encoding; strict-schema subset and recursion/reference limits; <code>additionalProperties</code> and required-field rules; finish/stop reasons; refusal representation; parallel-result ordering; streaming terminal events; tool/parser launch flags; prefill support; state storage defaults, retention, regions, quotas, pricing, and deprecations.</p>
+</div>
+</section>
+<section id="sec-ch12-build" class="level2" data-number="12.15">
+<h2 data-number="12.15" class="anchored" data-anchor-id="sec-ch12-build"><span class="header-section-number">12.15</span> Build</h2>
+<p>Install the two chapter-local dependencies and run the deterministic build from the <code>newbook</code> directory:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> pip install <span class="at">-r</span> code/ch12/requirements.txt</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch12/chapter_build.py</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch12/render_metrics.py <span class="at">--output</span> assets/figures/ch12-structured-validity.svg</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> pytest tests/test_ch12_api_surface.py <span class="at">-q</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The fixture contains 50 synthetic support tickets. Each ticket includes a traceable ticket ID, order ID, amount, currency, and messy prose. Three deterministic candidate generators stand in for prompt-only, JSON-mode, and schema-constrained behavior. They are not model measurements; they create known failures so the application boundary can be inspected.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Guarantee stage</th>
+<th style="text-align: right;">Schema-valid outputs</th>
+<th>What remains wrong</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>prompt only</td>
+<td style="text-align: right;">38 / 50 (76%)</td>
+<td>lower-case enums and wrapper text cause contract failures</td>
+</tr>
+<tr class="even">
+<td>JSON-mode proxy</td>
+<td style="text-align: right;">46 / 50 (92%)</td>
+<td>four objects contain an extra property</td>
+</tr>
+<tr class="odd">
+<td>schema-constrained proxy</td>
+<td style="text-align: right;">50 / 50 (100%)</td>
+<td>five legal-looking order IDs do not exist</td>
+</tr>
+<tr class="even">
+<td>application-validated extraction</td>
+<td style="text-align: right;">50 / 50 (100%)</td>
+<td>all values also pass the order-existence rule</td>
+</tr>
+</tbody>
+</table>
+<p>The important comparison is not 92 versus 100 percent. It is the five records that are structurally perfect and operationally false. Figure <a href="#fig-ch12-build-validity" class="quarto-xref">Figure&nbsp;<span>12.5</span></a> hatches that remainder so schema conformance cannot visually masquerade as correctness.</p>
+<div id="fig-ch12-build-validity" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Four bars show 76 percent prompt-only validity, 92 percent JSON-mode proxy validity, and 100 percent for schema-constrained and application-validated stages. Ten percentage points of the schema-constrained bar are hatched as business-invalid; the application-validated bar has no hatch.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch12-build-validity-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../assets/figures/ch12-structured-validity.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;12.5: How do stronger output guarantees change structural validity, and what error survives schema enforcement? Bars show schema-valid records from a deterministic 50-ticket fixture. The hatched portion of the schema-constrained bar marks five schema-valid but nonexistent order IDs. These are synthetic CPU results, not measurements of a language model or provider."><img src="../assets/figures/ch12-structured-validity.svg" class="img-fluid figure-img" alt="Four bars show 76 percent prompt-only validity, 92 percent JSON-mode proxy validity, and 100 percent for schema-constrained and application-validated stages. Ten percentage points of the schema-constrained bar are hatched as business-invalid; the application-validated bar has no hatch."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch12-build-validity-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;12.5: How do stronger output guarantees change structural validity, and what error survives schema enforcement? Bars show schema-valid records from a deterministic 50-ticket fixture. The hatched portion of the schema-constrained bar marks five schema-valid but nonexistent order IDs. These are synthetic CPU results, not measurements of a language model or provider.
+</figcaption>
+</figure>
+</div>
+<p>The application repair loop ran on the JSON-mode candidates. Four of 50 records required a second call, so the repair-invocation rate was 8 percent. The deterministic accounting was 46.32 tokens per successful extraction. That number has fixture units: it proves the code adds the cost of each attempt, not what a live model will cost.</p>
+<p>The tool half of the build issued 20 status questions. Every first response proposed exactly one <code>lookup_order</code> call; every application result echoed the proposal ID exactly once; and all 20 second responses terminated with an ordinary stop. The tests also delete a result ID, duplicate one, exhaust the extraction budget, and remove the terminal stream event. Each deliberate break fails at the boundary that owns it.</p>
+<p>To use a local server, start a tool-capable model under an OpenAI-compatible implementation using its current chat template and tool-parser instructions. Then bind the raw function:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> functools <span class="im">import</span> partial</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> chat_api <span class="im">import</span> chat, extract, REFUND_SCHEMA</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> chapter_build <span class="im">import</span> make_tickets, semantic_check</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>invoke <span class="op">=</span> partial(</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    chat,</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"http://localhost:8000"</span>,</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"YOUR_LOCAL_MODEL_ID"</span>,</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>ticket <span class="op">=</span> make_tickets()[<span class="dv">0</span>]</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> extract(</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    invoke,</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    [{<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: ticket[<span class="st">"text"</span>]}],</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    REFUND_SCHEMA,</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    semantic_check<span class="op">=</span>semantic_check,</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.value)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Replace the fixture ticket and <code>semantic_check</code> with your input and application-state lookup. A live run must pin the checkpoint, tokenizer, template, server revision, parser/backend flags, schema digest, controls, and seed when supported. Report field accuracy, schema validity, semantic validity, latency distribution, repair rate, and tokens per accepted record. Do not compare the fixture percentages to a live model.</p>
+<div class="callout callout-style-default callout-warning callout-titled" title="Honesty boundary">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Honesty boundary
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The default transport is a scripted fault fixture. Its HTTP body, message ordering, schema validation, bounded repair, tool-call parsing, call-ID correlation, stream terminal rule, metrics, and tests are real. Its candidate quality, token counts, and success rates estimate no checkpoint or provider. A live local server uses the same <code>chat()</code> seam, but model quality and parser compatibility must be evaluated on your own corpus.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch12-endures" class="level2" data-number="12.16">
+<h2 data-number="12.16" class="anchored" data-anchor-id="sec-ch12-endures"><span class="header-section-number">12.16</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Messages are structured inputs that a pinned template compiles into tokens. Sampling controls are versioned caller policy, not correctness guarantees. Output guarantees form a ladder: prompt behavior, JSON syntax, engine-supported schema conformance, and application validation. Only the last layer can combine canonical schema with current business state. Tool calls are proposals; application code parses, validates, authorizes, executes, and returns one result per call ID. Streaming separates parseability from eligibility. Finish reasons and typed failures are part of the contract.</p>
+<p><strong>What changes.</strong> Endpoint names, role spellings, item types, strict-schema subsets, tool-choice modes, function-argument encodings, stop reasons, prefill support, thought-signature rules, state-by-reference features, vLLM parsers, structured-generation engines, SDK conveniences, quotas, prices, and model capabilities will move. Keep those details in adapter tests and the dated landscape. Removing the dated section leaves a complete boundary design.</p>
+<p>Chapter 13 builds context on top of messages. Chapters 16 and 17 turn the one-tool round trip into a bounded agent loop and an authorized harness without changing the propose-versus-execute invariant learned here.</p>
+</section>
+<section id="sec-ch12-exercises" class="level2" data-number="12.17">
+<h2 data-number="12.17" class="anchored" data-anchor-id="sec-ch12-exercises"><span class="header-section-number">12.17</span> Exercises</h2>
+<ol type="1">
+<li><p><strong>Reconcile token counts.</strong> Load a tokenizer whose checkpoint publishes a chat template. Count one transcript with <code>count_tokens()</code>, call the matching local server, and compare with prompt-token usage. Add a tool declaration and one assistant tool-call turn. Explain every delta by rendered tokens rather than by characters.</p></li>
+<li><p><strong>Expose nucleus support.</strong> Request or compute next-token log probabilities for a small prompt. Find a distribution where <code>top_p=0.7</code> retains at least two tokens. Show the sorted probabilities, crossing token, retained cumulative mass, and renormalized distribution. Explain why the result is not “70 percent of the vocabulary.”</p></li>
+<li><p><strong>Break correlation on purpose.</strong> Extend the fixture to propose two independent reads. First omit one result; then return one call ID twice; then return correct results in reverse completion order. Make the first two cases fail and the third succeed. State why position is not identity.</p></li>
+<li><p><strong>Audit a schema-coverage gap.</strong> Add recursion, references, numeric bounds, string formats, and a nested union to the canonical application schema one at a time. Compile each against your local engine and one hosted surface if available. Produce a matrix of accepted, enforced, ignored, and rejected keywords. Keep every lost constraint in application validation.</p></li>
+<li><p><strong>Interrupt the stream.</strong> Capture or synthesize a streamed tool call. Delete an argument delta, the call-close event, and the response-terminal event in three separate tests. Attempt to parse each intermediate buffer, then prove that no variant becomes eligible for execution. Add one complete stream with two call indices and correlate by ID.</p></li>
+<li><p><strong>Measure the constraint tax.</strong> On a reasoning task with a machine-checkable answer, compare direct constrained output with free reasoning followed by constrained extraction. Hold model, examples, and total token budget as constant as possible. Report answer accuracy, schema validity, latency, generated tokens, and failures by class; do not select a winner from parse rate alone.</p></li>
+<li><p><strong>Defend the application validator.</strong> A reviewer proposes deleting it because the provider now enforces the schema. Use the build’s five nonexistent order IDs to specify the counterexample. Then write the evidence that could reduce—but not erase—the validator: provider conformance tests, semantic-error rate, validator latency, repair cost, drift alerts, and a rollback condition.</p></li>
+</ol>
+</section>
+<section id="sec-ch12-sources" class="level2" data-number="12.18">
+<h2 data-number="12.18" class="anchored" data-anchor-id="sec-ch12-sources"><span class="header-section-number">12.18</span> Notes and sources</h2>
+<p><a href="https://huggingface.co/docs/transformers/main/en/chat_templating">Hugging Face chat-template documentation</a> explains how structured messages are rendered with <code>apply_chat_template</code> and why generation prompts are template-specific. <a href="https://json-schema.org/draft/2020-12">JSON Schema Draft 2020-12</a> defines the canonical schema language; the Python <a href="https://python-jsonschema.readthedocs.io/en/stable/"><code>jsonschema</code> documentation</a> documents the versioned validator used by the build.</p>
+<p><a href="https://arxiv.org/abs/2408.02442">Let Me Speak Freely?</a> studies task-quality changes under format restrictions; dottxt’s <a href="https://blog.dottxt.co/say-what-you-mean.html">“Say What You Mean” response</a> challenges its prompt and evaluation setup and motivates separating reasoning from the constrained answer. <a href="https://arxiv.org/abs/2411.15100">XGrammar</a> develops grammar execution for efficient structured generation, while <a href="https://arxiv.org/abs/2601.04426">XGrammar 2</a> targets more dynamic agentic structures. <a href="https://arxiv.org/abs/2501.10868">JSONSchemaBench</a> separates schema coverage, efficiency, and output quality across real-world schemas. Together they support measuring constraints as an inference mechanism rather than assuming a universal quality effect.</p>
+<p>The dated provider documentation is linked inside <a href="#sec-ch12-landscape">Landscape 2026</a>. Chapter 22 owns benchmark construction and judge validity; Chapter 24 owns hostile tool-result content; Chapter 26 owns retry, fallback, and durable-effect policy.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/11-customization.html" class="pagination-link" aria-label="Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/13-prompting-context-engineering.html" class="pagination-link" aria-label="Prompting and Context Engineering [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

@@ -1,0 +1,2205 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Fillable evidence templates, unit-explicit sizing worksheets, cold coding drills, and a timed system-design workbook.">
+
+<title>Appendix B — Artifacts, Worksheets, and the Senior Design Workbook – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../appendices/c-landscape-2026.html" rel="next">
+<link href="../appendices/a-bridge.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../appendices/a-bridge.html">Appendices</a></li><li class="breadcrumb-item"><a href="../appendices/b-artifacts-workbook.html"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#contents" id="toc-contents" class="nav-link active" data-scroll-target="#contents"><span class="header-section-number">B.1</span> Contents</a></li>
+  <li><a href="#app-b-use" id="toc-app-b-use" class="nav-link" data-scroll-target="#app-b-use"><span class="header-section-number">B.2</span> How to use the toolbox honestly</a></li>
+  <li><a href="#app-b-cards" id="toc-app-b-cards" class="nav-link" data-scroll-target="#app-b-cards"><span class="header-section-number">B.3</span> Cards and architecture decisions</a>
+  <ul class="collapse">
+  <li><a href="#dataset-card" id="toc-dataset-card" class="nav-link" data-scroll-target="#dataset-card"><span class="header-section-number">B.3.1</span> Dataset card</a></li>
+  <li><a href="#model-card" id="toc-model-card" class="nav-link" data-scroll-target="#model-card"><span class="header-section-number">B.3.2</span> Model card</a></li>
+  <li><a href="#system-card" id="toc-system-card" class="nav-link" data-scroll-target="#system-card"><span class="header-section-number">B.3.3</span> System card</a></li>
+  <li><a href="#architecture-decision-record" id="toc-architecture-decision-record" class="nav-link" data-scroll-target="#architecture-decision-record"><span class="header-section-number">B.3.4</span> Architecture decision record</a></li>
+  </ul></li>
+  <li><a href="#app-b-evals" id="toc-app-b-evals" class="nav-link" data-scroll-target="#app-b-evals"><span class="header-section-number">B.4</span> Evaluation contracts and reports</a></li>
+  <li><a href="#app-b-risk" id="toc-app-b-risk" class="nav-link" data-scroll-target="#app-b-risk"><span class="header-section-number">B.5</span> Risk, privacy, safety, and AIMS artifacts</a>
+  <ul class="collapse">
+  <li><a href="#threat-model" id="toc-threat-model" class="nav-link" data-scroll-target="#threat-model"><span class="header-section-number">B.5.1</span> Threat model</a></li>
+  <li><a href="#privacy-impact-assessment" id="toc-privacy-impact-assessment" class="nav-link" data-scroll-target="#privacy-impact-assessment"><span class="header-section-number">B.5.2</span> Privacy impact assessment</a></li>
+  <li><a href="#safety-case" id="toc-safety-case" class="nav-link" data-scroll-target="#safety-case"><span class="header-section-number">B.5.3</span> Safety case</a></li>
+  <li><a href="#aims-risk-register-entry" id="toc-aims-risk-register-entry" class="nav-link" data-scroll-target="#aims-risk-register-entry"><span class="header-section-number">B.5.4</span> AIMS risk-register entry</a></li>
+  </ul></li>
+  <li><a href="#app-b-operations" id="toc-app-b-operations" class="nav-link" data-scroll-target="#app-b-operations"><span class="header-section-number">B.6</span> Operations and launch artifacts</a>
+  <ul class="collapse">
+  <li><a href="#slo-document" id="toc-slo-document" class="nav-link" data-scroll-target="#slo-document"><span class="header-section-number">B.6.1</span> SLO document</a></li>
+  <li><a href="#capacity-model" id="toc-capacity-model" class="nav-link" data-scroll-target="#capacity-model"><span class="header-section-number">B.6.2</span> Capacity model</a></li>
+  <li><a href="#runbook" id="toc-runbook" class="nav-link" data-scroll-target="#runbook"><span class="header-section-number">B.6.3</span> Runbook</a></li>
+  <li><a href="#blameless-incident-postmortem" id="toc-blameless-incident-postmortem" class="nav-link" data-scroll-target="#blameless-incident-postmortem"><span class="header-section-number">B.6.4</span> Blameless incident postmortem</a></li>
+  <li><a href="#launch-review" id="toc-launch-review" class="nav-link" data-scroll-target="#launch-review"><span class="header-section-number">B.6.5</span> Launch review</a></li>
+  </ul></li>
+  <li><a href="#app-b-model-sizing" id="toc-app-b-model-sizing" class="nav-link" data-scroll-target="#app-b-model-sizing"><span class="header-section-number">B.7</span> Model-side sizing worksheets</a>
+  <ul class="collapse">
+  <li><a href="#training-memory" id="toc-training-memory" class="nav-link" data-scroll-target="#training-memory"><span class="header-section-number">B.7.1</span> Training memory</a></li>
+  <li><a href="#training-compute" id="toc-training-compute" class="nav-link" data-scroll-target="#training-compute"><span class="header-section-number">B.7.2</span> Training compute</a></li>
+  <li><a href="#kv-cache" id="toc-kv-cache" class="nav-link" data-scroll-target="#kv-cache"><span class="header-section-number">B.7.3</span> KV cache</a></li>
+  </ul></li>
+  <li><a href="#app-b-system-sizing" id="toc-app-b-system-sizing" class="nav-link" data-scroll-target="#app-b-system-sizing"><span class="header-section-number">B.8</span> System-side sizing worksheets</a>
+  <ul class="collapse">
+  <li><a href="#queue-and-worker-capacity" id="toc-queue-and-worker-capacity" class="nav-link" data-scroll-target="#queue-and-worker-capacity"><span class="header-section-number">B.8.1</span> Queue and worker capacity</a></li>
+  <li><a href="#rag-storage" id="toc-rag-storage" class="nav-link" data-scroll-target="#rag-storage"><span class="header-section-number">B.8.2</span> RAG storage</a></li>
+  <li><a href="#media-accelerator-work" id="toc-media-accelerator-work" class="nav-link" data-scroll-target="#media-accelerator-work"><span class="header-section-number">B.8.3</span> Media accelerator work</a></li>
+  </ul></li>
+  <li><a href="#app-b-reliability" id="toc-app-b-reliability" class="nav-link" data-scroll-target="#app-b-reliability"><span class="header-section-number">B.9</span> Agent reliability and critical-path worksheets</a>
+  <ul class="collapse">
+  <li><a href="#long-trajectory-reliability" id="toc-long-trajectory-reliability" class="nav-link" data-scroll-target="#long-trajectory-reliability"><span class="header-section-number">B.9.1</span> Long-trajectory reliability</a></li>
+  <li><a href="#critical-path" id="toc-critical-path" class="nav-link" data-scroll-target="#critical-path"><span class="header-section-number">B.9.2</span> Critical path</a></li>
+  </ul></li>
+  <li><a href="#app-b-drills" id="toc-app-b-drills" class="nav-link" data-scroll-target="#app-b-drills"><span class="header-section-number">B.10</span> The coding-drill circuit</a></li>
+  <li><a href="#app-b-qa" id="toc-app-b-qa" class="nav-link" data-scroll-target="#app-b-qa"><span class="header-section-number">B.11</span> Rapid-fire questions with follow-ups</a>
+  <ul class="collapse">
+  <li><a href="#why-divide-attention-logits-by-sqrtd_h" id="toc-why-divide-attention-logits-by-sqrtd_h" class="nav-link" data-scroll-target="#why-divide-attention-logits-by-sqrtd_h"><span class="header-section-number">B.11.1</span> Why divide attention logits by <span class="math inline">\sqrt{d_h}</span>?</a></li>
+  <li><a href="#what-does-a-causal-mask-forbid" id="toc-what-does-a-causal-mask-forbid" class="nav-link" data-scroll-target="#what-does-a-causal-mask-forbid"><span class="header-section-number">B.11.2</span> What does a causal mask forbid?</a></li>
+  <li><a href="#why-can-grouped-query-attention-reduce-serving-memory" id="toc-why-can-grouped-query-attention-reduce-serving-memory" class="nav-link" data-scroll-target="#why-can-grouped-query-attention-reduce-serving-memory"><span class="header-section-number">B.11.3</span> Why can grouped-query attention reduce serving memory?</a></li>
+  <li><a href="#w4a16-versus-w4a4" id="toc-w4a16-versus-w4a4" class="nav-link" data-scroll-target="#w4a16-versus-w4a4"><span class="header-section-number">B.11.4</span> W4A16 versus W4A4?</a></li>
+  <li><a href="#what-is-exactly-once-for-an-external-effect" id="toc-what-is-exactly-once-for-an-external-effect" class="nav-link" data-scroll-target="#what-is-exactly-once-for-an-external-effect"><span class="header-section-number">B.11.5</span> What is “exactly once” for an external effect?</a></li>
+  <li><a href="#when-is-a-fallback-illegal" id="toc-when-is-a-fallback-illegal" class="nav-link" data-scroll-target="#when-is-a-fallback-illegal"><span class="header-section-number">B.11.6</span> When is a fallback illegal?</a></li>
+  <li><a href="#why-can-a-canary-comparison-be-biased" id="toc-why-can-a-canary-comparison-be-biased" class="nav-link" data-scroll-target="#why-can-a-canary-comparison-be-biased"><span class="header-section-number">B.11.7</span> Why can a canary comparison be biased?</a></li>
+  <li><a href="#where-should-backpressure-enter" id="toc-where-should-backpressure-enter" class="nav-link" data-scroll-target="#where-should-backpressure-enter"><span class="header-section-number">B.11.8</span> Where should backpressure enter?</a></li>
+  <li><a href="#why-grade-final-state-instead-of-agent-transcript" id="toc-why-grade-final-state-instead-of-agent-transcript" class="nav-link" data-scroll-target="#why-grade-final-state-instead-of-agent-transcript"><span class="header-section-number">B.11.9</span> Why grade final state instead of agent transcript?</a></li>
+  </ul></li>
+  <li><a href="#app-b-design" id="toc-app-b-design" class="nav-link" data-scroll-target="#app-b-design"><span class="header-section-number">B.12</span> The system-design workbook</a></li>
+  <li><a href="#app-b-timed" id="toc-app-b-timed" class="nav-link" data-scroll-target="#app-b-timed"><span class="header-section-number">B.13</span> Worked design prompts, 45 minutes, and self-scoring</a>
+  <ul class="collapse">
+  <li><a href="#the-45-minute-protocol" id="toc-the-45-minute-protocol" class="nav-link" data-scroll-target="#the-45-minute-protocol"><span class="header-section-number">B.13.1</span> The 45-minute protocol</a></li>
+  <li><a href="#self-scoring" id="toc-self-scoring" class="nav-link" data-scroll-target="#self-scoring"><span class="header-section-number">B.13.2</span> Self-scoring</a></li>
+  </ul></li>
+  <li><a href="#app-b-build" id="toc-app-b-build" class="nav-link" data-scroll-target="#app-b-build"><span class="header-section-number">B.14</span> Build: one packet and one timed loop</a></li>
+  <li><a href="#app-b-endures" id="toc-app-b-endures" class="nav-link" data-scroll-target="#app-b-endures"><span class="header-section-number">B.15</span> What endures, what changes</a></li>
+  <li><a href="#app-b-exercises" id="toc-app-b-exercises" class="nav-link" data-scroll-target="#app-b-exercises"><span class="header-section-number">B.16</span> Exercises</a></li>
+  <li><a href="#app-b-sources" id="toc-app-b-sources" class="nav-link" data-scroll-target="#app-b-sources"><span class="header-section-number">B.17</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../appendices/a-bridge.html">Appendices</a></li><li class="breadcrumb-item"><a href="../appendices/b-artifacts-workbook.html"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="app-b" class="quarto-section-identifier">Appendix B — Artifacts, Worksheets, and the Senior Design Workbook</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This appendix is a toolbox with three wings:</p>
+<ol type="1">
+<li><strong>evidence artifacts</strong> turn claims into reviewable system state;</li>
+<li><strong>sizing worksheets</strong> make architecture arithmetic explicit before boxes are drawn;</li>
+<li><strong>the senior workbook</strong> tests whether you can reproduce mechanisms and defend tradeoffs without leaning on memorized diagrams.</li>
+</ol>
+<p>Nothing here replaces the chapter that teaches a mechanism. When a field or drill is hard, follow its owner link, repair the gap, and return.</p>
+<section id="contents" class="level2" data-number="B.1">
+<h2 data-number="B.1" class="anchored" data-anchor-id="contents"><span class="header-section-number">B.1</span> Contents</h2>
+<ul>
+<li><a href="#app-b-use">How to use the toolbox honestly</a></li>
+<li><a href="#app-b-cards">Cards and architecture decisions</a></li>
+<li><a href="#app-b-evals">Evaluation contracts and reports</a></li>
+<li><a href="#app-b-risk">Risk, privacy, safety, and AIMS artifacts</a></li>
+<li><a href="#app-b-operations">Operations and launch artifacts</a></li>
+<li><a href="#app-b-model-sizing">Model-side sizing worksheets</a></li>
+<li><a href="#app-b-system-sizing">System-side sizing worksheets</a></li>
+<li><a href="#app-b-reliability">Agent reliability and critical-path worksheets</a></li>
+<li><a href="#app-b-drills">The coding-drill circuit</a></li>
+<li><a href="#app-b-qa">Rapid-fire questions with follow-ups</a></li>
+<li><a href="#app-b-design">The system-design workbook</a></li>
+<li><a href="#app-b-timed">Worked design prompts, 45 minutes, and self-scoring</a></li>
+<li><a href="#app-b-build">Build: one packet and one timed loop</a></li>
+<li><a href="#app-b-endures">What endures, what changes</a></li>
+<li><a href="#app-b-exercises">Exercises</a></li>
+<li><a href="#app-b-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="app-b-use" class="level2" data-number="B.2">
+<h2 data-number="B.2" class="anchored" data-anchor-id="app-b-use"><span class="header-section-number">B.2</span> How to use the toolbox honestly</h2>
+<p>Artifacts are review-after-building instruments. A blank form cannot make a system safe, and a filled form cannot substitute for the measurements it cites. Every consequential field should point to a versioned dataset, trace, test, query, dashboard, decision record, or accountable owner. Write <strong>unknown</strong> when evidence is missing.</p>
+<p>Use the workbook in a closed loop:</p>
+<ol type="1">
+<li>attempt the template, calculation, drill, or design without opening a solution;</li>
+<li>mark exactly where you stalled or guessed;</li>
+<li>return to the owning chapter section and run its artifact;</li>
+<li>repeat from a blank page after a delay;</li>
+<li>count a pass only when the properties hold—not when the code resembles a remembered answer.</li>
+</ol>
+<p>A memorized key is not a pass. For coding drills, change dimensions and adversarial cases. For design work, invert one requirement. For artifacts, ask another reviewer to follow every evidence pointer.</p>
+<p>The artifact bundle lives under <code>artifacts/templates/</code>; every template is linked individually in the sections below. Copy a template for a real project rather than editing the book’s blank source.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    SCOPE["Scope + design"] --&gt; CARDS["Dataset · model · system cards&lt;br/&gt;ADR · lineage · threat model"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    CARDS --&gt; EVAL["Evaluation"]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    EVAL --&gt; ER["Eval contract + report&lt;br/&gt;safety case · privacy assessment"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    ER --&gt; LAUNCH["Launch"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    LAUNCH --&gt; LR["SLO · capacity · runbook&lt;br/&gt;AIMS entry · launch review"]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    LR --&gt; OPERATE["Operate"]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    OPERATE --&gt; POST["Incident · postmortem&lt;br/&gt;permanent regression"]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    POST --&gt;|"evidence changes"| CARDS</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    LR --&gt; C28["Chapter 28&lt;br/&gt;launch packet"]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    POST --&gt; C32["Chapter 32&lt;br/&gt;failure game + defense"]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-appb-lifecycle" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-appb-lifecycle-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-appb-lifecycle">flowchart LR
+    SCOPE["Scope + design"] --&gt; CARDS["Dataset · model · system cards&lt;br/&gt;ADR · lineage · threat model"]
+    CARDS --&gt; EVAL["Evaluation"]
+    EVAL --&gt; ER["Eval contract + report&lt;br/&gt;safety case · privacy assessment"]
+    ER --&gt; LAUNCH["Launch"]
+    LAUNCH --&gt; LR["SLO · capacity · runbook&lt;br/&gt;AIMS entry · launch review"]
+    LR --&gt; OPERATE["Operate"]
+    OPERATE --&gt; POST["Incident · postmortem&lt;br/&gt;permanent regression"]
+    POST --&gt;|"evidence changes"| CARDS
+    LR --&gt; C28["Chapter 28&lt;br/&gt;launch packet"]
+    POST --&gt; C32["Chapter 32&lt;br/&gt;failure game + defense"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-appb-lifecycle-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;B.1: When is each evidence artifact created and who consumes it?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The packet is a graph, not a binder. A dataset version links to an evaluation run; a threat links to a test and runbook; an SLO links to telemetry; an incident changes both regression suite and risk register.</p>
+</section>
+<section id="app-b-cards" class="level2" data-number="B.3">
+<h2 data-number="B.3" class="anchored" data-anchor-id="app-b-cards"><span class="header-section-number">B.3</span> Cards and architecture decisions</h2>
+<p>Cards describe the thing being evaluated and the boundary of its claims. An architecture decision record (ADR) explains one consequential choice in context.</p>
+<section id="dataset-card" class="level3" data-number="B.3.1">
+<h3 data-number="B.3.1" class="anchored" data-anchor-id="dataset-card"><span class="header-section-number">B.3.1</span> Dataset card</h3>
+<p>Use the <a href="../artifacts/templates/dataset-card.md">dataset-card template</a> for training, tuning, retrieval, and evaluation collections.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Evidence that earns it</th>
+<th>Owner in the spine</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>purpose and prohibited uses</td>
+<td>task specification and risk review</td>
+<td>Chapters 5, 7, 28</td>
+</tr>
+<tr class="even">
+<td>source, collection, license, consent</td>
+<td>lineage records and legal review</td>
+<td>Chapters 5, 27</td>
+</tr>
+<tr class="odd">
+<td>population and known gaps</td>
+<td>descriptive statistics and slice audit</td>
+<td>Chapters 5, 22</td>
+</tr>
+<tr class="even">
+<td>transformations and deduplication</td>
+<td>reproducible pipeline/version</td>
+<td>Chapter 5</td>
+</tr>
+<tr class="odd">
+<td>privacy and deletion</td>
+<td>data map, retention job, propagation test</td>
+<td>Chapters 18, 27</td>
+</tr>
+<tr class="even">
+<td>split and contamination controls</td>
+<td>hashes, time boundary, overlap audit</td>
+<td>Chapters 5, 22</td>
+</tr>
+<tr class="odd">
+<td>maintenance</td>
+<td>owner, refresh trigger, deprecation plan</td>
+<td>Chapter 28</td>
+</tr>
+</tbody>
+</table>
+<p>The card does not claim “representative” without naming the population, sampling process, and excluded cases.</p>
+</section>
+<section id="model-card" class="level3" data-number="B.3.2">
+<h3 data-number="B.3.2" class="anchored" data-anchor-id="model-card"><span class="header-section-number">B.3.2</span> Model card</h3>
+<p>Use the <a href="../artifacts/templates/model-card.md">model-card template</a> for a trained, adapted, merged, or selected model.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Evidence that earns it</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>intended use and exclusions</td>
+<td>product scope and safety analysis</td>
+<td>Chapters 7, 25, 28</td>
+</tr>
+<tr class="even">
+<td>base model and modifications</td>
+<td>version bundle, training recipe, merge coefficients</td>
+<td>Chapters 7, 11</td>
+</tr>
+<tr class="odd">
+<td>data summary</td>
+<td>linked dataset cards</td>
+<td>Chapters 5, 7</td>
+</tr>
+<tr class="even">
+<td>evaluation</td>
+<td>four-set report, slices, uncertainty</td>
+<td>Chapters 11, 22</td>
+</tr>
+<tr class="odd">
+<td>limitations</td>
+<td>observed failures and out-of-distribution gaps</td>
+<td>Chapters 9, 22</td>
+</tr>
+<tr class="even">
+<td>safety and governance</td>
+<td>safety case, release conditions, recertification</td>
+<td>Chapters 25, 28</td>
+</tr>
+</tbody>
+</table>
+<p>A model card reports evidence at the model boundary. It cannot claim the deployed system is safe, because tools, retrieval, prompts, runtime, and users change the boundary.</p>
+</section>
+<section id="system-card" class="level3" data-number="B.3.3">
+<h3 data-number="B.3.3" class="anchored" data-anchor-id="system-card"><span class="header-section-number">B.3.3</span> System card</h3>
+<p>Use the <a href="../artifacts/templates/system-card.md">system-card template</a> for the deployed assembly. It names users, data/control/effect planes, models, tools, stores, per-action autonomy, human checkpoints, evidence, owners, rollback, and residual risk. The version identifier should bind model, prompt/policy, tool schemas, retrieval index/data snapshot, runtime, and deployment configuration.</p>
+<p>System claims are scenario-specific. “The model refuses harmful requests” is weaker than “for version bundle X, the calibrated release suite and canary policy bound behavior under these inputs and tool permissions.”</p>
+</section>
+<section id="architecture-decision-record" class="level3" data-number="B.3.4">
+<h3 data-number="B.3.4" class="anchored" data-anchor-id="architecture-decision-record"><span class="header-section-number">B.3.4</span> Architecture decision record</h3>
+<p>Use the <a href="../artifacts/templates/architecture-decision-record.md">ADR template</a>. A useful ADR contains:</p>
+<ul>
+<li>context and forces;</li>
+<li>considered options, including the conventional baseline;</li>
+<li>decision and status;</li>
+<li>evidence and assumptions;</li>
+<li>positive and negative consequences;</li>
+<li>reversal or reevaluation trigger;</li>
+<li>owner and date.</li>
+</ul>
+<p>A supported rejection demonstrates strong judgment. For example, an ADR can reject multi-agent coordination because single-agent success is equal, token use is lower, attribution is easier, and the proposed role split does not create parallel critical-path value. The reopening trigger might be a task slice that requires independent simultaneous investigation under isolated context.</p>
+</section>
+</section>
+<section id="app-b-evals" class="level2" data-number="B.4">
+<h2 data-number="B.4" class="anchored" data-anchor-id="app-b-evals"><span class="header-section-number">B.4</span> Evaluation contracts and reports</h2>
+<p>The <a href="../artifacts/templates/evaluation-contract.md">evaluation-contract template</a> freezes what a score means before anyone sees the candidate result.</p>
+<p>Minimum contract fields:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Contract field</th>
+<th>Required content</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>decision</td>
+<td>what ship/hold/rollback choice this eval informs</td>
+</tr>
+<tr class="even">
+<td>unit and population</td>
+<td>request, conversation, trajectory, user, tenant, or final state</td>
+</tr>
+<tr class="odd">
+<td>task set</td>
+<td>immutable identity, version, sampling, exclusions, contamination controls</td>
+</tr>
+<tr class="even">
+<td>system versions</td>
+<td>model, prompt, policy, tools, data/index, runtime, evaluator</td>
+</tr>
+<tr class="odd">
+<td>success predicates</td>
+<td>task outcome plus policy/final-state requirements</td>
+</tr>
+<tr class="even">
+<td>graders</td>
+<td>deterministic checks first; judge prompt/model and calibration where used</td>
+</tr>
+<tr class="odd">
+<td>slices</td>
+<td>consequence, tenant, language, difficulty, tool path, safety, accessibility</td>
+</tr>
+<tr class="even">
+<td>uncertainty</td>
+<td>confidence interval, clustering unit, repeated-trial treatment</td>
+</tr>
+<tr class="odd">
+<td>decision rule</td>
+<td>superiority/noninferiority margin, maximum regressions, AND gates</td>
+</tr>
+<tr class="even">
+<td>cost and latency</td>
+<td>measurement boundary, percentiles, retries, human allocation</td>
+</tr>
+<tr class="odd">
+<td>failure handling</td>
+<td>invalid samples, timeouts, grader disagreement, missing telemetry</td>
+</tr>
+</tbody>
+</table>
+<p>Then fill the <a href="../artifacts/templates/evaluation-report.md">evaluation-report template</a> without changing the contract. The report includes sample flow, baseline and candidate deltas with uncertainty, slice table, regression list, judge agreement/calibration, cost/latency, adversarial results, trace links, and verdict.</p>
+<p>The report should distinguish:</p>
+<ul>
+<li><strong>task success</strong> from <strong>policy compliance</strong>;</li>
+<li><strong>pass-at-<span class="math inline">k</span></strong> (at least one success among attempts) from <strong>pass-to-the-<span class="math inline">k</span></strong> (all required steps or repeats succeed);</li>
+<li>final-state checks from transcript-quality judgments;</li>
+<li>exploratory analysis from the predeclared release rule;</li>
+<li>missing evidence from a measured pass.</li>
+</ul>
+<p>A score without its contract is a number, not evidence.</p>
+</section>
+<section id="app-b-risk" class="level2" data-number="B.5">
+<h2 data-number="B.5" class="anchored" data-anchor-id="app-b-risk"><span class="header-section-number">B.5</span> Risk, privacy, safety, and AIMS artifacts</h2>
+<p>Four artifacts answer different questions. Combining them into one generic “responsible AI checklist” erases ownership.</p>
+<section id="threat-model" class="level3" data-number="B.5.1">
+<h3 data-number="B.5.1" class="anchored" data-anchor-id="threat-model"><span class="header-section-number">B.5.1</span> Threat model</h3>
+<p>Use the <a href="../artifacts/templates/threat-model.md">threat-model template</a>. It asks:</p>
+<ul>
+<li>What assets and user outcomes matter?</li>
+<li>Where do data and authority cross trust boundaries?</li>
+<li>What attacker goals and abuse cases follow those flows?</li>
+<li>Which preventive, detective, containment, and recovery controls cut each path?</li>
+<li>Which test demonstrates the control?</li>
+<li>What residual risk remains and who accepts it?</li>
+</ul>
+<p>Chapter 24 owns agent-specific action security. The threat model is adversarial and system-specific.</p>
+</section>
+<section id="privacy-impact-assessment" class="level3" data-number="B.5.2">
+<h3 data-number="B.5.2" class="anchored" data-anchor-id="privacy-impact-assessment"><span class="header-section-number">B.5.2</span> Privacy impact assessment</h3>
+<p>Use the <a href="../artifacts/templates/privacy-impact-assessment.md">privacy-impact-assessment template</a>. Record purpose, lawful/organizational basis, data subjects, categories, sources, flows, processors, locations, retention, access, deletion, profiling, human effects, necessity/proportionality, risks, mitigations, consultation, owner, and review date.</p>
+<p>Do not treat a transcript retention setting as the whole assessment. Derived embeddings, memory, traces, eval examples, human-review exports, and backups may preserve the same person’s information.</p>
+</section>
+<section id="safety-case" class="level3" data-number="B.5.3">
+<h3 data-number="B.5.3" class="anchored" data-anchor-id="safety-case"><span class="header-section-number">B.5.3</span> Safety case</h3>
+<p>Use the <a href="../artifacts/templates/safety-case.md">safety-case template</a>. A safety case is a structured claims–argument–evidence chain:</p>
+<ul>
+<li>top claim: the bounded system is acceptably safe for a defined use and exposure;</li>
+<li>subclaims: prevention, detection, containment, recovery, governance;</li>
+<li>argument: why evidence supports each claim under assumptions;</li>
+<li>evidence: tests, evals, formal checks, drills, telemetry, reviews;</li>
+<li>defeaters: observations that would invalidate the argument;</li>
+<li>residual risk and owner.</li>
+</ul>
+<p>Evidence quality matters more than document length. A failed test cannot be hidden behind five passing but irrelevant metrics.</p>
+</section>
+<section id="aims-risk-register-entry" class="level3" data-number="B.5.4">
+<h3 data-number="B.5.4" class="anchored" data-anchor-id="aims-risk-register-entry"><span class="header-section-number">B.5.4</span> AIMS risk-register entry</h3>
+<p>Use the <a href="../artifacts/templates/aims-risk-register-entry.md">AIMS risk-register template</a>. It translates a technical risk into organizational management: affected objective/stakeholder, scenario, likelihood/impact method, controls, evidence, accountable risk owner, action owner, exposure, acceptance, recertification trigger, and review date.</p>
+<p>NIST AI RMF’s govern/map/measure/manage functions and an AI management system such as ISO/IEC 42001 can inform the organization. The entry does not replace the threat model. One tracks organizational risk treatment; the other analyzes adversarial paths through a concrete system.</p>
+</section>
+</section>
+<section id="app-b-operations" class="level2" data-number="B.6">
+<h2 data-number="B.6" class="anchored" data-anchor-id="app-b-operations"><span class="header-section-number">B.6</span> Operations and launch artifacts</h2>
+<section id="slo-document" class="level3" data-number="B.6.1">
+<h3 data-number="B.6.1" class="anchored" data-anchor-id="slo-document"><span class="header-section-number">B.6.1</span> SLO document</h3>
+<p>Use the <a href="../artifacts/templates/slo.md">SLO template</a>. For each service-level indicator (SLI), state event definition, numerator/denominator, exclusions, data source, aggregation window, objective, error budget, alert policy, and owner.</p>
+<p>Agent SLIs may include exact effect rate, grounded task success, p95 completion, cost per success, queue age, unsafe-output containment, and human-review service. An SLO is a commitment with a budget policy, not a screenshot of current performance.</p>
+</section>
+<section id="capacity-model" class="level3" data-number="B.6.2">
+<h3 data-number="B.6.2" class="anchored" data-anchor-id="capacity-model"><span class="header-section-number">B.6.2</span> Capacity model</h3>
+<p>Use the <a href="../artifacts/templates/capacity-model.md">capacity-model template</a> together with the worksheets below. State arrival distribution, fan-out, service-time distribution, concurrency, memory/cache footprint, provider limits, retry amplification, headroom, queue/overflow behavior, regional failure, cost, load-test evidence, and owner.</p>
+</section>
+<section id="runbook" class="level3" data-number="B.6.3">
+<h3 data-number="B.6.3" class="anchored" data-anchor-id="runbook"><span class="header-section-number">B.6.3</span> Runbook</h3>
+<p>Use the <a href="../artifacts/templates/runbook.md">runbook template</a>. Organize by symptom, not component lore. Include detection, user impact, immediate safe actions, diagnostic queries, decision tree, degradation/fallback legality, recovery, verification, escalation, and evidence preservation.</p>
+<p>Every command needs scope and expected result. “Restart the agent” is not a runbook step if it can replay an ambiguous effect.</p>
+</section>
+<section id="blameless-incident-postmortem" class="level3" data-number="B.6.4">
+<h3 data-number="B.6.4" class="anchored" data-anchor-id="blameless-incident-postmortem"><span class="header-section-number">B.6.4</span> Blameless incident postmortem</h3>
+<p>Use the <a href="../artifacts/templates/incident-postmortem.md">postmortem template</a>. Record impact, detection, evidence-linked timeline, contributing conditions, what worked, what failed, counterfactual safeguards, and prioritized actions with owners/dates. End with at least one permanent regression test or executable monitor.</p>
+<p>Blameless analysis explains why the system made an action locally reasonable; it does not avoid accountability or omit decisions.</p>
+</section>
+<section id="launch-review" class="level3" data-number="B.6.5">
+<h3 data-number="B.6.5" class="anchored" data-anchor-id="launch-review"><span class="header-section-number">B.6.5</span> Launch review</h3>
+<p>Use the <a href="../artifacts/templates/launch-review.md">launch-review template</a> as an evidence index and decision record. The review requests one of ship, shadow, limited canary, hold, or reject. Each gate lists requirement, evidence, status, owner, and expiry. Residual risks have an accountable executive or product risk owner, bounded exposure, kill criteria, and next review.</p>
+</section>
+</section>
+<section id="app-b-model-sizing" class="level2" data-number="B.7">
+<h2 data-number="B.7" class="anchored" data-anchor-id="app-b-model-sizing"><span class="header-section-number">B.7</span> Model-side sizing worksheets</h2>
+<p>The executable calculator is <a href="../code/appb/sizing.py"><code>sizing.py</code></a>. Keep units in function names and worksheet cells.</p>
+<section id="training-memory" class="level3" data-number="B.7.1">
+<h3 data-number="B.7.1" class="anchored" data-anchor-id="training-memory"><span class="header-section-number">B.7.1</span> Training memory</h3>
+<p>For <span class="math inline">N</span> total parameters and <span class="math inline">N_t</span> trainable parameters, a useful parameter-state estimate is</p>
+<p><span class="math display">
+M=N b_w+N_t(b_g+b_m+b_o),
+</span></p>
+<p>where <span class="math inline">b_w</span> is stored weight bytes, <span class="math inline">b_g</span> gradient bytes, <span class="math inline">b_m</span> master-weight bytes, and <span class="math inline">b_o</span> optimizer-state bytes. With half-precision weights (<span class="math inline">b_w=2</span>), half-precision gradients (2), FP32 master weights (4), and two FP32 Adam moments (8), a trainable parameter costs about 16 bytes total; a frozen parameter pays only its stored weight bytes in this simplified estimate.</p>
+<p>Do not apply the 16-byte rule to every parameter in LoRA or QLoRA. For 7 billion stored parameters with 35 million trainable adapter parameters, the worksheet estimates about 13.5 GiB of parameter/optimizer state before activations, temporary buffers, fragmentation, quantization metadata, and distributed copies.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># artifact: sizing.py — Appendix B model worksheet adds: trainable-state memory</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> training_memory_bytes(</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    total_params, trainable_params, weight_bytes<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    gradient_bytes<span class="op">=</span><span class="dv">2</span>, master_weight_bytes<span class="op">=</span><span class="dv">4</span>, optimizer_bytes<span class="op">=</span><span class="dv">8</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> <span class="dv">0</span> <span class="op">&lt;=</span> trainable_params <span class="op">&lt;=</span> total_params:</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"trainable_params must lie within total_params"</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    trainable_state <span class="op">=</span> gradient_bytes <span class="op">+</span> master_weight_bytes <span class="op">+</span> optimizer_bytes</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> total_params <span class="op">*</span> weight_bytes <span class="op">+</span> trainable_params <span class="op">*</span> trainable_state</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="training-compute" class="level3" data-number="B.7.2">
+<h3 data-number="B.7.2" class="anchored" data-anchor-id="training-compute"><span class="header-section-number">B.7.2</span> Training compute</h3>
+<p>For a dense decoder transformer, a first-order training estimate is</p>
+<p><span class="math display">
+C\approx6ND,
+</span></p>
+<p>where <span class="math inline">N</span> is model parameters and <span class="math inline">D</span> training tokens. The constant wraps forward and backward matrix work. Architecture, sequence length, attention, sparsity, optimizer, recomputation, and hardware utilization change realized compute.</p>
+<p>For 7 billion parameters and 100 billion tokens, the estimate is 4.2 zettaFLOPs (<code>4.2e21</code> FLOPs). Wall time requires sustained throughput, not peak datasheet throughput. If cluster peak is <span class="math inline">F_{\text{peak}}</span> and model FLOP utilization is <span class="math inline">u</span>, approximate seconds are <span class="math inline">C/(uF_{\text{peak}})</span>.</p>
+</section>
+<section id="kv-cache" class="level3" data-number="B.7.3">
+<h3 data-number="B.7.3" class="anchored" data-anchor-id="kv-cache"><span class="header-section-number">B.7.3</span> KV cache</h3>
+<p>For decoder layers <span class="math inline">L</span>, key/value heads <span class="math inline">H_{kv}</span>, head dimension <span class="math inline">d_h</span>, cached sequence tokens <span class="math inline">T</span>, batch/concurrent sequences <span class="math inline">B</span>, and dtype bytes <span class="math inline">b</span>, the unpaged K-plus-V payload is</p>
+<p><span class="math display">
+M_{KV}=2LH_{kv}d_hTBb.
+</span></p>
+<p>The leading 2 is key plus value. For 32 layers, 8 KV heads, head dimension 128, 32,768 tokens, batch 4, and 2-byte values, the worksheet returns exactly 16 GiB. Chapter 3 owns cache derivation and grouped-query attention; this worksheet makes a deployment estimate.</p>
+</section>
+</section>
+<section id="app-b-system-sizing" class="level2" data-number="B.8">
+<h2 data-number="B.8" class="anchored" data-anchor-id="app-b-system-sizing"><span class="header-section-number">B.8</span> System-side sizing worksheets</h2>
+<section id="queue-and-worker-capacity" class="level3" data-number="B.8.1">
+<h3 data-number="B.8.1" class="anchored" data-anchor-id="queue-and-worker-capacity"><span class="header-section-number">B.8.1</span> Queue and worker capacity</h3>
+<p>Little’s law gives mean in-flight work</p>
+<p><span class="math display">
+L=\lambda aW,
+</span></p>
+<p>where <span class="math inline">\lambda</span> is requests/s, <span class="math inline">a</span> fan-out items/request, and <span class="math inline">W</span> average residence seconds. At 20 requests/s, fan-out 3, and residence 2 s, mean work in progress is 120. With 30 percent headroom, provision for 156 concurrent items.</p>
+<p>If each worker completes one item in 0.4 s, service rate is 2.5 items/s. Arrival is 60 items/s; 24 workers match the mean, and 32 meet the same 30 percent headroom rule. Tail latency and burst tolerance still require load testing and queue bounds.</p>
+<p>Targeting 100 percent utilization is not efficiency for latency-sensitive queues. As utilization approaches saturation, small variability produces long waits. Define admission, shedding, and degradation before the queue becomes the memory limit.</p>
+</section>
+<section id="rag-storage" class="level3" data-number="B.8.2">
+<h3 data-number="B.8.2" class="anchored" data-anchor-id="rag-storage"><span class="header-section-number">B.8.2</span> RAG storage</h3>
+<p>For <span class="math inline">n</span> vectors, dimension <span class="math inline">d</span>, element bytes <span class="math inline">b</span>, index overhead multiplier <span class="math inline">i</span>, and replicas <span class="math inline">r</span>,</p>
+<p><span class="math display">
+M_{RAG}=ndbir.
+</span></p>
+<p>Ten million 1,024-dimensional FP32 vectors, 1.5-times index overhead, and two replicas require about 114.4 GiB for this simplified payload. Add source text, metadata, ACL indexes, write-ahead logs, temporary build copies, backups, and growth.</p>
+<p>The estimate does not decide architecture. Chapter 14 compares retrieval quality and index behavior. The worksheet prevents “the embeddings are small” from bypassing capacity review.</p>
+</section>
+<section id="media-accelerator-work" class="level3" data-number="B.8.3">
+<h3 data-number="B.8.3" class="anchored" data-anchor-id="media-accelerator-work"><span class="header-section-number">B.8.3</span> Media accelerator work</h3>
+<p>Represent media work as GPU-seconds rather than request count:</p>
+<p><span class="math display">
+G=c\left(mg_i+vg_v\right),
+</span></p>
+<p>where <span class="math inline">c</span> is candidate count, <span class="math inline">m</span> image megapixels, <span class="math inline">g_i</span> GPU-seconds per megapixel, <span class="math inline">v</span> video output seconds, and <span class="math inline">g_v</span> GPU-seconds per output second. One 1-megapixel image request with four candidates and an illustrative 12 GPU-seconds/MP consumes 48 GPU-seconds before validation and retries.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026: worksheet constants
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Checked 2026-07-19. Verify live:</strong> actual processor token accounting, accelerator/hardware profiles, provider batch discounts, image/video resolution rules, candidate billing, storage, egress, and API prices from official sources before using the worksheets for a budget. The included <code>12 GPU-seconds/MP</code> and <code>4 GPU-seconds/output-second</code> are teaching assumptions from Chapter 30, not market benchmarks.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="app-b-reliability" class="level2" data-number="B.9">
+<h2 data-number="B.9" class="anchored" data-anchor-id="app-b-reliability"><span class="header-section-number">B.9</span> Agent reliability and critical-path worksheets</h2>
+<section id="long-trajectory-reliability" class="level3" data-number="B.9.1">
+<h3 data-number="B.9.1" class="anchored" data-anchor-id="long-trajectory-reliability"><span class="header-section-number">B.9.1</span> Long-trajectory reliability</h3>
+<p>If each of <span class="math inline">k</span> required independent steps succeeds with probability <span class="math inline">p</span>, the probability all succeed is</p>
+<p><span class="math display">
+P(\text{all})=p^k.
+</span></p>
+<p>At <span class="math inline">p=0.98</span> and <span class="math inline">k=30</span>, this is about 0.545. A component that looks 98 percent reliable per step can make a long trajectory barely better than a coin flip under the simplifying assumptions.</p>
+<p>Do not confuse this with <strong>pass-at-<span class="math inline">k</span></strong>, the chance at least one of <span class="math inline">k</span> attempts succeeds:</p>
+<p><span class="math display">
+P(\text{at least one})=1-(1-p)^k.
+</span></p>
+<p>Pass-at-<span class="math inline">k</span> measures capability under retries or sampling; pass-to-the-<span class="math inline">k</span> exposes compounding reliability for required work. Real errors are correlated, so measure full trajectories and repeated trials as Chapter 22 teaches.</p>
+<p>Mitigations change the effective sequence: deterministic validators catch local errors, checkpoints avoid restarting from zero, decomposition shortens dependent chains, idempotency makes retries safer, and human review gates high-consequence transitions. None makes <span class="math inline">p^k</span> disappear without an altered system model.</p>
+</section>
+<section id="critical-path" class="level3" data-number="B.9.2">
+<h3 data-number="B.9.2" class="anchored" data-anchor-id="critical-path"><span class="header-section-number">B.9.2</span> Critical path</h3>
+<p>Parallel workers reduce wall time only when work is independent and the join is not dominant. For a directed acyclic task graph, earliest finish time is</p>
+<p><span class="math display">
+F(v)=d(v)+\max_{u\in pred(v)}F(u),
+</span></p>
+<p>where <span class="math inline">d(v)</span> is duration and <span class="math inline">pred(v)</span> are dependencies. Total latency is the maximum finish time.</p>
+<p>The worked support graph has classify 180 ms; retrieve 120 ms and policy 60 ms both depend on classify; draft 260 ms waits for both. The critical path is classify → retrieve → draft, totaling 560 ms—not the sum of all four stages (620 ms).</p>
+<p><a href="../code/appb/sizing.py"><code>critical_path_ms</code></a> rejects cycles and takes the maximum at a parallel join. Multi-agent designs also add coordinator tokens, duplicated context, handoff latency, and failure surfaces. Compare token and latency against the single-agent baseline for the same task and quality contract.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026: multi-agent multipliers
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Checked 2026-07-19. Verify live:</strong> current multi-agent engineering reports at their primary source before quoting a token multiplier. Reported multipliers are architecture- and task-specific, often relative to one particular single-chat baseline. Do not turn an illustrative order-of-magnitude figure into a capacity constant. Measure tokens per successful task in your own graph.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="app-b-drills" class="level2" data-number="B.10">
+<h2 data-number="B.10" class="anchored" data-anchor-id="app-b-drills"><span class="header-section-number">B.10</span> The coding-drill circuit</h2>
+<p>Each drill has five parts:</p>
+<ol type="1">
+<li>prompt and permitted dependencies;</li>
+<li>time budget;</li>
+<li>property assertions;</li>
+<li>common mistake checklist;</li>
+<li>owning chapter for repair.</li>
+</ol>
+<p>Solutions live in your working copy, not on the page. The assertions are the teaching contract.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 21%">
+<col style="width: 28%">
+<col style="width: 21%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Drill</th>
+<th style="text-align: right;">Budget</th>
+<th>Properties that must pass</th>
+<th style="text-align: right;">Repair chapter</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>stable softmax + cross-entropy</td>
+<td style="text-align: right;">15 min</td>
+<td>invariant to constant shift; finite on large logits; correct reduction</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="even">
+<td>scaled dot-product attention</td>
+<td style="text-align: right;">25 min</td>
+<td>shape correct; masked future probability zero; rows sum to one</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="odd">
+<td>causal attention + tiny overfit</td>
+<td style="text-align: right;">40 min</td>
+<td>changing future token cannot change earlier output; loss falls</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="even">
+<td>byte-pair encoding</td>
+<td style="text-align: right;">35 min</td>
+<td>deterministic merges; round-trip bytes; unseen text encodes</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr class="odd">
+<td>one-step KV-cache decode</td>
+<td style="text-align: right;">35 min</td>
+<td>cached logits match full decode; cache grows one position</td>
+<td style="text-align: right;">3, 9</td>
+</tr>
+<tr class="even">
+<td>LoRA linear layer</td>
+<td style="text-align: right;">25 min</td>
+<td>zero-init adapter preserves base; only adapter receives gradient</td>
+<td style="text-align: right;">11</td>
+</tr>
+<tr class="odd">
+<td>sampler</td>
+<td style="text-align: right;">30 min</td>
+<td>top-<span class="math inline">p</span>/min-<span class="math inline">p</span> masks legal; seeded run reproducible; no NaNs</td>
+<td style="text-align: right;">9</td>
+</tr>
+<tr class="even">
+<td>mini-RAG</td>
+<td style="text-align: right;">45 min</td>
+<td>ACL filtering precedes ranking; citations map to returned chunks</td>
+<td style="text-align: right;">14, 15</td>
+</tr>
+<tr class="odd">
+<td>typed tool dispatch</td>
+<td style="text-align: right;">35 min</td>
+<td>unknown tool/field denied; validation precedes handler; timeout bounded</td>
+<td style="text-align: right;">12, 17</td>
+</tr>
+<tr class="even">
+<td>mini-MCP exchange</td>
+<td style="text-align: right;">35 min</td>
+<td>initialize before tools; version mismatch explicit; schema round-trip</td>
+<td style="text-align: right;">19</td>
+</tr>
+<tr class="odd">
+<td>trajectory scorer</td>
+<td style="text-align: right;">30 min</td>
+<td>final state dominates transcript style; invalid effects fail</td>
+<td style="text-align: right;">22</td>
+</tr>
+<tr class="even">
+<td>position-swap judge</td>
+<td style="text-align: right;">25 min</td>
+<td>swapped order exposes preference; disagreement recorded</td>
+<td style="text-align: right;">22</td>
+</tr>
+<tr class="odd">
+<td>regression gate</td>
+<td style="text-align: right;">35 min</td>
+<td>no previously passing critical case may regress; evidence logged</td>
+<td style="text-align: right;">22</td>
+</tr>
+<tr class="even">
+<td>idempotent effect wrapper</td>
+<td style="text-align: right;">45 min</td>
+<td>duplicate delivery creates one effect; crash window remains explicit</td>
+<td style="text-align: right;">26, App A</td>
+</tr>
+</tbody>
+</table>
+<p>Two example property blocks show the expected specificity.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># drill: causal attention — properties, not solution</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>x2 <span class="op">=</span> x.clone()</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>x2[:, future_index] <span class="op">=</span> torch.randn_like(x2[:, future_index])</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>y1 <span class="op">=</span> attention(x, causal<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>y2 <span class="op">=</span> attention(x2, causal<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>torch.testing.assert_close(y1[:, :future_index], y2[:, :future_index])</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> torch.<span class="bu">all</span>(attention_weights.triu(diagonal<span class="op">=</span><span class="dv">1</span>) <span class="op">==</span> <span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># drill: typed tool dispatch — properties, not solution</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> dispatch({<span class="st">"name"</span>: <span class="st">"missing"</span>, <span class="st">"arguments"</span>: {}}).code <span class="op">==</span> <span class="st">"unknown_tool"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> dispatch({<span class="st">"name"</span>: <span class="st">"refund"</span>, <span class="st">"arguments"</span>: {<span class="st">"amount"</span>: <span class="st">"15"</span>}}).code <span class="op">==</span> <span class="st">"schema_error"</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> handler_calls <span class="op">==</span> <span class="dv">0</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> dispatch(valid_read_call).deadline_ms <span class="op">&lt;=</span> request_budget_ms</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Common mistakes cluster:</p>
+<ul>
+<li>broadcasting succeeds but along the wrong axis;</li>
+<li>a causal mask has the correct triangle with reversed semantics;</li>
+<li>logits are normalized before subtracting the maximum;</li>
+<li>a cache stores query heads instead of KV heads;</li>
+<li>a seed is set in one library but not the generator actually sampled;</li>
+<li>ACL filtering happens after vector search;</li>
+<li>JSON parses but extra fields bypass intent validation;</li>
+<li>tool output is trusted as instruction;</li>
+<li>an LLM judge score replaces a deterministic final-state check;</li>
+<li>an attempt ID is mistaken for an idempotency key.</li>
+</ul>
+<p>Use the dependency map after a miss.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    T["Ch 2–3&lt;br/&gt;tensor + transformer"] --&gt; A["attention · BPE · KV"]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    T --&gt; L["LoRA · sampling"]</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    API["Ch 12, 17, 19&lt;br/&gt;schemas + protocols"] --&gt; TOOL["dispatch · MCP"]</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    RAG["Ch 14–15&lt;br/&gt;retrieval"] --&gt; RD["mini-RAG"]</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    EVAL["Ch 22&lt;br/&gt;evaluation"] --&gt; ED["scorer · judge · gate"]</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    DIST["App A + Ch 26&lt;br/&gt;partial failure"] --&gt; ID["idempotent effect"]</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    A --&gt; CAP["Ch 32 capstone"]</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    L --&gt; CAP</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    TOOL --&gt; CAP</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    RD --&gt; CAP</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    ED --&gt; CAP</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    ID --&gt; CAP</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-appb-drills" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-appb-drills-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-appb-drills">flowchart LR
+    T["Ch 2–3&lt;br/&gt;tensor + transformer"] --&gt; A["attention · BPE · KV"]
+    T --&gt; L["LoRA · sampling"]
+    API["Ch 12, 17, 19&lt;br/&gt;schemas + protocols"] --&gt; TOOL["dispatch · MCP"]
+    RAG["Ch 14–15&lt;br/&gt;retrieval"] --&gt; RD["mini-RAG"]
+    EVAL["Ch 22&lt;br/&gt;evaluation"] --&gt; ED["scorer · judge · gate"]
+    DIST["App A + Ch 26&lt;br/&gt;partial failure"] --&gt; ID["idempotent effect"]
+    A --&gt; CAP["Ch 32 capstone"]
+    L --&gt; CAP
+    TOOL --&gt; CAP
+    RD --&gt; CAP
+    ED --&gt; CAP
+    ID --&gt; CAP
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-appb-drills-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;B.2: When a coding drill fails, where should the reader retreat?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="app-b-qa" class="level2" data-number="B.11">
+<h2 data-number="B.11" class="anchored" data-anchor-id="app-b-qa"><span class="header-section-number">B.11</span> Rapid-fire questions with follow-ups</h2>
+<p>These are retrieval prompts for knowledge you already derived. Each short answer must survive the follow-up.</p>
+<section id="why-divide-attention-logits-by-sqrtd_h" class="level3" data-number="B.11.1">
+<h3 data-number="B.11.1" class="anchored" data-anchor-id="why-divide-attention-logits-by-sqrtd_h"><span class="header-section-number">B.11.1</span> Why divide attention logits by <span class="math inline">\sqrt{d_h}</span>?</h3>
+<p>If independent query/key components have unit variance, their dot product variance grows with head dimension <span class="math inline">d_h</span>. Dividing by <span class="math inline">\sqrt{d_h}</span> keeps logits at a scale where softmax does not saturate immediately. Learned distributions need not match the idealized assumption, but the scaling stabilizes optimization.</p>
+<p><strong>Follow-up:</strong> Why not divide after softmax? Because saturation and gradient compression already happened; post-normalization cannot restore the distribution.</p>
+</section>
+<section id="what-does-a-causal-mask-forbid" class="level3" data-number="B.11.2">
+<h3 data-number="B.11.2" class="anchored" data-anchor-id="what-does-a-causal-mask-forbid"><span class="header-section-number">B.11.2</span> What does a causal mask forbid?</h3>
+<p>For query position <span class="math inline">i</span>, it forbids attention to keys <span class="math inline">j&gt;i</span> before softmax, normally by adding negative infinity (or a sufficiently negative representable value) to those logits. Mask conventions vary between Boolean “allowed” and “blocked,” so test future-token independence rather than trusting polarity.</p>
+<p><strong>Follow-up:</strong> Why can training still compute all positions in parallel? The mask enforces dependency while matrix operations for all positions execute together.</p>
+</section>
+<section id="why-can-grouped-query-attention-reduce-serving-memory" class="level3" data-number="B.11.3">
+<h3 data-number="B.11.3" class="anchored" data-anchor-id="why-can-grouped-query-attention-reduce-serving-memory"><span class="header-section-number">B.11.3</span> Why can grouped-query attention reduce serving memory?</h3>
+<p>Many query heads share fewer key/value heads. KV cache stores keys and values for <span class="math inline">H_{kv}</span>, not query heads <span class="math inline">H</span>, so cache bytes scale with <span class="math inline">H_{kv}</span>. Query expressiveness and quality tradeoffs remain model-design questions.</p>
+<p><strong>Follow-up:</strong> Compute bytes live with the KV formula in the worksheet and state every unit.</p>
+</section>
+<section id="w4a16-versus-w4a4" class="level3" data-number="B.11.4">
+<h3 data-number="B.11.4" class="anchored" data-anchor-id="w4a16-versus-w4a4"><span class="header-section-number">B.11.4</span> W4A16 versus W4A4?</h3>
+<p>W4A16 stores weights at roughly four bits while activations remain 16-bit; it mostly reduces weight bandwidth/storage. W4A4 also quantizes activations, potentially improving compute/memory throughput but demanding kernels/hardware support and often causing greater calibration/quality sensitivity.</p>
+<p><strong>Follow-up:</strong> What about KV cache? It is a separate precision and memory decision; the label does not specify it.</p>
+</section>
+<section id="what-is-exactly-once-for-an-external-effect" class="level3" data-number="B.11.5">
+<h3 data-number="B.11.5" class="anchored" data-anchor-id="what-is-exactly-once-for-an-external-effect"><span class="header-section-number">B.11.5</span> What is “exactly once” for an external effect?</h3>
+<p>It is not a broker adjective. It is an end-to-end processing property over stable intent identity, atomic ownership/state, retries, provider idempotency or reconciliation, and the effect boundary. At-least-once delivery plus an idempotent consumer can collapse duplicates; a crash after effect before commit remains ambiguous without downstream help.</p>
+<p><strong>Follow-up:</strong> Why must the key represent intent? An attempt ID changes on retry and therefore cannot identify duplication.</p>
+</section>
+<section id="when-is-a-fallback-illegal" class="level3" data-number="B.11.6">
+<h3 data-number="B.11.6" class="anchored" data-anchor-id="when-is-a-fallback-illegal"><span class="header-section-number">B.11.6</span> When is a fallback illegal?</h3>
+<p>A technically available fallback is illegal when it violates region, data handling, model capability, safety policy, customer contract, or version compatibility. The routing layer must evaluate policy before availability.</p>
+<p><strong>Follow-up:</strong> What is the safe behavior? Queue, degrade to a declared lower-authority mode, or fail closed with an observable reason.</p>
+</section>
+<section id="why-can-a-canary-comparison-be-biased" class="level3" data-number="B.11.7">
+<h3 data-number="B.11.7" class="anchored" data-anchor-id="why-can-a-canary-comparison-be-biased"><span class="header-section-number">B.11.7</span> Why can a canary comparison be biased?</h3>
+<p>Routing can correlate treatment with tenant, region, load, risk, or time. Then outcome differences mix system effect with traffic mix. Randomize exposure when possible, check balance, and record propensities/assumptions when not.</p>
+<p><strong>Follow-up:</strong> Name one post-treatment variable you should not adjust for blindly.</p>
+</section>
+<section id="where-should-backpressure-enter" class="level3" data-number="B.11.8">
+<h3 data-number="B.11.8" class="anchored" data-anchor-id="where-should-backpressure-enter"><span class="header-section-number">B.11.8</span> Where should backpressure enter?</h3>
+<p>At the outermost boundary capable of refusing or degrading work before scarce downstream resources are consumed, with additional bounded queues at internal ownership boundaries. Unlimited admission plus downstream timeouts creates retry amplification.</p>
+<p><strong>Follow-up:</strong> Which metric pages first? Often queue age or predicted deadline miss, not CPU utilization alone.</p>
+</section>
+<section id="why-grade-final-state-instead-of-agent-transcript" class="level3" data-number="B.11.9">
+<h3 data-number="B.11.9" class="anchored" data-anchor-id="why-grade-final-state-instead-of-agent-transcript"><span class="header-section-number">B.11.9</span> Why grade final state instead of agent transcript?</h3>
+<p>The user receives changed files, database rows, sent messages, or completed tasks. A plausible trace can end in the wrong state; an awkward trace can recover correctly. Deterministic final-state and policy checks lead, with transcript judges used for qualities they can actually assess.</p>
+<p><strong>Follow-up:</strong> When is transcript evidence still essential? For diagnosing control failure, hidden policy violations, and human-quality properties not visible in final state.</p>
+</section>
+</section>
+<section id="app-b-design" class="level2" data-number="B.12">
+<h2 data-number="B.12" class="anchored" data-anchor-id="app-b-design"><span class="header-section-number">B.12</span> The system-design workbook</h2>
+<p>Start from requirements, not components. Fill this scoping form before drawing architecture:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">## Scope</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Primary user and outcome:</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Conventional non-agent baseline:</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>In-scope / out-of-scope tasks:</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Read actions / write actions / irreversible actions:</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">## Scale and performance</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Requests or sessions per second; burst and growth:</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Input/output/context distributions:</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Time-to-first-useful-output and completion SLOs:</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Availability, recovery, and data-loss objectives:</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">## Quality and risk</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Success and final-state predicates; who decides:</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Consequence tiers and human-control requirements:</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Tenancy, permissions, privacy, residency, retention:</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Threat actors and abuse cases:</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="fu">## Economics and ownership</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Cost envelope per successful task and monthly:</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Build/buy constraints and exit requirements:</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Product, platform, security, data, SRE, and risk owners:</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Every architecture decision should trace to one field. “Use a vector database” is not a decision until the evidence need, data scale, filtering, update, latency, and ownership forces are stated.</p>
+<p>Use a five-layer review rubric:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Layer</th>
+<th>Questions</th>
+<th>Evidence demanded</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1. scope and contract</td>
+<td>who, what outcome, scale, constraints, non-goals?</td>
+<td>filled spec; baseline; acceptance rule</td>
+</tr>
+<tr class="even">
+<td>2. model/data path</td>
+<td>how do context, retrieval, tools, memory, and outputs flow?</td>
+<td>lineage; schemas; grounding; version bundle</td>
+</tr>
+<tr class="odd">
+<td>3. authority/security</td>
+<td>who may cause which effect, under what state?</td>
+<td>trust boundaries; policy; gate; threat tests</td>
+</tr>
+<tr class="even">
+<td>4. reliability/economics</td>
+<td>how does it fail, retry, queue, recover, and cost?</td>
+<td>state machine; capacity math; ledger; degradation</td>
+</tr>
+<tr class="odd">
+<td>5. evidence/operations</td>
+<td>how do we know, launch, observe, and improve?</td>
+<td>eval report; SLO; runbook; packet; owners</td>
+</tr>
+</tbody>
+</table>
+<p>A strong answer walks one request through all five layers. It gives approximate arithmetic early, labels assumptions, and returns to residual risk after adding controls.</p>
+</section>
+<section id="app-b-timed" class="level2" data-number="B.13">
+<h2 data-number="B.13" class="anchored" data-anchor-id="app-b-timed"><span class="header-section-number">B.13</span> Worked design prompts, 45 minutes, and self-scoring</h2>
+<p>Use these eight prompts. Each has a fork question that changes the architecture and a pressure point the reviewer should push.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Design</th>
+<th>Default shape</th>
+<th>Fork question</th>
+<th>Push point</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A. enterprise knowledge support</td>
+<td>ACL-prefiltered RAG, grounded response</td>
+<td>read-only or ticket write-back?</td>
+<td>cross-tenant retrieval and citation latency</td>
+</tr>
+<tr class="even">
+<td>B. model-evaluation platform</td>
+<td>immutable runs, calibrated graders, CI gate</td>
+<td>offline benchmark or live traffic?</td>
+<td>judge drift and statistical power</td>
+</tr>
+<tr class="odd">
+<td>C. transactional operations agent</td>
+<td>typed proposals, approval hash, effect ledger</td>
+<td>reversible drafts or real writes?</td>
+<td>stale approval and duplicate delivery</td>
+</tr>
+<tr class="even">
+<td>D. deep-research system</td>
+<td>search/retrieve/synthesize with source graph</td>
+<td>single adaptive agent or parallel specialists?</td>
+<td>token multiplier, source independence, stopping</td>
+</tr>
+<tr class="odd">
+<td>E. long-running coding agent</td>
+<td>sandbox, repo state, tests, checkpoints</td>
+<td>patch only or deployment/migration authority?</td>
+<td>malicious repo config and partial effects</td>
+</tr>
+<tr class="even">
+<td>F. multi-tenant agent platform</td>
+<td>gateway, policy plane, runtime, evidence plane</td>
+<td>shared or dedicated topology?</td>
+<td>noisy neighbor, residency, ownership split</td>
+</tr>
+<tr class="odd">
+<td>G. realtime multimodal assistant</td>
+<td>session IDs, fresh observations, interruptible output</td>
+<td>advisory or point-of-risk control?</td>
+<td>sub-second tail and stale perception</td>
+</tr>
+<tr class="even">
+<td>H. self-hosted model platform</td>
+<td>serving gateway, autoscaling, rollout/eval</td>
+<td>build engine or buy managed endpoint?</td>
+<td>goodput, cache isolation, accelerator capacity</td>
+</tr>
+</tbody>
+</table>
+<section id="the-45-minute-protocol" class="level3" data-number="B.13.1">
+<h3 data-number="B.13.1" class="anchored" data-anchor-id="the-45-minute-protocol"><span class="header-section-number">B.13.1</span> The 45-minute protocol</h3>
+<ul>
+<li><strong>0–5 minutes:</strong> clarify user outcome, baseline, scope, scale, latency, quality, authority, privacy, and cost.</li>
+<li><strong>5–10:</strong> state the contract, top risks, and back-of-envelope capacity/cost.</li>
+<li><strong>10–22:</strong> draw the request/data/control/effect path and walk one normal request.</li>
+<li><strong>22–30:</strong> explain partial failure, retries, state ownership, overload, and recovery.</li>
+<li><strong>30–36:</strong> explain evaluation, rollout, SLOs, observability, and human operations.</li>
+<li><strong>36–41:</strong> accept one changed requirement and revise the design explicitly.</li>
+<li><strong>41–45:</strong> summarize tradeoffs, residual risk, what you did not build, and next evidence.</li>
+</ul>
+<p>Use the same sentence pattern as Chapter 32:</p>
+<blockquote class="blockquote">
+<p>Choice X costs Y, buys Z, creates risk W, and control V bounds it; evidence E decides whether it remains.</p>
+</blockquote>
+</section>
+<section id="self-scoring" class="level3" data-number="B.13.2">
+<h3 data-number="B.13.2" class="anchored" data-anchor-id="self-scoring"><span class="header-section-number">B.13.2</span> Self-scoring</h3>
+<p>Score each layer from 0 to 4:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 57%">
+<col style="width: 42%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">Score</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td>absent or contradicted</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td>named without mechanism or evidence</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td>plausible mechanism; major boundary or arithmetic gap</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">3</td>
+<td>coherent, quantified, failure-aware, with evidence and owner</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">4</td>
+<td>assumptions explicit; alternatives compared; residual risk and verification crisp</td>
+</tr>
+</tbody>
+</table>
+<p>The review is AND-gated. A high total does not compensate for zero on authority/security or evidence/operations. Record:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Layer <span class="pp">|</span> 0–4 <span class="pp">|</span> Strongest evidence <span class="pp">|</span> Gap <span class="pp">|</span> Repair chapter <span class="pp">|</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---|---|---|</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> scope and contract <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> model/data path <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> authority/security <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> reliability/economics <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> evidence/operations <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span> <span class="pp">|</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>Decision: pass | repeat | stop and repair</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>Next drill:</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="app-b-build" class="level2" data-number="B.14">
+<h2 data-number="B.14" class="anchored" data-anchor-id="app-b-build"><span class="header-section-number">B.14</span> Build: one packet and one timed loop</h2>
+<p>Use Design C, the transactional support/operations agent.</p>
+<ol type="1">
+<li><p>Copy and fill the <a href="../artifacts/templates/system-card.md">system card</a>, <a href="../artifacts/templates/evaluation-contract.md">evaluation contract</a>, <a href="../artifacts/templates/threat-model.md">threat model</a>, <a href="../artifacts/templates/slo.md">SLO</a>, <a href="../artifacts/templates/aims-risk-register-entry.md">AIMS entry</a>, and <a href="../artifacts/templates/launch-review.md">launch review</a>.</p></li>
+<li><p>Run the sizing artifact:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/appb/sizing.py</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> pytest tests/test_appendix_b_sizing.py <span class="at">-q</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p>Record the included worked results: 13.49 GiB parameter/optimizer estimate for the adapter example, 4.2 zettaFLOPs training estimate, 16 GiB KV payload, 156 provisioned in-flight items, 32 workers, 114.44 GiB vector payload, 48 media GPU-seconds, 0.545 pass-to-the-30, and 560 ms critical path.</p></li>
+<li><p>Replace each input with the design’s declared values and attach calculation output to the packet.</p></li>
+<li><p>Run three coding drills cold: causal attention, typed tool dispatch, and regression gate.</p></li>
+<li><p>Conduct the 45-minute design walkthrough, including the stale-approval and duplicate-message pressure test.</p></li>
+<li><p>Complete the self-score, then route every gap to its owning chapter.</p></li>
+</ol>
+<p>Eight sizing tests verify frozen-versus-trainable memory, KV shape arithmetic, fan-out/headroom, storage/media units, trajectory decay, parallel critical path, cycle rejection, and worksheet completeness.</p>
+<p>The build succeeds when another reviewer can follow every packet claim to evidence, recompute every number with units, run the property assertions, and state the same launch conditions. A polished presentation with unresolved evidence links is not complete.</p>
+</section>
+<section id="app-b-endures" class="level2" data-number="B.15">
+<h2 data-number="B.15" class="anchored" data-anchor-id="app-b-endures"><span class="header-section-number">B.15</span> What endures, what changes</h2>
+<p>The enduring tools are evidence-linked cards, explicit decision records, frozen evaluation contracts, claims–argument–evidence safety cases, SLOs with budget policy, unit-aware capacity arithmetic, final-state property tests, and requirement-first design defense.</p>
+<p>What changes are template mappings to standards, model/hardware constants, provider prices, benchmark health, API versions, and which drill variants best expose current failure modes. Appendix C tracks those dated pins. Keep the forms short enough to review and strict enough that unknowns remain visible.</p>
+</section>
+<section id="app-b-exercises" class="level2" data-number="B.16">
+<h2 data-number="B.16" class="anchored" data-anchor-id="app-b-exercises"><span class="header-section-number">B.16</span> Exercises</h2>
+<ol type="1">
+<li><p>Fill the KV worksheet for a 7B-class GQA configuration at 32k context and four concurrent sequences. Verify every factor against <code>sizing.py</code>, then add paging/fragmentation headroom separately.</p></li>
+<li><p>Run three foundation drills cold. Log every failure against the mistake checklist, repair from the owning chapter, and repeat with changed dimensions.</p></li>
+<li><p>Write an ADR for RAG versus fine-tuning on a supplied domain. Trace evidence to Chapter 11’s customization decision tree and Chapter 14’s retrieval evaluation.</p></li>
+<li><p>Compute pass-to-the-30 for per-step success 0.95, 0.98, and 0.995. For each, select a mitigation among verifier, checkpoint, decomposition, retry, or human gate and explain how it changes the model.</p></li>
+<li><p>Fill the threat-model template for Design G’s realtime browser assistant. Enumerate every observation freshness and action authority boundary, then add one attack and one executable control test per boundary.</p></li>
+<li><p>Run a 45-minute Design D walkthrough under the write-heavy fork. Defend whether multi-agent coordination earns its critical-path and token cost, including the simpler rejected alternative.</p></li>
+<li><p>Take a Chapter 27 postmortem and update three linked artifacts: permanent regression test, runbook step, and AIMS risk row. Explain why one incident changes all three.</p></li>
+</ol>
+</section>
+<section id="app-b-sources" class="level2" data-number="B.17">
+<h2 data-number="B.17" class="anchored" data-anchor-id="app-b-sources"><span class="header-section-number">B.17</span> Notes and sources</h2>
+<p>The template lineage includes <a href="https://arxiv.org/abs/1803.09010">Datasheets for Datasets</a>, <a href="https://arxiv.org/abs/1810.03993">Model Cards for Model Reporting</a>, Michael Nygard’s <a href="https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions">ADR formulation</a>, the <a href="https://www.nist.gov/itl/ai-risk-management-framework">NIST AI Risk Management Framework</a>, and Google’s <a href="https://sre.google/workbook/table-of-contents/">SRE Workbook</a> for SLO and postmortem practice. The trajectory-reliability worksheet connects to <a href="https://arxiv.org/abs/2406.12045"><span class="math inline">\tau</span>-bench</a>. The executable formulas are deliberately transparent approximations; their assumptions and owning chapters are more important than memorizing constants.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../appendices/a-bridge.html" class="pagination-link" aria-label="The Bridge: Math, Decisions, Planning, RL, Control, and Systems">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../appendices/c-landscape-2026.html" class="pagination-link" aria-label="Landscape 2026: A Living, Dated Registry">
+        <span class="nav-page-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

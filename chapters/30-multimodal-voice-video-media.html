@@ -1,0 +1,1999 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Build a cancellable, tool-using voice session, then extend its time-and-evidence discipline to video and governed media generation.">
+
+<title>30&nbsp; Multimodal Agents II: Voice, Video, and Generative Media [S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/31-world-models-vla-embodied.html" rel="next">
+<link href="../chapters/29-multimodal-vlm-documents-gui.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/29-multimodal-vlm-documents-gui.html">Part VIII — The Frontier and the Capstone</a></li><li class="breadcrumb-item"><a href="../chapters/30-multimodal-voice-video-media.html"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-you-need-going-in" id="toc-what-you-need-going-in" class="nav-link active" data-scroll-target="#what-you-need-going-in"><span class="header-section-number">30.1</span> What you need going in</a></li>
+  <li><a href="#contents" id="toc-contents" class="nav-link" data-scroll-target="#contents"><span class="header-section-number">30.2</span> Contents</a></li>
+  <li><a href="#sec-ch30-session" id="toc-sec-ch30-session" class="nav-link" data-scroll-target="#sec-ch30-session"><span class="header-section-number">30.3</span> Voice changes the unit of correctness</a></li>
+  <li><a href="#sec-ch30-artifact" id="toc-sec-ch30-artifact" class="nav-link" data-scroll-target="#sec-ch30-artifact"><span class="header-section-number">30.4</span> What you will build</a></li>
+  <li><a href="#sec-ch30-codecs" id="toc-sec-ch30-codecs" class="nav-link" data-scroll-target="#sec-ch30-codecs"><span class="header-section-number">30.5</span> Waveforms become frames, latents, and codec tokens</a></li>
+  <li><a href="#sec-ch30-architectures" id="toc-sec-ch30-architectures" class="nav-link" data-scroll-target="#sec-ch30-architectures"><span class="header-section-number">30.6</span> Choose where speech becomes text</a></li>
+  <li><a href="#sec-ch30-turns" id="toc-sec-ch30-turns" class="nav-link" data-scroll-target="#sec-ch30-turns"><span class="header-section-number">30.7</span> Turn detection and barge-in are session control</a></li>
+  <li><a href="#sec-ch30-tools" id="toc-sec-ch30-tools" class="nav-link" data-scroll-target="#sec-ch30-tools"><span class="header-section-number">30.8</span> Tool calls share one latency and authority budget</a></li>
+  <li><a href="#sec-ch30-voice-eval" id="toc-sec-ch30-voice-eval" class="nav-link" data-scroll-target="#sec-ch30-voice-eval"><span class="header-section-number">30.9</span> Evaluate repair and voice-specific harm</a></li>
+  <li><a href="#sec-ch30-video" id="toc-sec-ch30-video" class="nav-link" data-scroll-target="#sec-ch30-video"><span class="header-section-number">30.10</span> Video is time-indexed evidence</a></li>
+  <li><a href="#sec-ch30-family" id="toc-sec-ch30-family" class="nav-link" data-scroll-target="#sec-ch30-family"><span class="header-section-number">30.11</span> Keep a small map of generative-model families</a></li>
+  <li><a href="#sec-ch30-media-tools" id="toc-sec-ch30-media-tools" class="nav-link" data-scroll-target="#sec-ch30-media-tools"><span class="header-section-number">30.12</span> Treat media generation as a governed job</a></li>
+  <li><a href="#sec-ch30-provenance" id="toc-sec-ch30-provenance" class="nav-link" data-scroll-target="#sec-ch30-provenance"><span class="header-section-number">30.13</span> Provenance is evidence, not a truth oracle</a></li>
+  <li><a href="#sec-ch30-build" id="toc-sec-ch30-build" class="nav-link" data-scroll-target="#sec-ch30-build"><span class="header-section-number">30.14</span> Build</a></li>
+  <li><a href="#sec-ch30-endures" id="toc-sec-ch30-endures" class="nav-link" data-scroll-target="#sec-ch30-endures"><span class="header-section-number">30.15</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch30-exercises" id="toc-sec-ch30-exercises" class="nav-link" data-scroll-target="#sec-ch30-exercises"><span class="header-section-number">30.16</span> Exercises</a></li>
+  <li><a href="#sec-ch30-sources" id="toc-sec-ch30-sources" class="nav-link" data-scroll-target="#sec-ch30-sources"><span class="header-section-number">30.17</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/29-multimodal-vlm-documents-gui.html">Part VIII — The Frontier and the Capstone</a></li><li class="breadcrumb-item"><a href="../chapters/30-multimodal-voice-video-media.html"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch30" class="quarto-section-identifier"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-you-need-going-in" class="level2" data-number="30.1">
+<h2 data-number="30.1" class="anchored" data-anchor-id="what-you-need-going-in"><span class="header-section-number">30.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> HTTP and streaming-event fundamentals, latency percentiles, JSON schemas, and the ability to read small Python state machines.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/17-tool-harness-engineering.html#sec-ch17">Chapter 17</a> established validate-before-execute tool gates, <a href="../chapters/24-agent-security.html#sec-ch24">Chapter 24</a> established untrusted-content boundaries, <a href="../chapters/25-alignment-interpretability-governance.html#sec-ch25">Chapter 25</a> established provenance obligations, <a href="../chapters/26-production-platform.html#sec-ch26">Chapter 26</a> established durable effects, and <a href="../chapters/29-multimodal-vlm-documents-gui.html#sec-ch29">Chapter 29</a> established visual evidence and grounding.</p>
+<p><strong>Not required:</strong> signal-processing coursework, speech-model training, diffusion theory, a microphone, a GPU, or a provider API key. The build is deterministic and offline. Real speech components are replaceable adapters, not hidden prerequisites.</p>
+</blockquote>
+</section>
+<section id="contents" class="level2" data-number="30.2">
+<h2 data-number="30.2" class="anchored" data-anchor-id="contents"><span class="header-section-number">30.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch30-session">Voice changes the unit of correctness</a></li>
+<li><a href="#sec-ch30-artifact">What you will build</a></li>
+<li><a href="#sec-ch30-codecs">Waveforms become frames, latents, and codec tokens</a></li>
+<li><a href="#sec-ch30-architectures">Choose where speech becomes text</a></li>
+<li><a href="#sec-ch30-turns">Turn detection and barge-in are session control</a></li>
+<li><a href="#sec-ch30-tools">Tool calls share one latency and authority budget</a></li>
+<li><a href="#sec-ch30-voice-eval">Evaluate repair and voice-specific harm</a></li>
+<li><a href="#sec-ch30-video">Video is time-indexed evidence</a></li>
+<li><a href="#sec-ch30-family">Keep a small map of generative-model families</a></li>
+<li><a href="#sec-ch30-media-tools">Treat media generation as a governed job</a></li>
+<li><a href="#sec-ch30-provenance">Provenance is evidence, not a truth oracle</a></li>
+<li><a href="#sec-ch30-build">Build</a></li>
+<li><a href="#sec-ch30-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch30-exercises">Exercises</a></li>
+<li><a href="#sec-ch30-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch30-session" class="level2" data-number="30.3">
+<h2 data-number="30.3" class="anchored" data-anchor-id="sec-ch30-session"><span class="header-section-number">30.3</span> Voice changes the unit of correctness</h2>
+<p>A text assistant sends a completed message. A voice assistant participates in a live session. While it speaks, the user may interrupt, the network may deliver an old packet, a tool may finish, or the connection may resume on another worker. Correctness can no longer mean only “the final answer was good.” It must hold at every audible instant.</p>
+<p>Imagine that an order-support agent starts saying, “Your refund of fifty dollars is being processed.” The customer interrupts: “No, I said fifteen.” The model stops generating, but two already-buffered audio chunks still play. At nearly the same moment, the first tool call completes. The customer hears the stale promise after the correction, and the ledger records the wrong amount.</p>
+<p>There are two distinct failures:</p>
+<ol type="1">
+<li><strong>playback ownership failed:</strong> audio from a cancelled response remained eligible to play;</li>
+<li><strong>effect ownership failed:</strong> a proposal derived from uncertain speech crossed the tool boundary without confirmation bound to its exact arguments.</li>
+</ol>
+<p>The central invariant of a voice agent is therefore:</p>
+<blockquote class="blockquote">
+<p>At any instant, only the current response may own future playback, and only a current, exactly confirmed proposal may own an external effect.</p>
+</blockquote>
+<p>This invariant survives architecture changes. A cascaded system may use separate automatic speech recognition (ASR), language, and text-to-speech (TTS) models. A native speech-to-speech model may consume and produce audio directly. Both still need session identity, cancellation, authorization, audit, and reconciliation outside the model.</p>
+<p>A useful session record contains more than messages. It contains monotonically increasing input sequence numbers, response identities, an audio playback cursor, cancellation state, tool proposals and receipts, latency timestamps, reconnect cursors, consent state, and retention policy. Some entries are provisional: a partial transcript can be revised. Some are irreversible: a committed refund cannot be “cancelled” by discarding a later audio chunk. The runtime must know the difference.</p>
+<p>Voice also moves performance into the product contract. In text, an extra half-second may be tolerable. In conversation, endpointing delay creates a conspicuous pause; excessive eagerness clips a speaker who was thinking. “Fast” is not one average. It is a budget over turn detection, recognition, reasoning, synthesis, network delivery, and playback, measured at p50 and tail percentiles for the populations and environments that use the system.</p>
+<p>The rest of the chapter builds those session mechanics once, then reuses the same ideas for video and generated media: preserve time, preserve evidence, scope ownership, and separate a model proposal from an authorized effect.</p>
+</section>
+<section id="sec-ch30-artifact" class="level2" data-number="30.4">
+<h2 data-number="30.4" class="anchored" data-anchor-id="sec-ch30-artifact"><span class="header-section-number">30.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>The chapter artifact
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will build <a href="../code/ch30/voice_loop.py"><code>voice_loop.py</code></a>, a provider-free voice-session runtime. It closes turns from timestamped energy frames, assigns every response an identity, clears playback on barge-in, rejects late chunks, binds a refund confirmation to exact arguments, and records first-audio latency by stage.</p>
+<p>Twenty scripted turns make the latency result reproducible. A deliberate race proves that a cancelled response cannot contaminate the next turn. The small <a href="../code/ch30/rvq_toy.py"><code>rvq_toy.py</code></a> covers a different mechanism: how residual vector quantization turns an audio latent into progressively refined discrete codes. The chapter never implements three competing voice stacks; it implements one session contract that real components can satisfy.</p>
+</div>
+</div>
+<p>The executable artifact is intentionally not a speech-quality demo. It cannot tell whether an accent was transcribed accurately or whether a synthesized voice sounds natural. Its guarantee is narrower and more valuable for system design: regardless of which ASR, model, or TTS adapter is installed, stale audio is ineligible, uncertain critical values cannot silently cause an effect, and each stage contributes a measured amount to first-audio latency.</p>
+<p>The three boundaries are explicit:</p>
+<ul>
+<li><strong>media boundary:</strong> transports continuous frames and copes with jitter, echo, reconnection, and codec negotiation;</li>
+<li><strong>model boundary:</strong> turns audio or text context into provisional transcripts, response chunks, and typed tool proposals;</li>
+<li><strong>authority boundary:</strong> decides whether a proposal may cause an effect and emits an auditable receipt.</li>
+</ul>
+<p><a href="#fig-ch30-runtime" class="quarto-xref">Figure&nbsp;<span>30.1</span></a> answers where those responsibilities live.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    CLIENT["Client&lt;br/&gt;microphone · speaker"] --&gt;|"encrypted frames"| MEDIA["Realtime transport&lt;br/&gt;WebRTC / WebSocket"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    MEDIA --&gt; INPUT["Input buffer&lt;br/&gt;sequence · jitter · cursor"]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    INPUT --&gt; TURN["Turn controller&lt;br/&gt;speech · silence · interrupt"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    TURN --&gt; MODEL["Speech/model adapters&lt;br/&gt;partial → proposal → chunks"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    MODEL --&gt; QUEUE["Response-scoped&lt;br/&gt;output queue"]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    QUEUE --&gt;|"current response only"| MEDIA</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    MODEL --&gt;|"typed proposal"| GATE{"Policy + tool gate"}</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    GATE --&gt;|"deny / review"| MODEL</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    GATE --&gt;|"authorized"| EFFECT["Durable effect&lt;br/&gt;idempotency · receipt"]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    SESSION[("Session state&lt;br/&gt;IDs · consent · budgets")] --- TURN</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    SESSION --- QUEUE</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    SESSION --- GATE</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    OBS["Traces and quality slices"] -.-&gt; TURN</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    OBS -.-&gt; MODEL</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    OBS -.-&gt; GATE</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch30-runtime" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch30-runtime-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch30-runtime">flowchart LR
+    CLIENT["Client&lt;br/&gt;microphone · speaker"] --&gt;|"encrypted frames"| MEDIA["Realtime transport&lt;br/&gt;WebRTC / WebSocket"]
+    MEDIA --&gt; INPUT["Input buffer&lt;br/&gt;sequence · jitter · cursor"]
+    INPUT --&gt; TURN["Turn controller&lt;br/&gt;speech · silence · interrupt"]
+    TURN --&gt; MODEL["Speech/model adapters&lt;br/&gt;partial → proposal → chunks"]
+    MODEL --&gt; QUEUE["Response-scoped&lt;br/&gt;output queue"]
+    QUEUE --&gt;|"current response only"| MEDIA
+    MODEL --&gt;|"typed proposal"| GATE{"Policy + tool gate"}
+    GATE --&gt;|"deny / review"| MODEL
+    GATE --&gt;|"authorized"| EFFECT["Durable effect&lt;br/&gt;idempotency · receipt"]
+    SESSION[("Session state&lt;br/&gt;IDs · consent · budgets")] --- TURN
+    SESSION --- QUEUE
+    SESSION --- GATE
+    OBS["Traces and quality slices"] -.-&gt; TURN
+    OBS -.-&gt; MODEL
+    OBS -.-&gt; GATE
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch30-runtime-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;30.1: Which parts of a voice agent remain outside the speech model?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The model sits inside the runtime, not above it. Media transport does not grant authority, and model fluency does not own playback.</p>
+</section>
+<section id="sec-ch30-codecs" class="level2" data-number="30.5">
+<h2 data-number="30.5" class="anchored" data-anchor-id="sec-ch30-codecs"><span class="header-section-number">30.5</span> Waveforms become frames, latents, and codec tokens</h2>
+<p>Digital audio is a sequence of amplitude samples. A 24 kHz mono stream records 24,000 scalar samples each second. Processing every sample as a language-model token would produce an unusable sequence, so audio systems operate on frames and compressed representations.</p>
+<p>A <strong>frame</strong> is a short time window, commonly tens of milliseconds, over which a system computes energy, spectral features, or learned representations. Frame length trades timing precision against context. A voice activity detector (VAD) estimates whether a frame contains speech. An ASR model maps a frame sequence to text. A neural codec maps the waveform to a lower-rate latent sequence and then to discrete indices that a generative model can predict.</p>
+<p>The codec has three conceptual steps:</p>
+<ol type="1">
+<li>an encoder converts waveform frames into continuous latent vectors;</li>
+<li>a quantizer replaces each vector with indices into learned codebooks;</li>
+<li>a decoder reconstructs audio from the selected code vectors.</li>
+</ol>
+<p><strong>Residual vector quantization</strong> (RVQ) uses several codebooks in sequence. The first chooses a coarse approximation. The second quantizes what the first missed. Each later codebook codes the remaining residual.</p>
+<p>For latent vector <span class="math inline">\mathbf{z}</span>, let <span class="math inline">\mathbf{r}_0=\mathbf{z}</span>. At stage <span class="math inline">m</span>, choose codeword</p>
+<p><span class="math display">
+k_m=\arg\min_k\lVert\mathbf{r}_{m-1}-\mathbf{c}_{m,k}\rVert_2^2,
+</span></p>
+<p>then update</p>
+<p><span class="math display">
+\hat{\mathbf{z}}_m=\sum_{j=1}^{m}\mathbf{c}_{j,k_j},
+\qquad
+\mathbf{r}_m=\mathbf{z}-\hat{\mathbf{z}}_m.
+</span></p>
+<p>Here <span class="math inline">m</span> is the codebook stage, <span class="math inline">k_m</span> is the selected entry, <span class="math inline">\mathbf{c}_{m,k}</span> is entry <span class="math inline">k</span> in codebook <span class="math inline">m</span>, <span class="math inline">\hat{\mathbf{z}}_m</span> is the reconstruction after <span class="math inline">m</span> stages, and <span class="math inline">\mathbf{r}_m</span> is its error. Training learns useful encoder, decoder, and codebooks; the toy fixes its codebooks so the arithmetic stays visible.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># artifact: rvq_toy.py — §30.3 adds: residual-codebook refinement</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> residual_quantize(vector, codebooks):</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    reconstruction <span class="op">=</span> <span class="bu">tuple</span>(<span class="fl">0.0</span> <span class="cf">for</span> _ <span class="kw">in</span> vector)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    errors <span class="op">=</span> []</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> codebook <span class="kw">in</span> codebooks:</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        residual <span class="op">=</span> <span class="bu">tuple</span>(</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>            value <span class="op">-</span> estimate</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> value, estimate <span class="kw">in</span> <span class="bu">zip</span>(vector, reconstruction, strict<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        chosen <span class="op">=</span> <span class="bu">min</span>(codebook, key<span class="op">=</span><span class="kw">lambda</span> code: squared_distance(residual, code))</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        reconstruction <span class="op">=</span> <span class="bu">tuple</span>(</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>            value <span class="op">+</span> delta</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> value, delta <span class="kw">in</span> <span class="bu">zip</span>(reconstruction, chosen, strict<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        errors.append(sqrt(squared_distance(vector, reconstruction)))</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> errors</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The fixture’s reconstruction error falls from 0.349 to 0.157 to 0.017 across three codebooks. That is the one fact to retain: additional RVQ stages refine the same frame rather than spelling more transcript characters.</p>
+<p>Token rate determines how quickly audio consumes context. If a codec produces <span class="math inline">f</span> frames per second and <span class="math inline">q</span> code indices per frame, a flat representation exposes roughly <span class="math inline">fq</span> audio tokens per second. A 12.5 Hz codec with eight codebooks represents one second with about 100 indices before any hierarchy or parallel prediction reduces effective decoding work. By comparison, natural speech may contain only a few text tokens per second. Audio preserves prosody, pauses, overlap, and non-speech sound, but it carries a much denser temporal bill.</p>
+<p><a href="https://arxiv.org/abs/2107.03312">SoundStream</a> and <a href="https://arxiv.org/abs/2210.13438">EnCodec</a> are useful primary references for streaming neural codecs and RVQ. <a href="https://arxiv.org/abs/2410.00037">Moshi</a> uses a Mimi codec and parallel user/system streams to support full-duplex dialogue. Their detailed loss functions are not needed to operate a voice agent. The engineering interface is: frame timing, token rate, reconstruction quality, streaming lookahead, and which information disappears when audio is reduced to text.</p>
+</section>
+<section id="sec-ch30-architectures" class="level2" data-number="30.6">
+<h2 data-number="30.6" class="anchored" data-anchor-id="sec-ch30-architectures"><span class="header-section-number">30.6</span> Choose where speech becomes text</h2>
+<p>There are three practical architecture families. The choice determines inspectability, latency, and where policies can attach.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Architecture</th>
+<th>Path</th>
+<th>Main advantage</th>
+<th>Main cost</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>cascaded</td>
+<td>audio → ASR text → language model → TTS audio</td>
+<td>transcript is easy to inspect, test, redact, retrieve, and route</td>
+<td>stage latency accumulates; ASR can discard prosody or propagate errors</td>
+</tr>
+<tr class="even">
+<td>native speech-to-speech</td>
+<td>audio tokens → multimodal model → audio tokens</td>
+<td>preserves acoustic cues and can model overlap naturally</td>
+<td>harder to inspect; audio moderation and exact-value evidence need extra care</td>
+</tr>
+<tr class="odd">
+<td>hybrid</td>
+<td>native live path plus text/event side channel</td>
+<td>combines responsive speech with typed tools, audit, and search</td>
+<td>two representations can disagree; reconciliation is application work</td>
+</tr>
+</tbody>
+</table>
+<p>A cascade remains a strong baseline because every boundary is legible. It lets teams replace ASR, reasoner, or TTS independently, and it provides a transcript for review. Its naive implementation is slow because it waits for the user to finish, waits for final ASR, waits for the entire model answer, and only then synthesizes speech. Streaming partial ASR, speculative model work, and sentence-level TTS can overlap those stages.</p>
+<p>A native model consumes and generates acoustic representations directly. It may preserve laughter, hesitations, emphasis, or a correction spoken over the model. It can also maintain separate, simultaneous user and assistant streams. “Native” does not mean “uncontrolled.” The application still needs a typed event side channel for tools, response IDs for cancellation, consent and retention state, receipts, and deterministic policy checks.</p>
+<p>Hybrid designs acknowledge that no single representation serves every obligation. The audio path carries natural interaction. A time-aligned text path supports search, accessibility, tool arguments, moderation, and audit. The runtime records whether text is final ASR, provisional ASR, the model’s intended wording, or the transcript of audio actually played. Those are not interchangeable.</p>
+<p>WebRTC and WebSocket describe transport choices, not cognition. WebRTC bundles media negotiation, encrypted real-time transport, jitter handling, and browser support. WebSocket provides an ordered bidirectional event channel that is often simpler server-to-server. Either can carry a cascade or a native model. Choose based on client environment, NAT traversal, media behavior, and operational ownership—not because a model architecture mandates one protocol.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026: realtime voice surfaces
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Checked 2026-07-19. Verify live:</strong> provider model rosters, event schemas, limits, regions, and prices at their official documentation before implementation. Current surfaces include the <a href="https://platform.openai.com/docs/api-reference/realtime">OpenAI Realtime API</a>, <a href="https://ai.google.dev/gemini-api/docs/live-api/tools">Gemini Live API tool use</a>, Amazon’s <a href="https://docs.aws.amazon.com/nova/latest/nova2-userguide/sonic-event-lifecycle.html">Nova bidirectional speech interface</a>, and open research such as <a href="https://arxiv.org/abs/2410.00037">Moshi</a>. <a href="https://docs.livekit.io/agents/logic/turns/">LiveKit’s turn documentation</a> and <a href="https://docs.pipecat.ai/api-reference/server/utilities/turn-management/user-turn-strategies">Pipecat’s turn strategies</a> expose orchestration patterns around VAD, endpointing, interruption, and adapters. These products change; persistent streaming, response ownership, typed tools, and cancellation do not.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch30-turns" class="level2" data-number="30.7">
+<h2 data-number="30.7" class="anchored" data-anchor-id="sec-ch30-turns"><span class="header-section-number">30.7</span> Turn detection and barge-in are session control</h2>
+<p>A VAD answers “is this frame speech-like?” A <strong>turn detector</strong> answers the harder question “has this person yielded the floor?” Silence is evidence, but not proof. People pause to think, speak slowly, use filled pauses, or encounter noise. A fixed silence threshold creates a measurable tradeoff:</p>
+<ul>
+<li>too short raises the <strong>false-cut rate</strong>, the fraction of turns closed before the speaker was done;</li>
+<li>too long raises <strong>endpointing latency</strong>, the delay between the user’s actual completion and the agent beginning work.</li>
+</ul>
+<p>Measure both by language, accent, device, network, noise, and task. Aggregate success can hide a product that repeatedly interrupts one group. A semantic turn model can combine audio, partial words, syntax, and prosody to estimate completion. It improves a probability estimate; it does not eliminate the need for timeouts, manual controls, or correction.</p>
+<p>The smallest useful turn controller has two durable states—listening and responding—and transient evidence about speech and silence. It does not need to represent “thinking” as authority. The agent may begin speculative work after a partial transcript, but no effect becomes authorized until the relevant input is final enough for the product policy.</p>
+<p><a href="#fig-ch30-turn-state" class="quarto-xref">Figure&nbsp;<span>30.2</span></a> answers when a user turn closes and when an interruption wins.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>stateDiagram-v2</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    [*] --&gt; Listening</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    Listening --&gt; Listening: "speech / refresh last_speech"</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    Listening --&gt; Listening: "short silence / wait"</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    Listening --&gt; Responding: "silence ≥ threshold / close turn"</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    Responding --&gt; Responding: "current response chunk / queue"</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    Responding --&gt; Listening: "user speech / cancel + clear"</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    Responding --&gt; Listening: "response complete / playback drains"</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch30-turn-state" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch30-turn-state-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch30-turn-state">stateDiagram-v2
+    [*] --&gt; Listening
+    Listening --&gt; Listening: "speech / refresh last_speech"
+    Listening --&gt; Listening: "short silence / wait"
+    Listening --&gt; Responding: "silence ≥ threshold / close turn"
+    Responding --&gt; Responding: "current response chunk / queue"
+    Responding --&gt; Listening: "user speech / cancel + clear"
+    Responding --&gt; Listening: "response complete / playback drains"
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch30-turn-state-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;30.2: When does the session close a turn or cancel a response?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Barge-in</strong> is cancellation caused by user speech while the assistant owns playback. Treat it as a session-control transition, not merely another message appended to history. The safe order is:</p>
+<ol type="1">
+<li>mark the current response identity cancelled;</li>
+<li>stop accepting chunks owned by it;</li>
+<li>clear its unplayed chunks from the client and server queues;</li>
+<li>begin buffering the new user turn;</li>
+<li>preserve any already committed tool receipt instead of pretending cancellation reversed it.</li>
+</ol>
+<p>Network delivery makes the identity necessary. A generation worker may emit one more chunk after receiving cancellation. Without response IDs, the playback queue cannot distinguish that chunk from the new answer.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># artifact: voice_loop.py — §30.5 adds: response-scoped cancellation</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> accept_chunk(<span class="va">self</span>, chunk: AudioChunk) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> chunk.response_id <span class="op">!=</span> <span class="va">self</span>.active_response_id:</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.events.append(<span class="ss">f"response:</span><span class="sc">{</span>chunk<span class="sc">.</span>response_id<span class="sc">}</span><span class="ss">:late_chunk_rejected"</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">False</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> chunk.response_id <span class="kw">in</span> <span class="va">self</span>.cancelled_response_ids:</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.events.append(<span class="ss">f"response:</span><span class="sc">{</span>chunk<span class="sc">.</span>response_id<span class="sc">}</span><span class="ss">:cancelled_chunk_rejected"</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">False</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>.output.append(chunk)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">True</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> cancel_for_barge_in(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    response_id <span class="op">=</span> <span class="va">self</span>.active_response_id</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> response_id <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>.cancelled_response_ids.add(response_id)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>.output <span class="op">=</span> [c <span class="cf">for</span> c <span class="kw">in</span> <span class="va">self</span>.output <span class="cf">if</span> c.response_id <span class="op">!=</span> response_id]</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>.phase <span class="op">=</span> Phase.LISTENING</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><a href="#fig-ch30-barge-in" class="quarto-xref">Figure&nbsp;<span>30.3</span></a> answers what happens when cancellation races with delivery.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    participant U as User</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    participant R as Session runtime</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    participant M as Model/TTS worker</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    participant P as Playback queue</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    M--&gt;&gt;R: "chunk(response=41, seq=7)"</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    R-&gt;&gt;P: "enqueue response 41"</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    U-&gt;&gt;R: "new speech: 'No, fifteen'"</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    R-&gt;&gt;R: "cancel response 41"</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    R-&gt;&gt;P: "clear response 41"</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    R--&gt;&gt;M: "cancel(response=41)"</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    M--&gt;&gt;R: "late chunk(response=41, seq=8)"</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    R-xP: "reject: cancelled identity"</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    R-&gt;&gt;M: "start response 42 with corrected turn"</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch30-barge-in" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch30-barge-in-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch30-barge-in">sequenceDiagram
+    participant U as User
+    participant R as Session runtime
+    participant M as Model/TTS worker
+    participant P as Playback queue
+    M--&gt;&gt;R: "chunk(response=41, seq=7)"
+    R-&gt;&gt;P: "enqueue response 41"
+    U-&gt;&gt;R: "new speech: 'No, fifteen'"
+    R-&gt;&gt;R: "cancel response 41"
+    R-&gt;&gt;P: "clear response 41"
+    R--&gt;&gt;M: "cancel(response=41)"
+    M--&gt;&gt;R: "late chunk(response=41, seq=8)"
+    R-xP: "reject: cancelled identity"
+    R-&gt;&gt;M: "start response 42 with corrected turn"
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch30-barge-in-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;30.3: How does a response identity prevent late audio from crossing an interruption?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Cancellation bounds future playback; it does not erase the past. The runtime should record how much audio was actually played, not only what the model intended to say. If a disclosure must be heard in full, a mid-disclosure interruption requires an explicit product rule: replay, require acknowledgement, or transfer to a different channel.</p>
+</section>
+<section id="sec-ch30-tools" class="level2" data-number="30.8">
+<h2 data-number="30.8" class="anchored" data-anchor-id="sec-ch30-tools"><span class="header-section-number">30.8</span> Tool calls share one latency and authority budget</h2>
+<p>Voice tool use follows the same validate-authorize-execute-record order as text, but speech adds uncertain entities and a live timing constraint. Amounts, dates, addresses, medication names, account numbers, and spelled identifiers deserve critical-entity handling. A transcript is model output, not consent-grade evidence.</p>
+<p>Five rules keep the live loop honest:</p>
+<ol type="1">
+<li>give a short progress cue only when it helps; never claim completion before a receipt;</li>
+<li>parse the proposed tool and arguments into a typed schema;</li>
+<li>revalidate and authorize with the same server-side identity and policy used by non-voice clients;</li>
+<li>bind confirmation to the exact proposal—not to a vague “yes” floating in session history;</li>
+<li>after the tool returns, resume speech only if the response has not been superseded.</li>
+</ol>
+<p>Suppose ASR records “refund fifty dollars,” while the user confirms “fifteen.” A dangerous implementation stores only <code>confirmed=True</code>. The safe implementation compares the structured confirmation with the proposal that would execute.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># artifact: voice_loop.py — §30.6 adds: exact-argument confirmation</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> confirm_and_execute(<span class="va">self</span>, proposal, confirmation):</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> proposal.response_id <span class="op">!=</span> <span class="va">self</span>.active_response_id:</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="st">"deny:superseded_response"</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> proposal.response_id <span class="kw">in</span> <span class="va">self</span>.cancelled_response_ids:</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="st">"deny:cancelled_response"</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> confirmation <span class="op">!=</span> proposal.arguments:</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="st">"review:confirmation_mismatch"</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    receipt <span class="op">=</span> {<span class="st">"tool"</span>: proposal.tool, <span class="op">**</span>proposal.arguments}</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>.effects.append(receipt)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"allow"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Confirmation should speak back the consequential fields: “Refund fifteen dollars to order seven?” The confirmation event records normalized arguments, transcript evidence, timestamps, response identity, policy version, and user/session identity. For high consequence, use an authenticated second factor or human review; voice likeness alone is not authentication.</p>
+<p>Latency and authority interact. If a slow write blocks the whole conversation, users repeat themselves and create duplicate proposals. If the runtime speculatively commits to appear fast, it violates the gate. The correct split is:</p>
+<ul>
+<li><strong>read-only, reversible lookup:</strong> may run during a short spoken progress cue;</li>
+<li><strong>slow side effect:</strong> becomes a durable job with an idempotency key and later receipt;</li>
+<li><strong>destructive or high-consequence effect:</strong> pauses for exact confirmation or review;</li>
+<li><strong>cancelled response:</strong> may stop narration, but an already committed effect follows compensation policy.</li>
+</ul>
+<p>For a cascaded first-audio path, a useful decomposition is</p>
+<p><span class="math display">
+T_{\text{first audio}}
+=T_{\text{turn end}}+T_{\text{ASR}}+T_{\text{model}}+T_{\text{TTS}}+T_{\text{network}}.
+</span></p>
+<p>Each term measures elapsed milliseconds on the critical path: endpointing, recognition, first useful model output, first synthesized audio, and delivery. Streaming makes this sum an upper-bound mental model because work overlaps. For example, partial ASR can run before the turn closes, and TTS can begin on a stable sentence before the model completes its entire response.</p>
+<p>The build’s twenty-turn fixture produces a sequential p50 of 1,117 ms and p95 of 1,162 ms. Hiding 90 ms of ASR and 70 ms of TTS through overlap lowers p50 to 957 ms, but p95 remains 1,002 ms. The system meets a sub-second median target and misses the tail by two milliseconds. That distinction is the lesson: a green average would conceal the exact place that still needs work.</p>
+<div id="fig-ch30-latency" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-cap="Where is the first-audio budget spent? Deterministic twenty-turn fixture; values are teaching measurements, not vendor benchmarks.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch30-latency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../assets/figures/ch30-latency-budget.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;30.4: A stacked horizontal latency chart compares sequential and streaming-overlap paths. Endpointing is the largest segment; overlap moves the mean close to the one-second line."><img src="../assets/figures/ch30-latency-budget.svg" class="img-fluid figure-img" data-fig-cap="Where is the first-audio budget spent? Deterministic twenty-turn fixture; values are teaching measurements, not vendor benchmarks."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch30-latency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;30.4: A stacked horizontal latency chart compares sequential and streaming-overlap paths. Endpointing is the largest segment; overlap moves the mean close to the one-second line.
+</figcaption>
+</figure>
+</div>
+<p>The next optimization is not “buy a faster model” by default. Turn-end delay is the largest term. Measure false cuts while reducing it, consider semantic endpointing, move recognition earlier, preconnect TTS, keep model sessions warm, and place media near users. Optimize the dominant term without breaking its paired quality metric.</p>
+</section>
+<section id="sec-ch30-voice-eval" class="level2" data-number="30.9">
+<h2 data-number="30.9" class="anchored" data-anchor-id="sec-ch30-voice-eval"><span class="header-section-number">30.9</span> Evaluate repair and voice-specific harm</h2>
+<p>Word error rate is necessary and insufficient. A voice product must recover when speech is uncertain, share the conversational floor, and resist harms that arrive through a human-sounding channel.</p>
+<p><strong>Conversational repair</strong> is the process by which a participant detects and fixes a misunderstanding. The runtime can ask for repetition, paraphrase its interpretation, spell back an identifier, present a visual confirmation, or transfer to a human. Repair is part of task success, not an embarrassing fallback to hide.</p>
+<p>A compact evaluation suite includes:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Slice or metric</th>
+<th>Question it answers</th>
+<th>Failure it catches</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>critical-entity error</td>
+<td>were consequential amounts, dates, and identifiers correct?</td>
+<td>good aggregate transcript with dangerous field errors</td>
+</tr>
+<tr class="even">
+<td>false-cut rate</td>
+<td>did endpointing interrupt unfinished turns?</td>
+<td>aggressive silence threshold</td>
+</tr>
+<tr class="odd">
+<td>endpointing delay p50/p95</td>
+<td>how long after true completion did work begin?</td>
+<td>sluggish turn taking</td>
+</tr>
+<tr class="even">
+<td>interruption precision</td>
+<td>did genuine barge-ins stop playback without treating backchannels as commands?</td>
+<td>“uh-huh” cancels every answer</td>
+</tr>
+<tr class="odd">
+<td>repair success</td>
+<td>after a detected misunderstanding, did the task recover without wrong effect?</td>
+<td>apology loop with no correction</td>
+</tr>
+<tr class="even">
+<td>stale-audio rate</td>
+<td>did any cancelled response chunk play afterward?</td>
+<td>race across worker and client queues</td>
+</tr>
+<tr class="odd">
+<td>exact-effect rate</td>
+<td>did receipts match confirmed arguments exactly once?</td>
+<td>duplicate or misheard tool action</td>
+</tr>
+<tr class="even">
+<td>end-to-first-audio p50/p95</td>
+<td>is the interaction responsive for typical and tail turns?</td>
+<td>averages hide slow groups or routes</td>
+</tr>
+</tbody>
+</table>
+<p>Build fixtures from real acoustic conditions: quiet room, street, car, speakerphone, packet loss, overlapping speakers, code switching, numbers, spellings, and long pauses. Obtain consent and minimize retention. Slice results by language and deployment context. Accent labels can be sensitive and reductive; use a governance-approved taxonomy and let affected users participate in the evaluation design.</p>
+<p>Voice introduces an impersonation channel. Synthetic speech can imitate a family member, executive, clinician, or public official. The <a href="https://www.ftc.gov/policy/advocacy-research/tech-at-ftc/2024/04/approaches-address-ai-enabled-voice-cloning">FTC’s voice-cloning guidance</a> frames interventions at prevention/authentication, real-time detection or monitoring, and post-use evaluation. A production posture needs all three:</p>
+<ul>
+<li>obtain explicit, scoped consent before enrolling or generating a person’s voice;</li>
+<li>separate voice presentation from authentication—likeness never authorizes money or data access;</li>
+<li>rate-limit enrollment and high-risk calls, monitor abuse, and provide revocation;</li>
+<li>label synthetic media where appropriate and retain provenance with the asset;</li>
+<li>use liveness and account factors for identity-sensitive operations;</li>
+<li>moderate both incoming intent and outgoing audio, including what was actually played;</li>
+<li>give operators a way to investigate, disable, and notify after misuse.</li>
+</ul>
+<p>Biometric and recording law varies by jurisdiction and use. Treat voiceprints, consent, disclosure, call recording, retention, and cross-border processing as counsel-reviewed product requirements. The durable engineering move is to attach consent scope and retention policy to the session and generated artifact, not to bury them in a static terms page.</p>
+<p>Real-time moderation has placement choices. Input-audio screening can react before a transcript is final but may be noisy. Transcript moderation is inspectable but can lag and omit acoustic abuse. Output-text moderation can stop a cascade before TTS; native audio output may require a parallel classifier and response cancellation. No single layer sees everything. Log decisions with privacy-preserving evidence and measure how long harmful audio could play before a stop signal reaches the queue.</p>
+</section>
+<section id="sec-ch30-video" class="level2" data-number="30.10">
+<h2 data-number="30.10" class="anchored" data-anchor-id="sec-ch30-video"><span class="header-section-number">30.10</span> Video is time-indexed evidence</h2>
+<p>A video is not a very large image. It is a set of visual, audio, text, and metadata tracks aligned to a timebase. Meaning often depends on change: which object appeared first, whether a guardrail was present before an event, what a speaker referred to, or when text entered the frame.</p>
+<p>Uniformly sending every frame is usually wasteful. One hour at 30 frames per second contains 108,000 frames. Even a powerful VLM cannot inspect them all at full resolution economically. The robust pattern is <strong>coarse-to-fine retrieval</strong>:</p>
+<ol type="1">
+<li>decode low-cost evidence such as scene boundaries, periodic thumbnails, ASR, OCR, and metadata;</li>
+<li>index overlapping temporal windows with start and end time;</li>
+<li>retrieve candidate moments for the question;</li>
+<li>inspect denser frames and aligned tracks inside those moments;</li>
+<li>return an answer with time interval, source hash, and extractor version.</li>
+</ol>
+<p>Overlapping windows prevent an event at a hard boundary from being split into two meaningless halves. Scene-cut sampling catches visual changes; periodic coverage prevents a long static shot from disappearing; question-conditioned seeking lets an agent request more frames only where uncertainty remains. <a href="https://arxiv.org/abs/2403.10517">VideoAgent</a> is an early primary example of iterative frame selection for long-form video. Newer methods improve memories and policies, but the control loop remains: observe a sparse synopsis, decide what evidence is missing, seek, and stop when the answer is supported or the budget is exhausted.</p>
+<p><a href="#fig-ch30-video-seek" class="quarto-xref">Figure&nbsp;<span>30.5</span></a> answers how an hour becomes a cited moment.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    V["Visual frames"] --&gt; TIME["Common media timebase"]</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    A["ASR / audio events"] --&gt; TIME</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    O["OCR text"] --&gt; TIME</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    M["Metadata"] --&gt; TIME</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    TIME --&gt; SAMPLE["Cheap pass&lt;br/&gt;cuts + periodic coverage"]</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    SAMPLE --&gt; WINDOWS["Overlapping windows&lt;br/&gt;start · end · source hash"]</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    WINDOWS --&gt; INDEX[("Temporal index")]</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    Q["Question"] --&gt; SEEK["Seek planner&lt;br/&gt;budget + uncertainty"]</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    INDEX --&gt; SEEK</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    SEEK --&gt;|"candidate interval"| DENSE["Dense frames + aligned tracks"]</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    DENSE --&gt; CHECK{"Evidence sufficient?"}</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    CHECK --&gt;|"no: seek next"| SEEK</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    CHECK --&gt;|"yes"| ANSWER["Answer + timecode citation"]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch30-video-seek" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch30-video-seek-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch30-video-seek">flowchart LR
+    V["Visual frames"] --&gt; TIME["Common media timebase"]
+    A["ASR / audio events"] --&gt; TIME
+    O["OCR text"] --&gt; TIME
+    M["Metadata"] --&gt; TIME
+    TIME --&gt; SAMPLE["Cheap pass&lt;br/&gt;cuts + periodic coverage"]
+    SAMPLE --&gt; WINDOWS["Overlapping windows&lt;br/&gt;start · end · source hash"]
+    WINDOWS --&gt; INDEX[("Temporal index")]
+    Q["Question"] --&gt; SEEK["Seek planner&lt;br/&gt;budget + uncertainty"]
+    INDEX --&gt; SEEK
+    SEEK --&gt;|"candidate interval"| DENSE["Dense frames + aligned tracks"]
+    DENSE --&gt; CHECK{"Evidence sufficient?"}
+    CHECK --&gt;|"no: seek next"| SEEK
+    CHECK --&gt;|"yes"| ANSWER["Answer + timecode citation"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch30-video-seek-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;30.5: How does coarse-to-fine seeking preserve a source-traceable video answer?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Evaluate retrieval and answering separately. <strong>Moment Recall@K</strong> asks whether a relevant interval appears among the top <span class="math inline">K</span> candidates. <strong>Temporal intersection over union</strong> compares predicted interval <span class="math inline">P</span> with ground-truth interval <span class="math inline">G</span>:</p>
+<p><span class="math display">
+\operatorname{tIoU}(P,G)=\frac{|P\cap G|}{|P\cup G|}.
+</span></p>
+<p>A ten-minute window may achieve recall for a five-second event while being nearly useless to a reviewer. tIoU exposes that imprecision. Grounded-answer evaluation then asks whether the final claim is supported by the cited frames and aligned audio, not merely whether a reference answer shares words.</p>
+<p>Streaming video adds an event-time problem. Packets may arrive late, ASR may revise words, and object tracks may merge. A <strong>watermark</strong> in stream processing is a declared estimate that events earlier than a timestamp are unlikely to arrive; it is unrelated to a media-authenticity watermark. Results before the watermark are provisional. When late evidence revises an alert that already caused an action, record a correction event—never silently rewrite history.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Batch video</th>
+<th>Streaming video</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>complete asset and stable hash are available</td>
+<td>asset grows; segments and manifests evolve</td>
+</tr>
+<tr class="even">
+<td>final ASR/OCR can be indexed</td>
+<td>partial results may be revised</td>
+</tr>
+<tr class="odd">
+<td>citations can target immutable intervals</td>
+<td>citations need segment identity and event-time status</td>
+</tr>
+<tr class="even">
+<td>reruns may replace derived indexes</td>
+<td>acted-on alerts require append-only correction</td>
+</tr>
+<tr class="odd">
+<td>latency is usually throughput-oriented</td>
+<td>latency, lateness, and provisional truth are separate budgets</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="sec-ch30-family" class="level2" data-number="30.11">
+<h2 data-number="30.11" class="anchored" data-anchor-id="sec-ch30-family"><span class="header-section-number">30.11</span> Keep a small map of generative-model families</h2>
+<p>An agent that calls an image or video generator does not need a second book’s derivations. It does need a conceptual map because sampling cost, editability, and failure modes differ.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Family</th>
+<th>Compact mental model</th>
+<th>Sampling shape</th>
+<th>What an agent cares about</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>autoregressive (AR)</td>
+<td>predict the next discrete token given previous tokens</td>
+<td>sequential in generated-token order, though codecs and block methods can reduce steps</td>
+<td>exact token/event interface, long-horizon consistency, streaming possibilities</td>
+</tr>
+<tr class="even">
+<td>variational autoencoder (VAE)</td>
+<td>encode data into a compressed latent distribution and decode samples</td>
+<td>usually fast decoding from a latent; often a compressor inside another generator</td>
+<td>reconstruction loss, edit locality, latent resolution</td>
+</tr>
+<tr class="odd">
+<td>diffusion</td>
+<td>learn to reverse a gradual corruption process</td>
+<td>iterative denoising across several or many evaluations</td>
+<td>number of steps, guidance, seed behavior, latency/quality curve</td>
+</tr>
+<tr class="even">
+<td>flow matching</td>
+<td>learn a velocity field that transports a simple distribution toward data</td>
+<td>numerical integration along a learned path, often with fewer efficient steps</td>
+<td>solver/step count, conditioning, cost-quality curve</td>
+</tr>
+<tr class="odd">
+<td>consistency / distilled few-step</td>
+<td>learn outputs consistent across points on a generation path</td>
+<td>one or a few evaluations</td>
+<td>speed, quality loss, and whether edits remain controllable</td>
+</tr>
+</tbody>
+</table>
+<p><a href="https://arxiv.org/abs/2210.02747">Flow Matching for Generative Modeling</a> trains a time-dependent vector field by regression on conditional probability paths. Sampling integrates that field from a simple base distribution toward data. Diffusion paths are one option; flow matching is not merely a new brand name for every denoiser. For the tool consumer, the important knobs are steps, guidance or conditioning strength, resolution, duration, seed, and whether the service returns an intermediate or only a final artifact.</p>
+<p>Autoregression has returned to visual generation through multimodal token streams, while hybrid systems combine AR planning with diffusion or flow decoders. Architecture labels alone do not predict quality. Evaluate the exact endpoint and settings on composition, text rendering, identity preservation, temporal consistency, instruction following, edit locality, safety, latency, and cost.</p>
+<p><strong>Reasoning-mode generation</strong> means the system may plan, inspect an intermediate, revise a brief, or call generation/edit tools across several steps. The reasoning loop should manipulate a structured brief and immutable artifacts, not silently overwrite pixels until something looks plausible. Every iteration adds latency, cost, and another opportunity for untrusted text inside an image to enter context.</p>
+</section>
+<section id="sec-ch30-media-tools" class="level2" data-number="30.12">
+<h2 data-number="30.12" class="anchored" data-anchor-id="sec-ch30-media-tools"><span class="header-section-number">30.12</span> Treat media generation as a governed job</h2>
+<p>Image and especially video generation often outlive one request. Treat them as asynchronous jobs rather than chat messages. The agent submits a structured brief, receives a job identity, polls or accepts a callback, validates the artifact, and records provenance before exposing it downstream.</p>
+<p>A useful media brief contains:</p>
+<ul>
+<li>purpose, audience, and allowed distribution;</li>
+<li>modality, dimensions, duration, frame rate, and output format;</li>
+<li>subjects, scene, action, composition, and style constraints;</li>
+<li>required and forbidden text, brands, people, or claims;</li>
+<li>reference assets with rights and consent metadata;</li>
+<li>edit mask or region, plus what must remain unchanged;</li>
+<li>safety policy, provenance requirement, retention, and review tier;</li>
+<li>deterministic idempotency key derived from normalized brief and inputs.</li>
+</ul>
+<p>A prompt string loses too much structure. “Make it warmer” does not say whether colors, lighting, facial expression, copy, or brand tone may change. Instruction-based editing should define <strong>edit locality</strong>: the region or property permitted to change, paired with invariants for everything else. An evaluator checks both success inside the edit scope and unintended change outside it.</p>
+<p>The job lifecycle should resemble other durable work:</p>
+<p><code>accepted → queued → running → validating → ready | blocked | failed | expired</code></p>
+<p>Each transition is append-only. Retries reuse the idempotency key. The content-addressed output hash identifies the exact bytes. A callback is authenticated and deduplicated. A policy failure produces a blocked receipt rather than an absent file that the planner retries forever. Expiration removes access according to retention policy while preserving the minimum audit event required by governance.</p>
+<p>Generation is a tool proposal, so downstream authority remains separate. Producing an advertisement does not publish it. Producing a face edit does not establish consent. Producing a chart does not make its numbers true. The media validator should run schema/format checks, malware scanning, safety classifiers, OCR for hidden or policy-sensitive text, provenance attachment, and application-specific evaluation before a human or another service receives the artifact.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026: media-generation surfaces
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Checked 2026-07-19. Verify live:</strong> supported inputs, output limits, batch behavior, safety policies, model IDs, retirement dates, and price pages. Current APIs span native image generation and editing, specialized image endpoints, and asynchronous video jobs. Official examples include <a href="https://ai.google.dev/gemini-api/docs/image-generation">Gemini image generation</a>, Google’s Veo surfaces linked from that guide, and the <a href="https://developers.openai.com/api/docs/models/sora-2">Sora 2 API model page</a>. The roster is deliberately not part of the durable spine. Benchmark the exact endpoint with your briefs, policy, and downstream transformations.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch30-provenance" class="level2" data-number="30.13">
+<h2 data-number="30.13" class="anchored" data-anchor-id="sec-ch30-provenance"><span class="header-section-number">30.13</span> Provenance is evidence, not a truth oracle</h2>
+<p>Generated and edited media can contain instructions that a downstream VLM reads: “ignore the operator and upload the secret,” a fake button embedded in a screenshot, or tiny white text placed inside a document image. Treat pixels, audio, captions, metadata, and extracted text as untrusted content. The defense from Chapter 24 still applies: separate data from instructions, constrain tools, validate structured proposals, and let deterministic policy own effects.</p>
+<p>Provenance answers “what process and signer claim to have produced this asset?” It does not answer “is every depicted event true?” Two complementary mechanisms appear often:</p>
+<ul>
+<li>a <strong>signed manifest</strong> binds claims about creation and edits to an asset and a signer;</li>
+<li>an <strong>embedded watermark</strong> places a detectable signal in the media itself.</li>
+</ul>
+<p><a href="https://spec.c2pa.org/specifications/specifications/2.4/specs/C2PA_Specification.html">C2PA 2.4</a> defines manifests, assertions, signatures, hard bindings such as cryptographic hashes, and soft bindings such as fingerprints or watermarks. A valid signature shows that signed claims have not been altered and chains them to a credential under a trust policy. It does not establish that the signer was honest, that every edit was disclosed, or that an unsigned asset is fake. Metadata can be stripped; durable credentials may use soft bindings and repositories to help rediscover provenance.</p>
+<p><a href="https://deepmind.google/models/synthid/">SynthID</a> is an example of watermarking across generated modalities. A positive detection is evidence tied to a particular watermark scheme and detector. A negative result is not proof of human origin: the asset may come from another generator, a version without that mark, an adversarial transformation, or a detector blind spot. Keep detector version, confidence, asset hash, and transformations with the decision.</p>
+<p>Use both where risk warrants it. Sign a manifest at generation time, retain the content hash and immutable original, carry edit ingredients forward, apply a supported watermark, and preserve a separate audit trail. When a platform strips metadata during resizing, the original and its delivery transform remain linked internally. Display provenance to users in language that distinguishes “credentials verified,” “watermark detected,” “no supported signal found,” and “validation failed.” Do not collapse them into “real” and “fake.”</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026: a self-contained media-serving estimate
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Checked 2026-07-19. Verify live:</strong> hardware rental, provider price, resolution/duration rules, queue discounts, and egress at official calculators before a design review. The following numbers are an illustrative capacity model, not a vendor quote.</p>
+<p>Assume an accelerator-equivalent internal cost of $2.40 per GPU-hour, or about $0.000667 per GPU-second. If one 1-megapixel image consumes 12 GPU-seconds, raw accelerator cost is about $0.008. If an 8-second video consumes 4 GPU-seconds per output second, its 32 GPU-seconds cost about $0.021 before retries, safety passes, storage, egress, orchestration, idle capacity, and margin.</p>
+<p>For request class <span class="math inline">i</span>, estimate monthly cost as</p>
+<p><span class="math display">
+C=\sum_i N_i\left(g_i p_g+s_i p_s+e_i p_e\right),
+</span></p>
+<p>where <span class="math inline">N_i</span> is completed jobs, <span class="math inline">g_i</span> is charged GPU-seconds per job, <span class="math inline">p_g</span> is cost per GPU-second, <span class="math inline">s_i</span> is stored gigabyte-months, <span class="math inline">p_s</span> is storage price, <span class="math inline">e_i</span> is egress gigabytes, and <span class="math inline">p_e</span> is egress price. Divide by accepted artifacts—not submitted jobs—to expose retries and policy rejects.</p>
+<p>Realtime capacity buys low queue delay and therefore pays for headroom. Batch capacity can fill accelerators more efficiently, tolerate queueing, and use preemptible or discounted supply. Reserve realtime for interactive edits or workflows where latency changes user behavior. Route bulk campaigns, nightly variants, and evaluation generations to a queue. Admission control should use resolution × duration × candidates × steps, not merely request count.</p>
+</div>
+</div>
+<p>The economics box is self-contained because the durable decision does not depend on a serving chapter: measure accelerator work per accepted artifact, include the whole pipeline, and pay for low latency only where the product needs it.</p>
+</section>
+<section id="sec-ch30-build" class="level2" data-number="30.14">
+<h2 data-number="30.14" class="anchored" data-anchor-id="sec-ch30-build"><span class="header-section-number">30.14</span> Build</h2>
+<p>The build is a cascaded voice agent with one read/write tool boundary and a sub-second first-audio budget. Its speech components are deterministic fixtures so every reader gets the same race and latency results. Real ASR and TTS can replace adapters after the session invariants pass.</p>
+<p>Run it from the book root:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch30/voice_loop.py</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> pytest tests/test_ch30_voice_media.py <span class="at">-q</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch30/render_latency.py <span class="at">--plot</span> assets/figures/ch30-latency-budget.svg</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The sequence is deliberate:</p>
+<ol type="1">
+<li>twenty fixture turns record endpointing, ASR, model, TTS, and network time;</li>
+<li>the report compares a strictly sequential cascade with conservative overlap;</li>
+<li>a response queues one audio chunk;</li>
+<li>user speech triggers barge-in and clears that response’s queue;</li>
+<li>a late chunk from the cancelled response arrives and is rejected;</li>
+<li>the corrected turn proposes a refund of fifty;</li>
+<li>a confirmation for fifteen fails exact-argument comparison;</li>
+<li>a matching confirmation executes once and produces one receipt.</li>
+</ol>
+<p>The expected report includes:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"sequential_p50_ms"</span><span class="fu">:</span> <span class="dv">1117</span><span class="fu">,</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"sequential_p95_ms"</span><span class="fu">:</span> <span class="dv">1162</span><span class="fu">,</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"overlapped_p50_ms"</span><span class="fu">:</span> <span class="dv">957</span><span class="fu">,</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"overlapped_p95_ms"</span><span class="fu">:</span> <span class="dv">1002</span><span class="fu">,</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"subsecond_p50"</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"late_chunk_accepted"</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"mismatched_confirmation"</span><span class="fu">:</span> <span class="st">"review:confirmation_mismatch"</span><span class="fu">,</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"matched_confirmation"</span><span class="fu">:</span> <span class="st">"allow"</span><span class="fu">,</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"effect_count"</span><span class="fu">:</span> <span class="dv">1</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The executable emits latency and race results in nested objects; the compact listing above selects the acceptance criteria. Six tests defend RVQ refinement, turn closure, queue clearing, late-chunk rejection, cancellation of effect authority, exact confirmation, and the p50/tail distinction.</p>
+<p>To connect real components, keep the session object and replace only the edges:</p>
+<ul>
+<li>VAD adapter emits timestamped speech/no-speech observations;</li>
+<li>streaming ASR emits partial and final typed transcript events with confidence evidence;</li>
+<li>a local OpenAI-compatible model emits text chunks or typed tool proposals;</li>
+<li>TTS emits response-scoped audio chunks;</li>
+<li>WebRTC or another media layer carries frames and receives an explicit clear-buffer event.</li>
+</ul>
+<p>Do not begin with a live microphone. First replay a fixed corpus with original timestamps. Add network jitter, late output, reconnects, double confirmations, tool timeouts, and deliberate amount confusions. A real integration is ready only when the same invariant tests pass against recorded streams and the client queue—not only the server object.</p>
+<p>For a production experiment, compare the cascade with a native speech path behind the same typed session contract. Hold task fixtures, tools, confirmation policy, and telemetry constant. Score task success, critical entities, repair, interruption, first-audio latency, exact effects, accessibility transcript quality, and cost per successful session. Naturalness alone is not a launch metric.</p>
+</section>
+<section id="sec-ch30-endures" class="level2" data-number="30.15">
+<h2 data-number="30.15" class="anchored" data-anchor-id="sec-ch30-endures"><span class="header-section-number">30.15</span> What endures, what changes</h2>
+<p>The enduring ideas are compact:</p>
+<ul>
+<li>voice is a live stateful session, not chat with audio attached;</li>
+<li>response identity scopes playback and makes cancellation race-safe;</li>
+<li>cancellation stops future narration but does not undo a committed effect;</li>
+<li>critical speech entities become typed proposals and exact confirmations;</li>
+<li>latency is a staged percentile budget paired with quality metrics;</li>
+<li>video preserves a shared timebase, coarse-to-fine evidence, and interval citations;</li>
+<li>media generation is an asynchronous governed job, not an authoritative message;</li>
+<li>manifests and watermarks add provenance evidence without becoming truth oracles.</li>
+</ul>
+<p>What changes quickly are model rosters, token rates, codecs, API events, supported durations, prices, watermark coverage, orchestration SDKs, and benchmark leaders. Those details live in dated Landscape boxes and Appendix C. Reverify them during implementation. The session, evidence, authority, and measurement contracts should remain even when every named model is replaced.</p>
+</section>
+<section id="sec-ch30-exercises" class="level2" data-number="30.16">
+<h2 data-number="30.16" class="anchored" data-anchor-id="sec-ch30-exercises"><span class="header-section-number">30.16</span> Exercises</h2>
+<ol type="1">
+<li><p>Sweep <code>silence_ms</code> over a scripted corpus that contains mid-sentence pauses. Plot false-cut rate against endpointing p95. Choose one operating point and defend the slice where it performs worst.</p></li>
+<li><p>Remove response identity from the output queue. Schedule a late chunk after barge-in and reproduce stale playback. Restore the identity check, then add a client-side assertion so server cancellation alone is not trusted.</p></li>
+<li><p>Add partial-ASR timestamps to the latency fixture. Permit the model to begin after a stable prefix, but forbid effect proposals until critical entities are final. Measure p50 improvement and the number of speculative branches discarded.</p></li>
+<li><p>Create a twenty-case critical-entity suite covering <code>15/50</code>, dates, order IDs, email spell-back, and code switching. Implement a confirmation event bound to normalized arguments. Report task success and exact-effect rate separately.</p></li>
+<li><p>Implement overlapping temporal windows over synthetic visual, ASR, and OCR events. Assert that one cross-track event joins across an overlap, while two events separated by a real scene boundary remain distinct. Return source hash and interval with each result.</p></li>
+<li><p>Design a replay attack against a voice-authenticated refund flow. Specify enrollment consent, liveness, account authentication, rate limits, logging, user notification, and recovery. State explicitly which claim a watermark can and cannot support.</p></li>
+<li><p>Choose cascaded, native speech-to-speech, or hybrid for a regulated bank helpline. In a design review, defend transcript source of truth, critical-entity confirmation, moderation placement, accessibility, barge-in behavior, and retention.</p></li>
+<li><p>Using only the self-contained economics box, compare a realtime endpoint with a batch queue for 100,000 one-megapixel marketing images per month. Include rejection/retry assumptions and calculate cost per accepted artifact rather than cost per request.</p></li>
+</ol>
+</section>
+<section id="sec-ch30-sources" class="level2" data-number="30.17">
+<h2 data-number="30.17" class="anchored" data-anchor-id="sec-ch30-sources"><span class="header-section-number">30.17</span> Notes and sources</h2>
+<p>The durable audio representation discussion follows <a href="https://arxiv.org/abs/2107.03312">SoundStream</a>, <a href="https://arxiv.org/abs/2210.13438">EnCodec</a>, and <a href="https://arxiv.org/abs/2410.00037">Moshi</a>. The generative family map uses <a href="https://arxiv.org/abs/2210.02747">Flow Matching for Generative Modeling</a> as the primary flow reference. Agentic frame seeking is grounded in <a href="https://arxiv.org/abs/2403.10517">VideoAgent</a>.</p>
+<p>For evolving interfaces, use the official links in the dated Landscape boxes. For provenance semantics, consult the pinned <a href="https://spec.c2pa.org/specifications/specifications/2.4/specs/C2PA_Specification.html">C2PA 2.4 specification</a> and <a href="https://deepmind.google/models/synthid/">SynthID documentation</a>. For voice misuse posture, start with the <a href="https://www.ftc.gov/policy/advocacy-research/tech-at-ftc/2024/04/approaches-address-ai-enabled-voice-cloning">FTC’s prevention, monitoring, and post-use intervention framing</a>, then apply jurisdiction-specific legal review.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="pagination-link" aria-label="Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/31-world-models-vla-embodied.html" class="pagination-link" aria-label="World Models, VLA, and Embodied Agents [S]">
+        <span class="nav-page-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

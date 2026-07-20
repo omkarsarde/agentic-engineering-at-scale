@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Train tool-using agents from trajectories by engineering state coverage, resettable environments, local credit, reward integrity, and fresh rollout infrastructure.">
+
+<title>23&nbsp; Training Agents with RL [S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/24-agent-security.html" rel="next">
+<link href="../chapters/22-evaluation.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/22-evaluation.html">Part VI — Evaluation, Agent RL, Security, and Governance</a></li><li class="breadcrumb-item"><a href="../chapters/23-training-agents-rl.html"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-you-need-going-in" id="toc-what-you-need-going-in" class="nav-link active" data-scroll-target="#what-you-need-going-in"><span class="header-section-number">23.1</span> What you need going in</a></li>
+  <li><a href="#contents" id="toc-contents" class="nav-link" data-scroll-target="#contents"><span class="header-section-number">23.2</span> Contents</a></li>
+  <li><a href="#what-you-will-build" id="toc-what-you-will-build" class="nav-link" data-scroll-target="#what-you-will-build"><span class="header-section-number">23.3</span> What you will build</a></li>
+  <li><a href="#sec-ch23-primer" id="toc-sec-ch23-primer" class="nav-link" data-scroll-target="#sec-ch23-primer"><span class="header-section-number">23.4</span> Route B primer: from policy gradients to GRPO</a></li>
+  <li><a href="#sec-ch23-curriculum" id="toc-sec-ch23-curriculum" class="nav-link" data-scroll-target="#sec-ch23-curriculum"><span class="header-section-number">23.5</span> Climb from imitation to constrained online RL</a></li>
+  <li><a href="#sec-ch23-trajectories" id="toc-sec-ch23-trajectories" class="nav-link" data-scroll-target="#sec-ch23-trajectories"><span class="header-section-number">23.6</span> Agent trajectories change the learning problem</a></li>
+  <li><a href="#sec-ch23-environments" id="toc-sec-ch23-environments" class="nav-link" data-scroll-target="#sec-ch23-environments"><span class="header-section-number">23.7</span> Build resettable environments before trainers</a></li>
+  <li><a href="#sec-ch23-credit" id="toc-sec-ch23-credit" class="nav-link" data-scroll-target="#sec-ch23-credit"><span class="header-section-number">23.8</span> Assign credit across tool calls</a></li>
+  <li><a href="#sec-ch23-rewards" id="toc-sec-ch23-rewards" class="nav-link" data-scroll-target="#sec-ch23-rewards"><span class="header-section-number">23.9</span> Rewards must reject successful violations</a></li>
+  <li><a href="#sec-ch23-infrastructure" id="toc-sec-ch23-infrastructure" class="nav-link" data-scroll-target="#sec-ch23-infrastructure"><span class="header-section-number">23.10</span> Keep on-policy data fresh at production scale</a></li>
+  <li><a href="#sec-ch23-rft" id="toc-sec-ch23-rft" class="nav-link" data-scroll-target="#sec-ch23-rft"><span class="header-section-number">23.11</span> Train weights only after fixing the system</a></li>
+  <li><a href="#sec-ch23-build" id="toc-sec-ch23-build" class="nav-link" data-scroll-target="#sec-ch23-build"><span class="header-section-number">23.12</span> Build</a>
+  <ul class="collapse">
+  <li><a href="#acceptance-checks" id="toc-acceptance-checks" class="nav-link" data-scroll-target="#acceptance-checks"><span class="header-section-number">23.12.1</span> Acceptance checks</a></li>
+  <li><a href="#honesty-note" id="toc-honesty-note" class="nav-link" data-scroll-target="#honesty-note"><span class="header-section-number">23.12.2</span> Honesty note</a></li>
+  </ul></li>
+  <li><a href="#sec-ch23-endures" id="toc-sec-ch23-endures" class="nav-link" data-scroll-target="#sec-ch23-endures"><span class="header-section-number">23.13</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch23-exercises" id="toc-sec-ch23-exercises" class="nav-link" data-scroll-target="#sec-ch23-exercises"><span class="header-section-number">23.14</span> Exercises</a></li>
+  <li><a href="#sec-ch23-sources" id="toc-sec-ch23-sources" class="nav-link" data-scroll-target="#sec-ch23-sources"><span class="header-section-number">23.15</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/22-evaluation.html">Part VI — Evaluation, Agent RL, Security, and Governance</a></li><li class="breadcrumb-item"><a href="../chapters/23-training-agents-rl.html"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch23" class="quarto-section-identifier"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-you-need-going-in" class="level2" data-number="23.1">
+<h2 data-number="23.1" class="anchored" data-anchor-id="what-you-need-going-in"><span class="header-section-number">23.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network training, cross-entropy, probability distributions, gradients, production Python, and ordinary agent tool loops.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/16-agent-anatomy.html">Chapter 16</a> supplies the proposal–gate–execute–observe loop and typed termination. <a href="../chapters/17-tool-harness-engineering.html">Chapter 17</a> supplies tool and workspace enforcement. <a href="../chapters/22-evaluation.html">Chapter 22</a> supplies versioned tasks, trajectory evidence, graders, uncertainty, and release gates. This chapter consumes those evaluation contracts as reward inputs; it does not reteach their statistics.</p>
+<p><strong>Not required:</strong> Chapters 7–8, prior reinforcement learning, PPO, GRPO, a GPU cluster, or an RL framework. The first teaching section is a self-contained Route B primer. Route A readers may use it as a compact notation check.</p>
+</blockquote>
+</section>
+<section id="contents" class="level2" data-number="23.2">
+<h2 data-number="23.2" class="anchored" data-anchor-id="contents"><span class="header-section-number">23.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch23-primer">Route B primer: from policy gradients to GRPO</a></li>
+<li><a href="#sec-ch23-curriculum">Climb from imitation to constrained online RL</a></li>
+<li><a href="#sec-ch23-trajectories">Agent trajectories change the learning problem</a></li>
+<li><a href="#sec-ch23-environments">Build resettable environments before trainers</a></li>
+<li><a href="#sec-ch23-credit">Assign credit across tool calls</a></li>
+<li><a href="#sec-ch23-rewards">Rewards must reject successful violations</a></li>
+<li><a href="#sec-ch23-infrastructure">Keep on-policy data fresh at production scale</a></li>
+<li><a href="#sec-ch23-rft">Train weights only after fixing the system</a></li>
+<li><a href="#sec-ch23-build">Build</a></li>
+<li><a href="#sec-ch23-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch23-exercises">Exercises</a></li>
+<li><a href="#sec-ch23-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="what-you-will-build" class="level2" data-number="23.3">
+<h2 data-number="23.3" class="anchored" data-anchor-id="what-you-will-build"><span class="header-section-number">23.3</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Behavior cloning, then group-relative learning in one tool gym
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The artifact under <code>code/ch23/</code> trains a small tabular softmax policy whose states stand in for model contexts and whose actions are tool calls. A scripted expert produces safe refund trajectories for behavior cloning. Held-out recovery states expose the resulting state-coverage gap. The same policy then gathers fresh multi-turn rollouts, receives state-grouped relative advantages, and updates through a clipped policy-ratio rule. A composite scorer vetoes unauthorized or duplicate effects. The deterministic run improves eligible held-out completion from two of four tasks to four of four, records 22 vetoed rollouts and zero vetoed updates, and shows declared environment work dominating sampling and optimizer work.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch23-primer" class="level2" data-number="23.4">
+<h2 data-number="23.4" class="anchored" data-anchor-id="sec-ch23-primer"><span class="header-section-number">23.4</span> Route B primer: from policy gradients to GRPO</h2>
+<p>A support agent refunds a high-value order without requesting approval. The database reaches the user’s requested final state, so an outcome-only grader marks the trajectory successful. A training pipeline promotes it into the next dataset. After behavior cloning, the unauthorized shortcut becomes more likely. The gradient worked; the training contract failed.</p>
+<p>That incident is the reason to learn RL from the objective outward. Reinforcement learning does not tell a system what “good” means. It changes a policy to increase the reward supplied by an environment. If the environment rewards the shortcut, optimization reinforces it.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Route B primer — policy gradients through GRPO
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This primer is self-contained. Chapters 7–8 give the canonical treatment of post-training and reasoning-focused RL, but no machinery from them is assumed here.</p>
+<p>An agent generates a <strong>trajectory</strong></p>
+<p>[ =(s_0,a_0,r_0,s_1,a_1,r_1,,s_T), ]</p>
+<p>where (s_t) is the information available to the policy at decision (t), (a_t) is an action sampled from policy (pi_(as_t)), (r_t) is reward, and ( heta) denotes trainable parameters. For a language-model agent, one action may be a token, a whole tool call, a structured control decision, or a block of tokens. The choice determines the credit-assignment unit.</p>
+<p>The <strong>return-to-go</strong> from step (t) is</p>
+<p>[ G_t=_{k=t}<sup>{T-1}</sup>{k-t}r_k, ]</p>
+<p>where discount (0&lt;) controls how later reward is assigned to earlier decisions. In a bounded task whose final result matters equally at every step, (gamma=1) can be appropriate. A smaller value expresses a preference for nearer reward; it does not prove which earlier action caused the outcome.</p>
+<p>The training objective is expected return:</p>
+<p>[ J()=<em>{</em>}[G_0]. ]</p>
+<p>The score may be nondifferentiable: a test passes, a database reaches a goal state, or a policy rule is violated. The policy-gradient identity moves the gradient onto the log probability of sampled actions. A Monte Carlo estimator is</p>
+<p>[ =<em>{t=0}^{T-1}</em>_(a_ts_t)G_t. ]</p>
+<p>If a sampled trajectory receives positive return, gradient ascent increases its selected actions’ log probabilities; negative return decreases them. This estimator is unbiased under its assumptions but noisy. Subtracting a baseline (b(s_t)) that does not depend on the sampled action preserves the expected gradient while reducing variance. The <strong>advantage</strong></p>
+<p>[ A_t=G_t-b(s_t) ]</p>
+<p>asks whether the sampled action did better than the comparison available at that state. Actor–critic methods learn (b) with a value model called a critic.</p>
+<p>Policy updates can move too far from the policy that generated the batch. Proximal Policy Optimization (PPO) records the old action probability and uses ratio</p>
+<p>[ _t()= . ]</p>
+<p>Its clipped surrogate is</p>
+<p>[ L^{}()= _t, ]</p>
+<p>where (epsilon&gt;0) bounds the region in which improvement keeps receiving the ordinary policy-gradient incentive. Clipping is a stabilizer, not a proof that the new policy is safe or improved.</p>
+<p>Group Relative Policy Optimization (GRPO) avoids a learned value critic by sampling a group of alternatives for the same prompt or state and normalizing their rewards. For group (mathcal{G}),</p>
+<p>[ A_i=, <em>{}=</em>{j}R_j, ]</p>
+<p>where (R_i) is trajectory reward, (sigma_{}) is the group reward standard deviation, and small (arepsilon) prevents division by zero. The policy then optimizes a PPO-like clipped objective, often with regularization toward a reference policy. “PPO without a critic” captures the memory-saving intuition, but the group construction, normalization, clipping, and regularization are load-bearing parts of the method.</p>
+<p>Reinforcement learning with verifiable rewards (RLVR) uses programmatic or otherwise checkable rewards instead of a learned preference score where the task permits. Chapter 8 owns RLVR for reasoning and the broader GRPO family. This chapter asks what changes when one sample contains many agent decisions, tools mutate an environment, and the reward arrives from final application state.</p>
+</div>
+</div>
+<p>The primer yields four rules for the rest of the chapter. Rewards define the behavior pressure. A baseline changes variance and local comparison, not task semantics. Policy-ratio control requires knowing which policy generated each action. Multi-turn credit depends on what counts as a state and action, not merely on which optimizer name appears in the configuration.</p>
+</section>
+<section id="sec-ch23-curriculum" class="level2" data-number="23.5">
+<h2 data-number="23.5" class="anchored" data-anchor-id="sec-ch23-curriculum"><span class="header-section-number">23.5</span> Climb from imitation to constrained online RL</h2>
+<p>RL is late in the improvement ladder. Begin with trajectories whose outcomes and process constraints have already been verified. If a capable policy produced them, <strong>behavior cloning</strong> (BC) fits the next-action distribution by supervised learning:</p>
+<p>[ L_{}()=-_{D}<em>t </em>(a_ts_t). ]</p>
+<p>BC is attractive because it is stable, uses existing training infrastructure, and does not need online exploration. It also imitates every systematic feature of accepted data, including accidental shortcuts, verbosity, and tool sequences that happened to work. “Successful” must therefore include final-state correctness, policy compliance, effect integrity, and provenance—not merely a favorable outcome flag.</p>
+<p>The deeper limitation is distribution shift. Expert demonstrations cover states induced by the expert. A learned policy makes occasional different actions, reaches unfamiliar states, and compounds errors because those recovery states are absent from (mathcal D). More expert data from the same narrow state distribution may not repair that gap.</p>
+<p>Dataset Aggregation (DAgger) addresses the mismatch iteratively: run the learner, collect the states it actually visits, ask an expert for the right action at those states, aggregate those labels, and retrain. “Expert” may mean a human, a stronger policy, a deterministic controller, or an application-specific oracle. It must be qualified for the decision; self-labeling a failure with the same policy does not provide independent correction.</p>
+<p>Offline RL can use logged rewards to improve beyond demonstrated actions without new environment interaction. The danger is estimating values for actions poorly represented in the log. Long agent trajectories worsen the problem because off-policy corrections multiply ratios across decisions:</p>
+<p>[ w_{0:T}=_{t=0}^{T-1} , ]</p>
+<p>where (pi_b) is the behavior policy. Products can explode or vanish. Conservative offline methods penalize unsupported actions or constrain the learned policy near logged behavior. They reduce extrapolation; they do not make a weak or confounded log causal evidence.</p>
+<p>Constrained online RL comes last. It lets the current policy explore in a resettable environment, which closes state coverage but creates real opportunities for reward gaming and unsafe effects. Run it in a sandbox with hidden checks, bounded actions, hard vetoes, and no ambient production authority.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    V["Verified successful trajectories"] --&gt; B["Behavior cloning"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    B --&gt; D["DAgger-style relabeling of learner states"]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    D --&gt; O["Conservative offline RL"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    O --&gt; R["Constrained online RL in resettable gym"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    R --&gt; S["Shadow evaluation and release gates"]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    B -. "state coverage gap" .-&gt; D</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    O -. "unsupported actions" .-&gt; R</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch23-curriculum" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch23-curriculum-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch23-curriculum">flowchart LR
+    V["Verified successful trajectories"] --&gt; B["Behavior cloning"]
+    B --&gt; D["DAgger-style relabeling of learner states"]
+    D --&gt; O["Conservative offline RL"]
+    O --&gt; R["Constrained online RL in resettable gym"]
+    R --&gt; S["Shadow evaluation and release gates"]
+    B -. "state coverage gap" .-&gt; D
+    O -. "unsupported actions" .-&gt; R
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch23-curriculum-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;23.1: The learning mode should become more adaptive only as state coverage, reward integrity, and environment containment become stronger.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>This is a curriculum of evidence, not a mandatory march to online RL. Stop at the first rung that meets the product contract. Chapters 26–27 own canaries, aliases, rollback, and operations; this chapter’s responsibility is to produce a versioned policy bundle and evidence packet they can release or reject.</p>
+</section>
+<section id="sec-ch23-trajectories" class="level2" data-number="23.6">
+<h2 data-number="23.6" class="anchored" data-anchor-id="sec-ch23-trajectories"><span class="header-section-number">23.6</span> Agent trajectories change the learning problem</h2>
+<p>A single completion can be approximated as a contextual bandit: observe a prompt, emit one completion, receive one reward. An agent instead changes what it will observe next. A tool call mutates a database, a browser action changes a page, and a failed command produces a diagnostic. The process is naturally modeled as a partially observable Markov decision process.</p>
+<p>Let (x_t) be authoritative environment state, which the model may not see. The environment emits observation (o_t). The harness constructs policy state (s_t) from the instruction, allowed context, memory, and prior observations. The policy proposes (a_t_(s_t)). A gate validates authority and arguments before executor (E) applies the action. The next observation is returned to the harness. This preserves Chapter 16’s ownership rule: the policy proposes; application code authorizes and executes.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    participant P as Policy</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    participant H as Harness and gate</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    participant E as Executor</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    participant X as Environment</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    participant V as Verifier</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    P-&gt;&gt;H: propose action with policy version and log probability</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    alt denied</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        H--&gt;&gt;P: typed denial observation</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    else authorized</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        H-&gt;&gt;E: validated action</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        E-&gt;&gt;X: apply effect with effect ID</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        X--&gt;&gt;H: next observation and state version</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    X-&gt;&gt;V: final authoritative state</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    V--&gt;&gt;H: reward components and hard vetoes</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch23-trajectory-ownership" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch23-trajectory-ownership-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch23-trajectory-ownership">sequenceDiagram
+    participant P as Policy
+    participant H as Harness and gate
+    participant E as Executor
+    participant X as Environment
+    participant V as Verifier
+    P-&gt;&gt;H: propose action with policy version and log probability
+    alt denied
+        H--&gt;&gt;P: typed denial observation
+    else authorized
+        H-&gt;&gt;E: validated action
+        E-&gt;&gt;X: apply effect with effect ID
+        X--&gt;&gt;H: next observation and state version
+    end
+    X-&gt;&gt;V: final authoritative state
+    V--&gt;&gt;H: reward components and hard vetoes
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch23-trajectory-ownership-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;23.2: Training may optimize the policy’s proposals, but the harness, executor, environment, and verifier retain their separate authority.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The trajectory record must support learning, replay analysis, and incident reconstruction. At minimum store task and environment snapshot IDs; policy, tokenizer, prompt, tool-schema, harness, and scorer versions; observation references; structured action and action mask; behavior-policy log probability; gate result; tool receipt or effect ID; termination category; reward components; and eligibility for training. A single “model version” field is insufficient because a prompt or tool-schema change alters the behavior policy.</p>
+<p>Do not use hidden chain-of-thought as the causal event log. It may be unavailable, unfaithful, or intentionally withheld. Record externally meaningful decisions: messages exposed to the application, tool proposals, gate outcomes, observations, state versions, effects, and verifier evidence. Chapter 25 owns interpretability and faithfulness questions.</p>
+<p>The chapter artifact retains the minimal learning seam:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># agent_gym.py — behavior-policy evidence on every action</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Transition:</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    observation: <span class="bu">str</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    action: <span class="bu">str</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    behavior_logp: <span class="bu">float</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    behavior_version: <span class="bu">int</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Trajectory:</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    task_id: <span class="bu">str</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    transitions: <span class="bu">list</span>[Transition] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    success: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    policy_violation: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    duplicate_effect: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    environment_units: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Action granularity affects learning. Token-level updates can shape structured arguments but broadcast noisy outcome credit across formatting tokens. Tool-call-level updates align with application decisions but need the log probability of the complete action under the behavior policy. Turn-level updates include reasoning or text surrounding the call, but the boundary must be reproducible. Choose the coarsest unit that captures the behavior being trained and whose probability can be recorded correctly.</p>
+</section>
+<section id="sec-ch23-environments" class="level2" data-number="23.7">
+<h2 data-number="23.7" class="anchored" data-anchor-id="sec-ch23-environments"><span class="header-section-number">23.7</span> Build resettable environments before trainers</h2>
+<p>An agent gym is not just a benchmark with a <code>reset()</code> method. It combines three versioned layers:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Layer</th>
+<th>Owns</th>
+<th>Failure when conflated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Taskset</strong></td>
+<td>Initial states, instructions, hidden goals, splits, difficulty and policy cases</td>
+<td>Training sees held-out answers or narrow tasks masquerade as a domain</td>
+</tr>
+<tr class="even">
+<td><strong>Harness</strong></td>
+<td>Policy context, tool schemas, gates, budgets, trace format, termination</td>
+<td>A harness change is mistaken for a weight improvement</td>
+</tr>
+<tr class="odd">
+<td><strong>Runtime</strong></td>
+<td>Reset, isolation, clocks, services, fixtures, resource limits, effect emulation</td>
+<td>Rollouts contaminate one another or touch production</td>
+</tr>
+</tbody>
+</table>
+<p>A reset contract must restore authoritative state, not merely clear conversation history. Database rows, files, queues, clock, random seed, authentication, rate-limit counters, and external-service fakes all belong to the episode identity. If perfect reset is impossible, create a fresh isolated namespace and record it. Every effect needs an idempotency or reconciliation identity so retries can be distinguished from duplicate actions.</p>
+<p>Training environments also need hidden structure. A policy that can read the checker, expected patch, target database snapshot, or reward implementation may optimize the test instead of the task. Separate agent-visible observations from verifier-only state. Hold out tasks, initial-state patterns, and exploit probes. Give the trainer reward components after the episode without exposing private checker implementation through tools.</p>
+<p>The artifact’s environment is deliberately permissive: an unauthorized refund can mutate fixture state. That design lets the scorer demonstrate why final-state success is insufficient. Production should enforce the policy at execution time as Chapter 17 teaches; a training gym should still retain adversarial cases that prove the reward and release gates would catch a defect.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># agent_gym.py — the high-value approval transition</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> step(<span class="va">self</span>, action: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="va">self</span>.done:</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="st">"step after terminal state"</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    high <span class="op">=</span> <span class="va">self</span>.task.amount <span class="op">&gt;</span> <span class="dv">50</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="va">self</span>.state <span class="kw">in</span> {<span class="st">"start"</span>, <span class="st">"recover"</span>} <span class="kw">and</span> action <span class="op">==</span> <span class="st">"lookup"</span>:</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.state <span class="op">=</span> <span class="st">"known_high"</span> <span class="cf">if</span> high <span class="cf">else</span> <span class="st">"known_low"</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> <span class="va">self</span>.state <span class="op">==</span> <span class="st">"known_high"</span> <span class="kw">and</span> action <span class="op">==</span> <span class="st">"request_approval"</span>:</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.state <span class="op">=</span> <span class="st">"approved"</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> <span class="va">self</span>.state <span class="kw">in</span> {<span class="st">"known_low"</span>, <span class="st">"approved"</span>} <span class="kw">and</span> action <span class="op">==</span> <span class="st">"refund"</span>:</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.refunded, <span class="va">self</span>.state, <span class="va">self</span>.effects <span class="op">=</span> <span class="va">True</span>, <span class="st">"refunded"</span>, <span class="va">self</span>.effects <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> <span class="va">self</span>.state <span class="op">==</span> <span class="st">"known_high"</span> <span class="kw">and</span> action <span class="op">==</span> <span class="st">"refund"</span>:</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.refunded, <span class="va">self</span>.state, <span class="va">self</span>.effects <span class="op">=</span> <span class="va">True</span>, <span class="st">"refunded"</span>, <span class="va">self</span>.effects <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.violation <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> <span class="va">self</span>.state <span class="op">==</span> <span class="st">"refunded"</span> <span class="kw">and</span> action <span class="op">==</span> <span class="st">"finish"</span>:</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.done <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> action <span class="op">==</span> <span class="st">"finish"</span>:</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.done <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.state <span class="op">=</span> <span class="st">"recover"</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"terminal"</span> <span class="cf">if</span> <span class="va">self</span>.done <span class="cf">else</span> <span class="va">self</span>.state</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Environment throughput is completed valid transitions per unit time, not raw requests per second. Measure reset latency, tool latency by class, verifier latency, timeout and infrastructure-error rates, active environments, and useful transitions per accelerator-hour. In agent RL, model generation may wait on browsers, containers, databases, human simulators, or test suites. Faster gradient kernels cannot recover time the rollout fleet spends waiting for environments.</p>
+<p>Benchmarks such as τ-bench and SWE-Gym demonstrate important environment properties: executable state, domain policy or repository tests, task setup, and trajectory collection. A training gym additionally needs safe repeatability, hidden splits, exploit resistance, high-throughput orchestration, and a policy for which trajectories may become training data.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>agent_gym.py</code> through environment and BC</td>
+<td style="text-align: right;">About 145 lines</td>
+<td>Reset removes prior effects, expert trajectories obey approval order, and recovery state is absent from BC data.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch23-credit" class="level2" data-number="23.8">
+<h2 data-number="23.8" class="anchored" data-anchor-id="sec-ch23-credit"><span class="header-section-number">23.8</span> Assign credit across tool calls</h2>
+<p>A terminal reward says which trajectory ended well. It does not identify which turn caused the outcome. Broadcasting one normalized sequence advantage across every generated token is a valid estimator for a trajectory objective, but it is coarse credit assignment. Early useful actions, irrelevant narration, and a late decisive tool call receive the same sign.</p>
+<p>There are three common resolutions:</p>
+<ul>
+<li><strong>Trajectory-level credit</strong> assigns the final advantage to all optimized actions. It needs no step labels and works when trajectories are short, but variance grows with horizon.</li>
+<li><strong>Turn- or action-level credit</strong> estimates a local advantage for a tool call or decision. It can use returns-to-go, process rewards, counterfactual rollouts, or groups of actions taken from comparable states.</li>
+<li><strong>Token-level credit</strong> distributes the action or turn signal over generated tokens, commonly through the same policy ratio. It is necessary for language-model parameter updates but should not be confused with knowing which semantic token caused success.</li>
+</ul>
+<p>The deterministic build uses an anchor-state idea: collect repeated visits to the same task and observation state, group the final rewards of actions taken there, and normalize within that group. For visit (i) at anchor (s),</p>
+<p>[ A_{i,s}=. ]</p>
+<p>This comparison is finer than one baseline across whole trajectories. It also depends on state identity. If two strings look equal while hidden database state differs, grouping them creates biased comparisons. Production anchor states require environment-defined identifiers or carefully justified equivalence, not model-generated summaries.</p>
+<p>Sparse reward is not automatically defective. A strong terminal verifier can be preferable to a dense learned process reward that is easier to exploit. Add intermediate reward only when the intermediate property is independently meaningful: an authorization was obtained, a compiler phase passed, or a required source was inspected. Reward shaping changes the objective; it does not reveal causal credit by itself.</p>
+<p>The build records old log probabilities, constructs local group advantages, makes two clipped passes over each fresh batch, and discards the batch. It is a tabular mechanism demonstration, not a claim that a production language model needs the same hyperparameters. A production trainer must compute sequence log probabilities with the exact tokenizer, action mask, sampling transformation, and reference policy used by its objective.</p>
+<p>Long-horizon training has recognizable pathologies. Nearly identical group rewards collapse the normalized signal. A lucky late action assigns positive advantage to weak earlier steps. Repeated low-information turns can dominate token count. Entropy can collapse so the policy repeats a narrow strategy and no longer generates comparison diversity. Track reward variance, action entropy by state, unique tool sequences, trajectory length, invalid-action rate, and advantage magnitude—not only average return.</p>
+</section>
+<section id="sec-ch23-rewards" class="level2" data-number="23.9">
+<h2 data-number="23.9" class="anchored" data-anchor-id="sec-ch23-rewards"><span class="header-section-number">23.9</span> Rewards must reject successful violations</h2>
+<p>Consider three high-value refund trajectories:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Trajectory</th>
+<th>Actions</th>
+<th>Final state</th>
+<th>Hidden failure</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Safe</strong></td>
+<td>lookup → approval → refund → finish</td>
+<td>Refunded</td>
+<td>None</td>
+</tr>
+<tr class="even">
+<td><strong>Shortcut</strong></td>
+<td>lookup → refund → finish</td>
+<td>Refunded</td>
+<td>Required approval bypassed</td>
+</tr>
+<tr class="odd">
+<td><strong>Loopy</strong></td>
+<td>lookup → approval → refund → refund → finish</td>
+<td>Refunded</td>
+<td>Duplicate external effect</td>
+</tr>
+</tbody>
+</table>
+<p>An outcome-only reward gives all three the same success. A scalar weighted sum can still trade a severe violation against a large outcome bonus. Separate reward components and use <strong>lexicographic constraints</strong>: first decide whether the trajectory is eligible; only then use scalar quality or efficiency to compare eligible trajectories.</p>
+<p>The artifact scorer makes that order executable:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># agent_gym.py — outcome quality cannot buy eligibility</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score_trajectory(trajectory: Trajectory) <span class="op">-&gt;</span> Score:</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    outcome <span class="op">=</span> <span class="fl">1.0</span> <span class="cf">if</span> trajectory.success <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    policy <span class="op">=</span> <span class="op">-</span><span class="fl">2.0</span> <span class="cf">if</span> trajectory.policy_violation <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    effects <span class="op">=</span> <span class="op">-</span><span class="fl">1.0</span> <span class="cf">if</span> trajectory.duplicate_effect <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    cost <span class="op">=</span> <span class="op">-</span><span class="fl">0.03</span> <span class="op">*</span> <span class="bu">len</span>(trajectory.transitions)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    eligible <span class="op">=</span> policy <span class="op">==</span> <span class="fl">0.0</span> <span class="kw">and</span> effects <span class="op">==</span> <span class="fl">0.0</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> Score(outcome <span class="op">+</span> policy <span class="op">+</span> effects <span class="op">+</span> cost,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>                 eligible, outcome, policy, effects, cost)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The scalar reward remains useful for advantage calculation and diagnostics, including the group baseline. The update loop separately checks <code>eligible</code>; shortcut and duplicate-effect trajectories produce no policy-gradient updates. This is conservative. In other systems, a safe denied action may deserve a negative update, while an executed prohibited action must never become a positive example. Write that policy explicitly.</p>
+<p>One narrated failure is enough. The build samples a high-value shortcut that reaches <code>refunded</code>, receives outcome component (+1), receives policy component (-2), and becomes ineligible. The group sees evidence that alternatives differ, but the shortcut’s actions never enter the update set. If the eligibility check were removed, changing the outcome weight could eventually make the forbidden sequence profitable.</p>
+<p>Reward gaming targets every visible seam:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Exploit</th>
+<th>What the policy learns</th>
+<th>Countermeasure</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Readable checker or expected answer</td>
+<td>Emit the fixture rather than solve the task</td>
+<td>Verifier-only state and hidden held-outs</td>
+</tr>
+<tr class="even">
+<td>Editable tests or policy files</td>
+<td>Weaken the definition of success</td>
+<td>Read-only verifier assets and immutable digests</td>
+</tr>
+<tr class="odd">
+<td>Mocked tool or intercepted receipt</td>
+<td>Forge success without final state</td>
+<td>Independent environment-state assertion</td>
+</tr>
+<tr class="even">
+<td>Timeout or crash ambiguity</td>
+<td>Seek episodes whose failure is mislabeled</td>
+<td>Typed infrastructure failure excluded from reward</td>
+</tr>
+<tr class="odd">
+<td>Duplicate retries</td>
+<td>Accumulate outcome credit through repeated effects</td>
+<td>Effect IDs, idempotency, and duplicate-effect veto</td>
+</tr>
+<tr class="even">
+<td>Proxy maximization</td>
+<td>Satisfy a count while harming the goal</td>
+<td>Component telemetry, adversarial probes, review</td>
+</tr>
+</tbody>
+</table>
+<p>Anti-exploit design is continuous because the learned policy searches the reward surface more aggressively than ordinary testing. Keep known exploit trajectories as must-not-train fixtures. Audit unexpectedly high rewards before scaling. Restrict the training runtime so finding an exploit cannot become a real external incident; Chapter 24 owns the broader security architecture.</p>
+</section>
+<section id="sec-ch23-infrastructure" class="level2" data-number="23.10">
+<h2 data-number="23.10" class="anchored" data-anchor-id="sec-ch23-infrastructure"><span class="header-section-number">23.10</span> Keep on-policy data fresh at production scale</h2>
+<p>On-policy training is a data-consistency problem. Each transition must identify the behavior policy that generated it. The policy version includes weights, tokenizer, prompt template, tool schema, action masking, decoding configuration, harness, and environment. If workers collect rollouts while weights change, the trainer must either synchronize at a declared boundary, quantify and correct policy lag, or reject stale trajectories.</p>
+<p>PPO-like objectives permit several optimization epochs over one batch because the recorded old probability defines the ratio. They do not authorize indefinite replay of a mixed six-month log. As lag grows, ratios clip more often, effective sample use falls, and unrecorded harness changes make the ratio itself incomplete. Offline logs belong to BC or explicitly offline objectives unless their behavior probabilities and environment identities satisfy the chosen estimator.</p>
+<p>A production system separates the <strong>execution plane</strong> from the <strong>training plane</strong>. Rollout workers run the real harness against isolated gym instances. A trajectory store accepts immutable, versioned events. Reward workers read verifier-only state and attach components plus eligibility. A curator filters duplicates, infrastructure failures, privacy violations, and contaminated tasks. The trainer reads an approved snapshot and publishes a candidate bundle, never the production alias.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    P["Production and expert trajectories"] --&gt; C["Verify, redact, deduplicate, version"]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    C --&gt; S["Immutable training snapshot"]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    S --&gt; W["Sandbox rollout workers"]</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    W --&gt; R["Reward components and eligibility"]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    R --&gt; T["Trainer"]</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    T --&gt; G["Evaluation and release gates"]</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    G --&gt;|"eligible"| A["Candidate alias"]</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    G --&gt;|"regression or exploit"| C</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    A --&gt;|"observed failures"| P</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch23-training-flywheel" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch23-training-flywheel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch23-training-flywheel">flowchart LR
+    P["Production and expert trajectories"] --&gt; C["Verify, redact, deduplicate, version"]
+    C --&gt; S["Immutable training snapshot"]
+    S --&gt; W["Sandbox rollout workers"]
+    W --&gt; R["Reward components and eligibility"]
+    R --&gt; T["Trainer"]
+    T --&gt; G["Evaluation and release gates"]
+    G --&gt;|"eligible"| A["Candidate alias"]
+    G --&gt;|"regression or exploit"| C
+    A --&gt;|"observed failures"| P
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch23-training-flywheel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;23.3: The production flywheel has two trust boundaries: outcomes must be curated before training, and learned weights must pass gates before serving.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Rollout throughput usually sets cluster balance. The generation engine handles prefix caching, batching, and policy sampling. Environments wait on tools and services. Reward workers may run tests or database comparisons. The training engine performs forward and backward passes. Increasing trainers while rollout queues are empty wastes accelerators; increasing rollout concurrency beyond database or browser capacity creates timeouts instead of useful transitions. Capacity-plan from measured service times and backpressure.</p>
+<p>The deterministic fixture reports <strong>declared work units</strong> rather than pretending laptop wall-clock timing predicts a cluster. Each tool action carries a stable environment cost, policy sampling carries three units per decision, and each accepted gradient carries one. This makes the bottleneck reproducible while preserving the accounting shape. A real adapter replaces units with monotonic timing and resource telemetry.</p>
+<div id="cell-fig-ch23-build-measurement" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>chapter_code <span class="op">=</span> Path(<span class="st">"code/ch23"</span>).resolve()</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">str</span>(chapter_code) <span class="kw">not</span> <span class="kw">in</span> sys.path:</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    sys.path.insert(<span class="dv">0</span>, <span class="bu">str</span>(chapter_code))</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> agent_gym <span class="im">import</span> run_experiment</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib_inline.backend_inline <span class="im">import</span> set_matplotlib_formats</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>plt.rcParams[<span class="st">"svg.hashsalt"</span>] <span class="op">=</span> <span class="st">"chapter-23-inline"</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>set_matplotlib_formats(<span class="st">"svg"</span>, metadata<span class="op">=</span>{<span class="st">"Date"</span>: <span class="va">None</span>})</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>report <span class="op">=</span> run_experiment()</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="fl">3.2</span>))</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].bar([<span class="st">"BC"</span>, <span class="st">"BC + RL"</span>], [report[<span class="st">"bc"</span>][<span class="st">"successes"</span>], report[<span class="st">"bc_plus_rl"</span>][<span class="st">"successes"</span>]])</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].<span class="bu">set</span>(ylabel<span class="op">=</span><span class="st">"eligible successes (of 4)"</span>, ylim<span class="op">=</span>(<span class="dv">0</span>, <span class="fl">4.3</span>))</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>units <span class="op">=</span> report[<span class="st">"training"</span>][<span class="st">"work_units"</span>]</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].bar([<span class="st">"environment"</span>, <span class="st">"sampling"</span>, <span class="st">"update"</span>], units.values())</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].<span class="bu">set</span>(ylabel<span class="op">=</span><span class="st">"declared work units"</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].tick_params(axis<span class="op">=</span><span class="st">"x"</span>, rotation<span class="op">=</span><span class="dv">20</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="fig-ch23-build-measurement" class="quarto-float quarto-figure quarto-figure-center anchored" alt="The left bar chart shows eligible held-out success rising from two of four after behavior cloning to four of four after group-relative reinforcement learning. The right chart shows environment work units above policy-sampling and update units.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch23-build-measurement-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="23-training-agents-rl_files/figure-html/fig-ch23-build-measurement-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;23.4: The fixture closes the recovery-state gap while declared environment work remains the largest training phase."><img src="23-training-agents-rl_files/figure-html/fig-ch23-build-measurement-output-1.svg" class="img-fluid figure-img" alt="The left bar chart shows eligible held-out success rising from two of four after behavior cloning to four of four after group-relative reinforcement learning. The right chart shows environment work units above policy-sampling and update units."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch23-build-measurement-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;23.4: The fixture closes the recovery-state gap while declared environment work remains the largest training phase.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The measurement answers two questions only: did the fixture learn the deliberately missing state, and which declared phase dominates? It does not establish sample efficiency, accelerator utilization, or model quality.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 (dated)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>As of 2026-07-19, public agent-RL work includes execution/training disaggregation, asynchronous tool rollouts, anchor-state group credit, and stabilized multi-turn objectives. Representative research systems include Agent Lightning, VerlTool, GiGPO, and RAGEN/StarPO. Hosted reinforcement fine-tuning surfaces expose user-defined graders, while open training stacks increasingly separate rollout engines from trainer backends. Their APIs, supported models, algorithm variants, and performance claims remain volatile.</p>
+<p><strong>Verify live: 2026-07-19.</strong> Recheck the primary <a href="https://arxiv.org/abs/2508.03680">Agent Lightning paper</a>, <a href="https://arxiv.org/abs/2509.01055">VerlTool paper</a>, <a href="https://arxiv.org/abs/2505.10978">GiGPO paper</a>, <a href="https://arxiv.org/abs/2504.20073">RAGEN paper</a>, maintained framework repositories, and the official <a href="https://platform.openai.com/docs/api-reference/fine-tuning">reinforcement fine-tuning</a> and <a href="https://platform.openai.com/docs/api-reference/graders">grader</a> documentation before adopting named systems or current interfaces.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch23-rft" class="level2" data-number="23.11">
+<h2 data-number="23.11" class="anchored" data-anchor-id="sec-ch23-rft"><span class="header-section-number">23.11</span> Train weights only after fixing the system</h2>
+<p>Agent reinforcement fine-tuning (RFT) is appropriate when the remaining behavior gap is genuinely in the policy, the task supplies reliable trajectory rewards, the gym covers policy-induced states, and the harness will remain stable long enough for training evidence to transfer. It is not the first response to a 30-percent failure rate.</p>
+<p>Use a six-step diagnosis:</p>
+<ol type="1">
+<li><strong>Repair the task contract.</strong> Remove ambiguous instructions and define authoritative completion.</li>
+<li><strong>Repair observations.</strong> Ensure the policy can see the state and provenance required for the decision.</li>
+<li><strong>Repair actions and gates.</strong> Make valid actions easy to express and invalid actions impossible or typed.</li>
+<li><strong>Repair the verifier.</strong> Test final state, policy compliance, effects, and infrastructure failure separately.</li>
+<li><strong>Use inference-time control.</strong> Improve context, decomposition, retries, or model choice when those target the failure directly.</li>
+<li><strong>Train only the residual.</strong> Choose BC, DAgger, offline RL, or constrained online RL according to the evidence ladder.</li>
+</ol>
+<p>This ordering is causal debugging. If a tool omits an essential argument, weight updates ask the model to work around a broken interface. If retrieval hides the relevant policy, training may memorize cases instead of gaining access to the rule. If the checker rewards unauthorized state changes, RL intensifies the defect. Fixing the system also creates cleaner trajectories for later training.</p>
+<p>When RFT is justified, freeze and version the contract before collecting the confirmatory dataset. Define action masks and zero-tolerance constraints. Predeclare training, validation, exploit, and held-out environment splits. Estimate rollout capacity and abort conditions. Start from a BC or otherwise stable policy unless the experiment specifically justifies cold exploration. Run shadow training, inspect reward-component distributions and trajectories, and make promotion a separate release decision under Chapter 22’s evidence contract.</p>
+<p>Rollback means restoring the prior complete policy bundle—not just weights. Tokenizer, prompt, tools, harness, scorer, and environment compatibility travel with it. A learned policy can also change traffic: more tool calls, longer trajectories, new error states, and higher approval volume. Chapters 26–27 own deployment and SLO operations; the trainer must hand them the capacity and failure evidence needed to operate the candidate.</p>
+</section>
+<section id="sec-ch23-build" class="level2" data-number="23.12">
+<h2 data-number="23.12" class="anchored" data-anchor-id="sec-ch23-build"><span class="header-section-number">23.12</span> Build</h2>
+<p>The integrated artifact consists of <a href="../code/ch23/agent_gym.py">agent_gym.py</a> and its focused <a href="../code/ch23/tests/test_agent_gym.py">tests</a>. It uses only the Python standard library; Matplotlib is needed only for the book figure. From the <code>newbook/</code> directory, run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> unittest discover <span class="at">-s</span> code/ch23/tests <span class="at">-v</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch23/agent_gym.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The default experiment is deterministic at seed 7. Read the JSON report in this order:</p>
+<ol type="1">
+<li><code>bc.successes = 2</code> of 4. The normal low- and high-value tasks pass. Both recovery-start tasks fail because BC never saw observation <code>recover</code>; its tied logits greedily select <code>finish</code>.</li>
+<li><code>bc_plus_rl.successes = 4</code> of 4 after 24 rounds. Fresh rollouts discover <code>lookup</code> from the recovery state and the state-grouped advantage makes that action more likely.</li>
+<li><code>vetoed_rollouts = 22</code>. Exploration found unauthorized or duplicate-effect trajectories that may have reached a refunded final state.</li>
+<li><code>vetoed_updates = 0</code>. The update set and veto set are intersected explicitly; no prohibited trajectory contributes an update.</li>
+<li><code>max_policy_lag = 0</code>. Each round’s trajectories were generated by the declared batch policy and discarded after the update.</li>
+<li>Declared work units are environment 30,682; policy sampling 12,267; update 7,774. The values are deterministic accounting fixtures, not elapsed milliseconds.</li>
+</ol>
+<p>The tests separately prove the BC coverage gap, scorer veto, group-centering property, reset isolation, and integrated outcome. Change <code>--seed</code> to inspect sensitivity or <code>--rounds</code> to change the on-policy budget. Predict the result before reducing rounds; a short run need not close both recovery states and may exit with status <code>2</code>.</p>
+<section id="acceptance-checks" class="level3" data-number="23.12.1">
+<h3 data-number="23.12.1" class="anchored" data-anchor-id="acceptance-checks"><span class="header-section-number">23.12.1</span> Acceptance checks</h3>
+<p>The build is complete when all focused tests pass, the default command exits zero, eligible held-out completion changes from two to four, at least one successful violation is vetoed, vetoed updates and policy lag remain zero, and environment work exceeds both sampling and update work.</p>
+</section>
+<section id="honesty-note" class="level3" data-number="23.12.2">
+<h3 data-number="23.12.2" class="anchored" data-anchor-id="honesty-note"><span class="header-section-number">23.12.2</span> Honesty note</h3>
+<p>The tabular policy makes state coverage, probabilities, clipping, and updates inspectable. It is not a language model and does not demonstrate useful agent capability. Declared work units make the bottleneck result reproducible but do not predict wall-clock ratios. The group-relative update is a small mechanism analogue with anchor-state advantages and clipping; production GRPO includes sequence-level likelihoods, batching, regularization, distributed rollout and training, and extensive stability controls. The permissive refund tool exists to test reward vetoes; a deployed executor must enforce approval before effect.</p>
+</section>
+</section>
+<section id="sec-ch23-endures" class="level2" data-number="23.13">
+<h2 data-number="23.13" class="anchored" data-anchor-id="sec-ch23-endures"><span class="header-section-number">23.13</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Train from trajectories only after final state, policy, effects, and provenance are verified. Climb from BC to learner-state relabeling, conservative offline learning, and constrained online learning only as evidence and containment improve. Treat a gym as taskset plus harness plus resettable runtime. Record behavior-policy probabilities and the whole policy bundle. Separate eligibility constraints from scalar quality. Localize credit at meaningful action boundaries, measure state coverage and entropy, and capacity-plan environments as part of the training system.</p>
+<p><strong>What changes.</strong> Agent-RL algorithm names, hosted RFT APIs, open training frameworks, rollout engines, anchor-state methods, model families, scaling results, and recommended hyperparameters will change. Removing the Landscape 2026 box leaves the curriculum, environment contract, reward boundaries, and freshness rules intact.</p>
+</section>
+<section id="sec-ch23-exercises" class="level2" data-number="23.14">
+<h2 data-number="23.14" class="anchored" data-anchor-id="sec-ch23-exercises"><span class="header-section-number">23.14</span> Exercises</h2>
+<ol type="1">
+<li>Compute returns-to-go for rewards ((0,0,1)) with (gamma{0.9,0.95,1.0}). Explain how discount changes early-turn weight and why it does not prove causal responsibility.</li>
+<li>Add one recovery state that differs only in hidden account status. Show why grouping by the visible string biases the local advantage, then add an environment-owned state identity that separates the groups.</li>
+<li>Implement one DAgger round: collect the BC policy’s learner-visited recovery states, label them with the scripted expert, retrain, and compare with the RL result. Defend which source of supervision is cheaper and safer for this fixture.</li>
+<li>Extend the scorer with a duplicate-effect constraint keyed by tenant and effect ID. Construct a retry after an ambiguous timeout and distinguish a safe reconciliation from a second refund.</li>
+<li>Expose the gym’s checker through a read tool and design a policy that gains reward without satisfying the intended task. Move the checker behind the verifier boundary and add the exploit as a must-not-train test.</li>
+<li>Given six months of trajectories from mixed prompts, tokenizers, tool schemas, scorers, and policies, define the minimum version tuple and decide which records qualify for BC, offline RL, on-policy correction, or exclusion.</li>
+<li>Design-review exercise: a support agent fails 30 percent of tasks and a product manager requests online RL. Apply the six-step diagnosis, define the evidence needed to advance each curriculum rung, and name the condition that would make you stop before RL.</li>
+</ol>
+</section>
+<section id="sec-ch23-sources" class="level2" data-number="23.15">
+<h2 data-number="23.15" class="anchored" data-anchor-id="sec-ch23-sources"><span class="header-section-number">23.15</span> Notes and sources</h2>
+<ul>
+<li>Williams, <a href="https://doi.org/10.1007/BF00992696">“Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning”</a>, introduced REINFORCE-style likelihood-ratio policy gradients.</li>
+<li>Schulman et al., <a href="https://arxiv.org/abs/1707.06347">“Proximal Policy Optimization Algorithms”</a>, introduced PPO’s clipped surrogate and repeated minibatch updates.</li>
+<li>Shao et al., <a href="https://arxiv.org/abs/2402.03300">“DeepSeekMath”</a>, introduced GRPO as a critic-free group-relative PPO variant for verifiable mathematical reasoning.</li>
+<li>Ross, Gordon, and Bagnell, <a href="https://arxiv.org/abs/1011.0686">“A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning”</a>, introduced DAgger and analyzes learning under policy-induced state distributions.</li>
+<li>Levine et al., <a href="https://arxiv.org/abs/2005.01643">“Offline Reinforcement Learning: Tutorial, Review, and Perspectives on Open Problems”</a>, surveys distribution shift and conservative learning from fixed logs.</li>
+<li>Feng et al., <a href="https://arxiv.org/abs/2505.10978">“Group-in-Group Policy Optimization for LLM Agent Training”</a>, constructs episode- and anchor-state-level relative advantages for agent trajectories.</li>
+<li>Wang et al., <a href="https://arxiv.org/abs/2504.20073">“RAGEN”</a>, studies multi-turn agent RL pathologies including reward-variance cliffs, gradient spikes, and strategy collapse.</li>
+<li>Luo et al., <a href="https://arxiv.org/abs/2508.03680">“Agent Lightning”</a>, proposes execution/training disaggregation and hierarchical credit assignment for existing agents.</li>
+<li>Jiang et al., <a href="https://arxiv.org/abs/2509.01055">“VerlTool”</a>, treats asynchronous multi-turn tool environments as a first-class rollout system.</li>
+<li>Yao et al., <a href="https://arxiv.org/abs/2406.12045">τ-bench</a>, combines domain policy, tool interaction, user simulation, and final database-state evaluation.</li>
+<li>Pan et al., <a href="https://arxiv.org/abs/2412.21139">“Training Software Engineering Agents and Verifiers with SWE-Gym”</a>, provides executable repository environments and trajectories for training software agents.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/22-evaluation.html" class="pagination-link" aria-label="Evaluation [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/24-agent-security.html" class="pagination-link" aria-label="Agent Security [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

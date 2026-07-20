@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Choose the smallest model-side intervention that matches the evidence, train it without confusing specialization for progress, and ship it only through a four-set release gate.">
+
+<title>11&nbsp; Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/12-api-surface.html" rel="next">
+<link href="../chapters/10-serving-at-scale.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/09-inference-behavior.html">Part III — Inference, Serving, and Customization</a></li><li class="breadcrumb-item"><a href="../chapters/11-customization.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch11-prerequisites" id="toc-sec-ch11-prerequisites" class="nav-link active" data-scroll-target="#sec-ch11-prerequisites"><span class="header-section-number">11.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch11-contents" id="toc-sec-ch11-contents" class="nav-link" data-scroll-target="#sec-ch11-contents"><span class="header-section-number">11.2</span> Contents</a></li>
+  <li><a href="#sec-ch11-decision-tree" id="toc-sec-ch11-decision-tree" class="nav-link" data-scroll-target="#sec-ch11-decision-tree"><span class="header-section-number">11.3</span> The customization decision tree</a></li>
+  <li><a href="#sec-ch11-will-build" id="toc-sec-ch11-will-build" class="nav-link" data-scroll-target="#sec-ch11-will-build"><span class="header-section-number">11.4</span> What you will build</a></li>
+  <li><a href="#sec-ch11-peft" id="toc-sec-ch11-peft" class="nav-link" data-scroll-target="#sec-ch11-peft"><span class="header-section-number">11.5</span> LoRA and QLoRA isolate a trainable update</a></li>
+  <li><a href="#sec-ch11-distillation" id="toc-sec-ch11-distillation" class="nav-link" data-scroll-target="#sec-ch11-distillation"><span class="header-section-number">11.6</span> Distillation moves behavior down the size ladder</a></li>
+  <li><a href="#sec-ch11-merging" id="toc-sec-ch11-merging" class="nav-link" data-scroll-target="#sec-ch11-merging"><span class="header-section-number">11.7</span> Model merging combines task vectors, not capabilities</a></li>
+  <li><a href="#sec-ch11-preference-rft" id="toc-sec-ch11-preference-rft" class="nav-link" data-scroll-target="#sec-ch11-preference-rft"><span class="header-section-number">11.8</span> Preference tuning and reinforcement fine-tuning are surgical tools</a></li>
+  <li><a href="#sec-ch11-data" id="toc-sec-ch11-data" class="nav-link" data-scroll-target="#sec-ch11-data"><span class="header-section-number">11.9</span> Data engineering determines what customization learns</a></li>
+  <li><a href="#sec-ch11-forgetting" id="toc-sec-ch11-forgetting" class="nav-link" data-scroll-target="#sec-ch11-forgetting"><span class="header-section-number">11.10</span> Forgetting and compression define the capability budget</a></li>
+  <li><a href="#sec-ch11-eval-gate" id="toc-sec-ch11-eval-gate" class="nav-link" data-scroll-target="#sec-ch11-eval-gate"><span class="header-section-number">11.11</span> The four-set gate decides whether a model ships</a></li>
+  <li><a href="#sec-ch11-serving" id="toc-sec-ch11-serving" class="nav-link" data-scroll-target="#sec-ch11-serving"><span class="header-section-number">11.12</span> Serving customized models closes the loop</a></li>
+  <li><a href="#sec-ch11-landscape" id="toc-sec-ch11-landscape" class="nav-link" data-scroll-target="#sec-ch11-landscape"><span class="header-section-number">11.13</span> Landscape 2026 (dated)</a></li>
+  <li><a href="#sec-ch11-build" id="toc-sec-ch11-build" class="nav-link" data-scroll-target="#sec-ch11-build"><span class="header-section-number">11.14</span> Build</a></li>
+  <li><a href="#sec-ch11-endures" id="toc-sec-ch11-endures" class="nav-link" data-scroll-target="#sec-ch11-endures"><span class="header-section-number">11.15</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch11-exercises" id="toc-sec-ch11-exercises" class="nav-link" data-scroll-target="#sec-ch11-exercises"><span class="header-section-number">11.16</span> Exercises</a></li>
+  <li><a href="#sec-ch11-sources" id="toc-sec-ch11-sources" class="nav-link" data-scroll-target="#sec-ch11-sources"><span class="header-section-number">11.17</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/09-inference-behavior.html">Part III — Inference, Serving, and Customization</a></li><li class="breadcrumb-item"><a href="../chapters/11-customization.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch11" class="quarto-section-identifier"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch11-prerequisites" class="level2" data-number="11.1">
+<h2 data-number="11.1" class="anchored" data-anchor-id="sec-ch11-prerequisites"><span class="header-section-number">11.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, backpropagation, basic Python, and beginner PyTorch.</p>
+<p><strong>From earlier chapters:</strong> Chapter 5’s data-mixture and contamination treatment established why provenance, deduplication, and clean evaluation data matter. <a href="../chapters/07-post-training.html#sec-ch07">Chapter 7, Supervised and preference post-training</a> owns the derivations of SFT, reward modeling, DPO, and RLHF. <a href="../chapters/08-reasoning-test-time-compute.html#sec-ch08">Chapter 8, Reinforcement learning with verifiable rewards</a> owns reasoning-policy optimization. <a href="../chapters/10-serving-at-scale.html#sec-ch10-quantization">Chapter 10, Quantization is a validation problem</a> owns inference quantization and multi-LoRA serving mechanics. This chapter turns those ingredients into a customization decision and release workflow.</p>
+<p><strong>Not required:</strong> a training cluster, access to a proprietary teacher, experience with a fine-tuning service, or a seven-billion-parameter checkpoint. The default build is a deterministic CPU proxy; an optional adapter exposes the same QLoRA configuration to a real open-weight model.</p>
+</blockquote>
+</section>
+<section id="sec-ch11-contents" class="level2" data-number="11.2">
+<h2 data-number="11.2" class="anchored" data-anchor-id="sec-ch11-contents"><span class="header-section-number">11.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch11-decision-tree">The customization decision tree</a></li>
+<li><a href="#sec-ch11-will-build">What you will build</a></li>
+<li><a href="#sec-ch11-peft">LoRA and QLoRA isolate a trainable update</a></li>
+<li><a href="#sec-ch11-distillation">Distillation moves behavior down the size ladder</a></li>
+<li><a href="#sec-ch11-merging">Model merging combines task vectors, not capabilities</a></li>
+<li><a href="#sec-ch11-preference-rft">Preference tuning and reinforcement fine-tuning are surgical tools</a></li>
+<li><a href="#sec-ch11-data">Data engineering determines what customization learns</a></li>
+<li><a href="#sec-ch11-forgetting">Forgetting and compression define the capability budget</a></li>
+<li><a href="#sec-ch11-eval-gate">The four-set gate decides whether a model ships</a></li>
+<li><a href="#sec-ch11-serving">Serving customized models closes the loop</a></li>
+<li><a href="#sec-ch11-landscape">Landscape 2026 (dated)</a></li>
+<li><a href="#sec-ch11-build">Build</a></li>
+<li><a href="#sec-ch11-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch11-exercises">Exercises</a></li>
+<li><a href="#sec-ch11-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch11-decision-tree" class="level2" data-number="11.3">
+<h2 data-number="11.3" class="anchored" data-anchor-id="sec-ch11-decision-tree"><span class="header-section-number">11.3</span> The customization decision tree</h2>
+<p>A support assistant repeatedly answers with the wrong refund policy. The team proposes fine-tuning because the error appears in the model’s output. That diagnosis is one layer too late. The policy changes every quarter, must be cited, and depends on the customer’s jurisdiction. Encoding today’s answer in weights would make updates slow, provenance invisible, and stale behavior difficult to revoke. The failure is missing evidence and state, not missing response behavior.</p>
+<p>The first customization skill is deciding <em>not</em> to customize weights. Name the failing contract before choosing a method:</p>
+<ul>
+<li><strong>Evidence:</strong> the answer requires facts that are private, mutable, attributable, or too rare to trust to parametric recall. Retrieve the facts and require grounded use.</li>
+<li><strong>State:</strong> the answer depends on an account, workflow, prior action, or current environment. Read state through an authorized interface.</li>
+<li><strong>Effect:</strong> success means changing the world—issuing a refund, compiling code, or updating a ticket. Use a typed tool with validation and authorization.</li>
+<li><strong>Behavior:</strong> the necessary information is already present, but the model selects the wrong format, tone, classification, transformation, or refusal policy. Prompting or post-training may fit.</li>
+<li><strong>Representation:</strong> retrieval fails because semantically related items are poorly embedded or ranked. Tune the retriever, embedding model, or reranker against retrieval judgments.</li>
+<li><strong>Economics:</strong> a strong model succeeds, but latency or per-query compute prevents deployment. Distill into a smaller student, prune a family member, or route easy cases to it.</li>
+</ul>
+<p>The RAG branch is completed in Ch 14. This section is deliberately self-contained because Chapter 14’s Route B reader uses it to decide whether retrieval is the missing mechanism.</p>
+<p>Before any training, build the strongest non-training baseline that the production interface permits: a precise instruction, representative few-shot examples, a typed output schema, retrieved evidence when appropriate, and a deterministic verifier. Run that baseline on a frozen evaluation set. Training without this baseline cannot distinguish a learned capability from an expensive way to shorten a prompt.</p>
+<p>Once the defect is genuinely model behavior, the kind of supervision selects the method:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Supervision the team can produce</th>
+<th>Most direct intervention</th>
+<th>What it teaches</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>“Here is the response to write”</td>
+<td>SFT, often through LoRA or QLoRA</td>
+<td>conditional imitation: input to target output</td>
+</tr>
+<tr class="even">
+<td>“Response A is better than B”</td>
+<td>preference tuning such as DPO</td>
+<td>relative choice under a prompt distribution</td>
+</tr>
+<tr class="odd">
+<td>“This outcome scores 0.8”</td>
+<td>reinforcement fine-tuning</td>
+<td>search against a stable reward or grader</td>
+</tr>
+<tr class="even">
+<td>“Here is the teacher distribution”</td>
+<td>logit distillation</td>
+<td>relative probability across alternatives</td>
+</tr>
+<tr class="odd">
+<td>“Here is the teacher completion or solution trace”</td>
+<td>sequence distillation</td>
+<td>imitation of teacher-generated trajectories</td>
+</tr>
+<tr class="even">
+<td>“These specialized checkpoints share one base”</td>
+<td>model merging</td>
+<td>an evaluated combination of parameter updates</td>
+</tr>
+<tr class="odd">
+<td>“Here is a large unlabeled domain corpus”</td>
+<td>continued pretraining</td>
+<td>the domain’s token distribution, vocabulary, and regularities</td>
+</tr>
+</tbody>
+</table>
+<p>Do not climb this table as a maturity ladder. SFT is not an inferior form of RL when exact targets are available; RFT is not useful when a grader is noisy or exploitable. Pick the supervision that most directly expresses the contract.</p>
+<p>Figure <a href="#fig-ch11-decision-tree" class="quarto-xref">Figure&nbsp;<span>11.1</span></a> makes escalation and its stop conditions explicit. Every weight-changing path returns to the same release gate.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart TD</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    F(["Observed production failure"]) --&gt; B["Freeze a baseline and reproduce it"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    B --&gt; Q{"What is missing?"}</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    Q --&gt;|"mutable facts or citations"| R["Retrieval / RAG — completed in Ch 14"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    Q --&gt;|"private or live state"| S["Authorized state read"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    Q --&gt;|"external effect"| T["Typed tool + policy"]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    Q --&gt;|"retrieval geometry"| E["Embedding or reranker tuning"]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    Q --&gt;|"response behavior"| H{"Available supervision?"}</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    H --&gt;|"target response"| SFT["SFT with PEFT or full tuning"]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    H --&gt;|"ranked pair"| DPO["Preference tuning"]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    H --&gt;|"reliable scalar verifier"| RFT["Reinforcement fine-tuning"]</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    Q --&gt;|"teacher succeeds, serving is costly"| KD["Distill to a smaller student"]</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    Q --&gt;|"compatible specialists exist"| M["Merge task vectors"]</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    R --&gt; G["Four-set task and regression gate"]</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    E --&gt; G</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    SFT --&gt; G</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    DPO --&gt; G</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    RFT --&gt; G</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    KD --&gt; G</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    M --&gt; G</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    G --&gt;|"pass"| P(["Canary, observe, promote"])</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    G --&gt;|"fail"| B</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch11-decision-tree" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch11-decision-tree-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch11-decision-tree">flowchart TD
+    F(["Observed production failure"]) --&gt; B["Freeze a baseline and reproduce it"]
+    B --&gt; Q{"What is missing?"}
+    Q --&gt;|"mutable facts or citations"| R["Retrieval / RAG — completed in Ch 14"]
+    Q --&gt;|"private or live state"| S["Authorized state read"]
+    Q --&gt;|"external effect"| T["Typed tool + policy"]
+    Q --&gt;|"retrieval geometry"| E["Embedding or reranker tuning"]
+    Q --&gt;|"response behavior"| H{"Available supervision?"}
+    H --&gt;|"target response"| SFT["SFT with PEFT or full tuning"]
+    H --&gt;|"ranked pair"| DPO["Preference tuning"]
+    H --&gt;|"reliable scalar verifier"| RFT["Reinforcement fine-tuning"]
+    Q --&gt;|"teacher succeeds, serving is costly"| KD["Distill to a smaller student"]
+    Q --&gt;|"compatible specialists exist"| M["Merge task vectors"]
+    R --&gt; G["Four-set task and regression gate"]
+    E --&gt; G
+    SFT --&gt; G
+    DPO --&gt; G
+    RFT --&gt; G
+    KD --&gt; G
+    M --&gt; G
+    G --&gt;|"pass"| P(["Canary, observe, promote"])
+    G --&gt;|"fail"| B
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch11-decision-tree-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11.1: Which missing mechanism should be repaired before a team changes model weights?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Two tempting shortcuts fail this tree. Fine-tuning on documents is not a dependable database: memorization is uneven, updates require training, and answers do not carry source identity. Fine-tuning on a handful of bad outputs is also not a specification: the examples may encode an accidental wording, judge bias, or one traffic slice. Diagnose the invariant, then collect supervision around it.</p>
+</section>
+<section id="sec-ch11-will-build" class="level2" data-number="11.4">
+<h2 data-number="11.4" class="anchored" data-anchor-id="sec-ch11-will-build"><span class="header-section-number">11.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled" title="The customization decision lab">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>The customization decision lab
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will extend one integrated artifact rooted at <a href="../code/ch11/customization_lab.py"><code>code/ch11/customization_lab.py</code></a>. Its declared synthetic linear fixture has a frozen base classifier, two related tasks, and four data partitions. The lab reconstructs the base through the NF4 codebook, trains a rank-two LoRA update, adds temperature-scaled logit distillation, evaluates every checkpoint on train, development, untouched task-test, and general-regression sets, then sweeps a two-adapter linear merge against TIES.</p>
+<p><a href="../code/ch11/render_metrics.py"><code>render_metrics.py</code></a> renders the numeric result from the same functions. <a href="../code/ch11/hf_qlora_adapter.py"><code>hf_qlora_adapter.py</code></a> is an optional training seam for a real seven-billion-parameter-class conversational checkpoint and teacher-trace JSONL; it does not replace the release gate. Success in the default fixture means the task-test gain reaches eight percentage points, general regression loses no more than eight points, every mechanism test passes, and the merge result is reported rather than presumed.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch11-peft" class="level2" data-number="11.5">
+<h2 data-number="11.5" class="anchored" data-anchor-id="sec-ch11-peft"><span class="header-section-number">11.5</span> LoRA and QLoRA isolate a trainable update</h2>
+<p>Full fine-tuning gives every parameter permission to move. That is useful when a broad distribution shift needs high capacity, but it couples one adaptation to the storage, optimizer state, checkpointing, and serving cost of an entire model. Parameter-efficient fine-tuning (PEFT) constrains the update and keeps a reusable base.</p>
+<p>For a pretrained linear map <span class="math inline">W_0\in\mathbb{R}^{d_{out}\times d_{in}}</span>, LoRA freezes <span class="math inline">W_0</span> and learns</p>
+<p><span class="math display">
+h=W_0x+\frac{\alpha}{r}BAx,
+</span></p>
+<p>where <span class="math inline">A\in\mathbb{R}^{r\times d_{in}}</span>, <span class="math inline">B\in\mathbb{R}^{d_{out}\times r}</span>, rank <span class="math inline">r\ll\min(d_{in},d_{out})</span>, and <span class="math inline">\alpha</span> controls update scale. The trainable parameter count is <span class="math inline">r(d_{in}+d_{out})</span> instead of <span class="math inline">d_{in}d_{out}</span>. A common initialization draws <span class="math inline">A</span> and sets <span class="math inline">B=0</span>, so the first forward pass exactly matches the base. After training, <span class="math inline">\Delta W=(\alpha/r)BA</span> can remain as an adapter or be added to a compatible base for inference.</p>
+<p>A common mixed-precision Adam accounting is roughly 16 bytes per <em>trainable</em> parameter—half-precision weight and gradient, a full-precision master weight, and two full-precision moments—before activations and temporary buffers. LoRA reduces that term and the saved artifact. It does not erase activation memory, base-weight memory, optimizer implementation details, or the cost of forwarding through the full model.</p>
+<p>Configuration is a capacity allocation problem:</p>
+<ol type="1">
+<li>Establish an all-linear baseline when the architecture and PEFT implementation support it; restricting updates to query and value projections is a historical default, not a universal optimum.</li>
+<li>Sweep rank against held-out quality. Rank is update capacity, not an accuracy knob with monotonic returns.</li>
+<li>Treat <span class="math inline">\alpha</span>, learning rate, dropout, target modules, sequence length, packing, and epochs as a coupled recipe. The heuristic <span class="math inline">\alpha=2r</span> is a starting point, not a law.</li>
+<li>Inspect trainable parameter names and counts before the first batch. A misspelled module pattern can create a no-op or update an unintended head.</li>
+<li>Save the base revision, tokenizer, chat template, PEFT configuration, and adapter together. An adapter is not self-describing enough to deploy safely.</li>
+</ol>
+<p>Rank-stabilized LoRA replaces <span class="math inline">\alpha/r</span> scaling with <span class="math inline">\alpha/\sqrt{r}</span> so updates do not vanish as quickly at high rank. DoRA separates weight magnitude from direction and applies a low-rank update to the direction. Both are hypotheses to evaluate under the same gate; neither repairs poor supervision.</p>
+<p>Full fine-tuning remains an important control. Escalate when a well-tuned PEFT sweep saturates, the required update is broad rather than approximately low rank, embeddings or architectural components must change, or continued pretraining is the actual objective. Compare it with PEFT at matched data and a declared compute budget; a full update can gain capacity while increasing optimizer memory, checkpoint size, forgetting surface, and the cost of keeping variants independently deployable.</p>
+<p>QLoRA makes the <em>frozen</em> base cheaper to hold during adapter training. It stores base weights in four-bit NormalFloat (NF4), dequantizes them to a higher-precision compute type for matrix operations, and backpropagates through that fixed reconstruction into LoRA parameters. The optimized object remains the adapter; the four-bit codes are not updated.</p>
+<p>NF4 places code points according to a normal-distribution prior and includes an exact zero. Double quantization compresses the blockwise quantization constants, saving about 0.37 bits per parameter in the QLoRA experiments. Paged optimizers move optimizer pages through unified memory to control transient spikes. These mechanisms solve different memory terms and should be measured separately.</p>
+<p>Figure <a href="#fig-ch11-qlora" class="quarto-xref">Figure&nbsp;<span>11.2</span></a> answers the frequent question “what receives a gradient?” The quantized base participates in the computation but is immutable.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    X(["Activation x"]) --&gt; Q["Frozen NF4 codes + block scales"]</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    Q --&gt;|"dequantize for compute"| W["Base matrix multiply in bf16/fp16"]</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    X --&gt; A["Trainable LoRA A"]</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    A --&gt; B["Trainable LoRA B"]</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    W --&gt; SUM(("+"))</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    B --&gt;|"scaled low-rank update"| SUM</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    SUM --&gt; H(["Activation h"])</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    L["Loss"] -.-&gt;|"gradient"| B</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    L -.-&gt;|"gradient"| A</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    L -.-&gt;|"no update"| Q</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch11-qlora" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch11-qlora-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch11-qlora">flowchart LR
+    X(["Activation x"]) --&gt; Q["Frozen NF4 codes + block scales"]
+    Q --&gt;|"dequantize for compute"| W["Base matrix multiply in bf16/fp16"]
+    X --&gt; A["Trainable LoRA A"]
+    A --&gt; B["Trainable LoRA B"]
+    W --&gt; SUM(("+"))
+    B --&gt;|"scaled low-rank update"| SUM
+    SUM --&gt; H(["Activation h"])
+    L["Loss"] -.-&gt;|"gradient"| B
+    L -.-&gt;|"gradient"| A
+    L -.-&gt;|"no update"| Q
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch11-qlora-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11.2: During QLoRA, which representation is stored, which precision computes, and which parameters update?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The lab implements the NF4 reconstruction and the low-rank gradient explicitly:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch11/customization_lab.py — changed regions: nf4_quantize, LoRA</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>quantized_base, rmse <span class="op">=</span> nf4_quantize(full_base, group_size<span class="op">=</span><span class="dv">16</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>adapter <span class="op">=</span> LoRA(quantized_base, rank<span class="op">=</span><span class="dv">2</span>, alpha<span class="op">=</span><span class="fl">4.0</span>, seed<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>frozen <span class="op">=</span> quantized_base.copy()</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>train_sft(adapter, sets[<span class="st">"train"</span>])</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> np.array_equal(quantized_base, frozen)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> np.linalg.norm(adapter.delta) <span class="op">&gt;</span> <span class="dv">0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>customization_lab.py</code> after NF4 and LoRA</td>
+<td style="text-align: right;">97 lines</td>
+<td>The base reconstruction never changes; only the low-rank update receives optimization steps.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch11-distillation" class="level2" data-number="11.6">
+<h2 data-number="11.6" class="anchored" data-anchor-id="sec-ch11-distillation"><span class="header-section-number">11.6</span> Distillation moves behavior down the size ladder</h2>
+<p>A frontier teacher classifies difficult tickets accurately, but its latency and price make it unsuitable for every request. Distillation asks a smaller student to reproduce the teacher on a <em>declared operating distribution</em>. It does not copy an abstract capability object. What transfers depends on prompts, teacher access, targets, student capacity, and loss.</p>
+<p><strong>Sequence-level distillation</strong> samples teacher completions and uses them as SFT targets. It works through a black-box API and can transfer format, style, tool-selection patterns, or solution traces. It discards the teacher’s probability mass over alternatives and inherits sampling errors. Generate multiple candidates when a verifier exists, retain provenance and teacher settings, filter invalid outputs, and preserve human or executable gold data as an anchor.</p>
+<p><strong>Logit distillation</strong> uses the teacher distribution. Let <span class="math inline">z_T</span> and <span class="math inline">z_S</span> be teacher and student logits and let temperature <span class="math inline">\tau&gt;0</span> soften both distributions:</p>
+<p><span class="math display">
+p_T^{(\tau)}=\operatorname{softmax}(z_T/\tau),\qquad
+p_S^{(\tau)}=\operatorname{softmax}(z_S/\tau).
+</span></p>
+<p>A standard objective contains</p>
+<p><span class="math display">
+\mathcal{L}_{KD}=\tau^2D_{KL}\!\left(p_T^{(\tau)}\,\|\,p_S^{(\tau)}\right).
+</span></p>
+<p>The teacher can reveal that two wrong labels are nearly plausible even when its sampled output supplies only one hard target. The <span class="math inline">\tau^2</span> factor compensates for gradient shrinkage introduced by temperature. This white-box signal requires compatible vocabularies or an explicit mapping and can be expensive across all tokens.</p>
+<p>Direction matters. Forward KL, <span class="math inline">D_{KL}(p_T\|p_S)</span>, penalizes the student for under-covering teacher-supported regions. Reverse KL, <span class="math inline">D_{KL}(p_S\|p_T)</span>, emphasizes modes the student itself assigns mass to; MiniLLM developed a reverse-KL formulation for generative LMs. These are different objectives, not interchangeable spelling.</p>
+<p><strong>On-policy distillation</strong> addresses exposure mismatch. Static teacher sequences condition training on teacher prefixes, while deployment conditions the student on its own prior tokens. Generalized Knowledge Distillation lets the student generate prefixes and asks the teacher for feedback there. It spends teacher compute on states the student actually visits and can focus learning on self-generated mistakes. It also needs safeguards against low-quality or adversarial student trajectories.</p>
+<p>Reasoning traces add a learnability constraint. A correct, very long teacher solution can exceed the student’s capacity or teach verbal mannerisms rather than a reusable procedure. Evidence on the small-model learnability gap found that students at or below three billion parameters did not consistently benefit from longer traces or larger teachers; shorter or mixed-complexity traces could work better. Treat trace length, abstraction, correctness, diversity, and student likelihood as data-selection variables. Compare answer-only, concise derivation, long trace, and mixed curricula on an untouched set. Do not assume access to a provider’s private hidden chain of thought; use outputs the provider and license permit, executable trajectories, or concise authored rationales.</p>
+<p>Distillation becomes an economic replacement only after amortization. If data generation and training cost <span class="math inline">C_{build}</span>, the teacher costs <span class="math inline">C_T</span> per in-scope query, the student costs <span class="math inline">C_S&lt;C_T</span>, and <span class="math inline">N</span> such queries are expected, the direct-cost break-even is</p>
+<p><span class="math display">
+N&gt;\frac{C_{build}}{C_T-C_S}.
+</span></p>
+<p>Add routing, monitoring, retraining, and teacher fallback before using this as a business case. A student matching the teacher on support-ticket triage has not matched it on open-domain reasoning. Record the envelope and route outside it.</p>
+<p>The lab begins KD from the SFT adapter and uses softened teacher logits on a separate distillation set:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch11/customization_lab.py — changed region: LoRA.kd_step</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>teacher <span class="op">=</span> softmax(teacher_logits, temperature)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>student <span class="op">=</span> softmax(adapter.logits(x), temperature)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>loss <span class="op">=</span> np.mean(np.<span class="bu">sum</span>(teacher <span class="op">*</span> np.log((teacher <span class="op">+</span> <span class="fl">1e-12</span>) <span class="op">/</span> (student <span class="op">+</span> <span class="fl">1e-12</span>)), axis<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>grad_logits <span class="op">=</span> (student <span class="op">-</span> teacher) <span class="op">*</span> temperature <span class="op">/</span> <span class="bu">len</span>(x)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>adapter._apply_gradient(grad_logits.T <span class="op">@</span> x, learning_rate)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>customization_lab.py</code> after logit KD</td>
+<td style="text-align: right;">30 lines</td>
+<td>Temperature changes the supervised distribution, and KD loss falls without granting updates to the base.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch11-merging" class="level2" data-number="11.7">
+<h2 data-number="11.7" class="anchored" data-anchor-id="sec-ch11-merging"><span class="header-section-number">11.7</span> Model merging combines task vectors, not capabilities</h2>
+<p>Two teams fine-tune the same base: one for ticket routing, another for urgency detection. Retraining a joint model requires both datasets and another training run, so the teams average checkpoints and call the result a combined expert. Sometimes that works because the checkpoints remain in a connected low-loss region. Sometimes opposing updates cancel the features each task needs.</p>
+<p>For a base parameter vector <span class="math inline">\theta_0</span> and task-fine-tuned parameters <span class="math inline">\theta_i</span>, define the task vector</p>
+<p><span class="math display">
+\tau_i=\theta_i-\theta_0.
+</span></p>
+<p>Linear task arithmetic constructs <span class="math inline">\theta'=\theta_0+\sum_i\lambda_i\tau_i</span>. A model soup instead averages compatible fine-tuned checkpoints, often selected by validation performance. Both require aligned parameters: the same architecture, tensor shapes, tokenizer and vocabulary layout, and normally the same base revision. Matching filenames or model family names is insufficient.</p>
+<p>LoRA makes the subtraction cheap because <span class="math inline">\tau_i</span> is already represented by low-rank deltas. Merge the realized deltas <span class="math inline">B_iA_i</span>, not <span class="math inline">A</span> matrices separately from <span class="math inline">B</span> matrices: in general,</p>
+<p><span class="math display">
+(B_1+B_2)(A_1+A_2)\ne B_1A_1+B_2A_2.
+</span></p>
+<p>If one compact adapter must represent the merged delta, add the deltas and refactor the result with a rank-constrained SVD, accepting approximation error.</p>
+<p>TIES addresses two common interference sources:</p>
+<ol type="1">
+<li><strong>Trim:</strong> zero small-magnitude changes that are more likely redundant or noisy.</li>
+<li><strong>Elect:</strong> choose an aggregate sign for each surviving coordinate.</li>
+<li><strong>Disjoint merge:</strong> combine only task updates whose sign agrees with the elected sign.</li>
+</ol>
+<p>DARE randomly drops delta parameters and rescales survivors before a merge, using redundancy to reduce interference. SLERP follows a spherical interpolation path between two parameter vectors rather than a straight Euclidean segment. Names do not select a winner. Coefficients, density, layer treatment, task mix, and regression behavior still need a sweep.</p>
+<p>The lab’s TIES implementation is intentionally small enough to audit:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch11/customization_lab.py — changed region: ties_merge</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>cutoff <span class="op">=</span> np.quantile(np.<span class="bu">abs</span>(delta), <span class="fl">1.0</span> <span class="op">-</span> density)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>trimmed <span class="op">=</span> np.where(np.<span class="bu">abs</span>(delta) <span class="op">&gt;=</span> cutoff, weight <span class="op">*</span> delta, <span class="fl">0.0</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>elected <span class="op">=</span> np.sign(stack.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">0</span>))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>keep <span class="op">=</span> np.sign(stack) <span class="op">==</span> elected</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>count <span class="op">=</span> keep.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>merged <span class="op">=</span> np.divide(</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    (stack <span class="op">*</span> keep).<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">0</span>), count,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    out<span class="op">=</span>np.zeros_like(stack[<span class="dv">0</span>]), where<span class="op">=</span>count <span class="op">&gt;</span> <span class="dv">0</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>At equal weights in the fixed fixture, TIES beats linear averaging on mean task accuracy. Across the full coefficient sweep, a linear merge reaches the higher best mean. That result is more useful than declaring a universal algorithm: interference handling can improve one operating point while coefficient selection changes the conclusion.</p>
+<p>Merging is attractive when training data are unavailable, when ablation is cheap, or when one artifact reduces serving complexity. It is a bad fit for checkpoints with different bases, incompatible tokenizers, safety policies that must remain independently revocable, or tasks whose joint regressions cannot be measured. A merged model inherits licenses and risks; it does not erase lineage.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>customization_lab.py</code> after the merge sweep</td>
+<td style="text-align: right;">47 lines</td>
+<td>Only deltas from one quantized base are combined, and linear versus TIES quality is measured at every coefficient.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch11-preference-rft" class="level2" data-number="11.8">
+<h2 data-number="11.8" class="anchored" data-anchor-id="sec-ch11-preference-rft"><span class="header-section-number">11.8</span> Preference tuning and reinforcement fine-tuning are surgical tools</h2>
+<p>SFT can demonstrate a desired refusal or concise answer, yet it treats every target token as equally authoritative. When several responses are valid but one is preferred, comparative or scalar feedback carries a better-shaped signal.</p>
+<p>For preference tuning, collect two responses to the same prompt and label a chosen and rejected output. Pairs should expose the defect: excessive hedging, unsupported claims, a refusal boundary, verbosity, instruction priority, or tone. Near-ties can be informative when annotators agree; easy pairs waste capacity. Preserve the policy that generated each response, randomize presentation order, measure annotator agreement, and keep a slice from real production failures.</p>
+<p>DPO optimizes a classification-style loss over the chosen/rejected log-probability margin relative to a reference policy. Its <span class="math inline">\beta</span> participates in the policy-versus-reference trade-off and interacts with learning rate and pair difficulty. Tune it against both preference win rate and general regressions. Chapter 7 owns the derivation; the practical point here is that a higher training win rate can still indicate memorized phrasing or excessive drift.</p>
+<p>Reinforcement fine-tuning (RFT) fits tasks with multiple valid trajectories and a reliable outcome score: code that passes tests, mathematics with a checked final answer, structured extraction against a validator, or a simulator score. It is usually a poor first move for subjective tone when the grader is an unstable judge model. Start by evaluating the grader independently:</p>
+<ul>
+<li>Does it score known good and bad outputs correctly across slices?</li>
+<li>Can formatting, verbosity, or leaked references raise reward without solving the task?</li>
+<li>Is reward stable across retries and grader versions?</li>
+<li>Are training prompts, grader development cases, and final tests separate?</li>
+<li>Does the model have enough initial success to receive a useful signal?</li>
+</ul>
+<p>If almost every sample receives zero, provide SFT demonstrations or a curriculum before RFT. If almost every sample already receives full reward, the optimization has little headroom. Hold out adversarial grader cases and inspect high-reward failures for reward hacking. Chapter 8 owns RLVR/GRPO mechanics, and Chapter 23 extends reinforcement tuning to complete agent trajectories; this chapter owns the model-customization choice and gate.</p>
+<p>Use the smallest intervention that matches the feedback. A refusal wording issue may need a few-shot prompt or a narrow preference adapter. A verifiable reasoning strategy may justify RFT. Neither should be used to inject a quarterly policy document.</p>
+</section>
+<section id="sec-ch11-data" class="level2" data-number="11.9">
+<h2 data-number="11.9" class="anchored" data-anchor-id="sec-ch11-data"><span class="header-section-number">11.9</span> Data engineering determines what customization learns</h2>
+<p>Optimization makes the model imitate the empirical training distribution. It cannot infer which examples were mislabeled, which teacher outputs violate a license, which repeated template dominates by accident, or which benchmark answer leaked into a prompt. Most customization leverage therefore sits before the trainer.</p>
+<p>Define one canonical record schema with prompt, context, response or feedback, task and source identifiers, provenance, license, timestamp, policy version, generator revision and settings, validation result, safety labels, and split. Hash normalized content and near-deduplicate at the semantic unit users see—a conversation or problem, not only an individual message.</p>
+<p>Split by source or entity <em>before</em> augmentation and synthesis. If one customer template is paraphrased into train and test, lexical differences conceal shared information. Quarantine the final test and regression sets from teacher generation, rejection sampling, hyperparameter selection, and judge-prompt development. A repeatedly consulted test set becomes a development set; rotate it.</p>
+<p>Synthetic data is a controlled measurement instrument, not free truth:</p>
+<ul>
+<li><strong>Self-Instruct</strong> bootstraps instructions, inputs, and outputs from a model, then filters invalid or similar generations.</li>
+<li><strong>Magpie</strong> elicits user-like queries from the pre-query template of an aligned model and generates responses at scale.</li>
+<li><strong>Rejection sampling</strong> generates several outputs and retains those passing a verifier or quality model.</li>
+<li><strong>ReST and ReST-EM</strong> alternate generation, feedback-based filtering, and offline fine-tuning.</li>
+</ul>
+<p>Each loop can narrow diversity, amplify a grader blind spot, or train on its own mistakes. The model-collapse results in Chapter 5 concern recursive replacement of real-distribution support, not a ban on all synthetic supervision. Keep licensed human or environment-grounded anchors, track synthetic fraction by slice and generation, measure diversity and tail coverage, and stop when held-out improvement saturates.</p>
+<p>Reasoning and tool data need extra validation. Execute code and tool calls in a sandbox; recompute final answers; reject traces that reach a correct result through invalid steps; normalize tool schemas without erasing meaningful variation. Do not train on secrets or raw production conversations merely because they improved the teacher prompt. Apply consent, retention, access, and deletion policies before data enters an immutable artifact.</p>
+<p>Figure <a href="#fig-ch11-data-loop" class="quarto-xref">Figure&nbsp;<span>11.3</span></a> places the irreversible boundary at dataset approval and keeps evaluation outside the self-improvement loop.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    P["Versioned real prompts and labels"] --&gt; S["Split by source / entity"]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    S --&gt; TR["Train partition"]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    S --&gt; DV["Development partition"]</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    S --&gt; TT["Sealed task test"]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    S --&gt; RG["General regressions"]</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    TR --&gt; G["Teacher or current policy generates candidates"]</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    G --&gt; V["Executable checks, humans, dedup, license filter"]</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    V --&gt;|"approved records + provenance"| MX["Versioned training mixture"]</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    MX --&gt; FT["SFT / preference / RFT / distillation"]</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    FT --&gt; G</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    FT --&gt; DV</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    DV --&gt;|"recipe selection only"| MX</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    FT --&gt; Q["Release candidate"]</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    TT --&gt; Q</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    RG --&gt; Q</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch11-data-loop" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch11-data-loop-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch11-data-loop">flowchart LR
+    P["Versioned real prompts and labels"] --&gt; S["Split by source / entity"]
+    S --&gt; TR["Train partition"]
+    S --&gt; DV["Development partition"]
+    S --&gt; TT["Sealed task test"]
+    S --&gt; RG["General regressions"]
+    TR --&gt; G["Teacher or current policy generates candidates"]
+    G --&gt; V["Executable checks, humans, dedup, license filter"]
+    V --&gt;|"approved records + provenance"| MX["Versioned training mixture"]
+    MX --&gt; FT["SFT / preference / RFT / distillation"]
+    FT --&gt; G
+    FT --&gt; DV
+    DV --&gt;|"recipe selection only"| MX
+    FT --&gt; Q["Release candidate"]
+    TT --&gt; Q
+    RG --&gt; Q
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch11-data-loop-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11.3: Where must provenance, filtering, and evaluation quarantine interrupt a synthetic self-improvement loop?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Mixture weights are part of the objective. Sampling a million synthetic classification records beside ten thousand safety cases does not merely add data; it changes gradient frequency. Report raw counts, sampled counts, token counts, duplication, loss masks, and per-source learning curves. Pack short examples for efficiency only after verifying boundary tokens and assistant-only loss masking.</p>
+</section>
+<section id="sec-ch11-forgetting" class="level2" data-number="11.10">
+<h2 data-number="11.10" class="anchored" data-anchor-id="sec-ch11-forgetting"><span class="header-section-number">11.10</span> Forgetting and compression define the capability budget</h2>
+<p>A frozen base does not guarantee preserved behavior. LoRA leaves <span class="math inline">W_0</span> unchanged, but inference uses <span class="math inline">W_0+\Delta W</span>. For any input <span class="math inline">x</span> and compatible operator/vector norms,</p>
+<p><span class="math display">
+\left\|\frac{\alpha}{r}BAx\right\|
+\le
+\frac{\alpha}{r}\|B\|\,\|A\|\,\|x\|.
+</span></p>
+<p>The adapter can dominate particular activations even when it contains few parameters. Catastrophic forgetting is observed behavior on earlier capabilities, not proof that base tensors moved.</p>
+<p>Mitigate drift by matching intervention strength to the defect: lower rank or fewer target modules, a smaller learning rate, fewer epochs, early stopping on regression metrics, KL or weight regularization, and replay of representative general examples. Separate adapters can preserve revocability when tenants or policies differ. Replay must sample meaningful capabilities and safety boundaries; generic benchmark averages can miss a critical slice.</p>
+<p>A practical adaptation ladder is:</p>
+<ol type="1">
+<li><strong>Continued pretraining (CPT):</strong> use the language-model objective on a large unlabeled domain corpus when vocabulary, style, or domain regularities are absent. Mix replay and expect the widest regression surface.</li>
+<li><strong>SFT:</strong> teach explicit input-to-output behavior when targets can be written or verified.</li>
+<li><strong>Preference tuning:</strong> resolve subjective trade-offs that exact demonstrations underspecify.</li>
+<li><strong>RFT:</strong> optimize a stable outcome verifier when trajectories have many valid forms.</li>
+<li><strong>Distillation:</strong> transfer the resulting in-scope behavior into the deployment-sized student.</li>
+</ol>
+<p>These stages are optional and can branch. Do not run CPT to fix JSON formatting or preference tuning to memorize terminology. Gate after every stage so the source of gain or damage remains identifiable.</p>
+<p>Compression can create a smaller model family rather than one adapter:</p>
+<ul>
+<li><strong>Structured pruning</strong> removes complete layers, hidden dimensions, attention heads, or MLP channels. It can reduce dense tensor shapes and produce speedups on ordinary kernels, but requires importance estimation and recovery training.</li>
+<li><strong>Unstructured pruning</strong> zeros individual weights. Parameter count falls, yet wall-clock speed improves only with a supported sparse representation and kernel.</li>
+<li><strong>Low-rank compression</strong> factorizes an existing matrix <span class="math inline">W\in\mathbb{R}^{m\times n}</span> as <span class="math inline">UV</span> with inner dimension <span class="math inline">k</span>, reducing parameters from <span class="math inline">mn</span> to <span class="math inline">k(m+n)</span>. Truncated SVD minimizes matrix reconstruction error under a Frobenius norm; that is not the same as minimizing language-model loss.</li>
+<li><strong>Prune then distill</strong> uses the original model to recover quality in the structurally smaller student. Minitron combines depth, width, attention, and MLP pruning with distillation; SliceGPT removes rows and columns after rotations that preserve the network function before slicing.</li>
+</ul>
+<p>Quantization is another compression axis, but Chapter 10’s validation ladder remains authoritative. A pruned or distilled model can still be quantized afterward; each composition needs its own quality and kernel measurement. Compare against a natively pretrained model of similar size. Creating a family member is worthwhile when recovered quality and lifetime serving savings exceed the pruning, distillation, and revalidation burden.</p>
+</section>
+<section id="sec-ch11-eval-gate" class="level2" data-number="11.11">
+<h2 data-number="11.11" class="anchored" data-anchor-id="sec-ch11-eval-gate"><span class="header-section-number">11.11</span> The four-set gate decides whether a model ships</h2>
+<p>Training loss tells whether an optimizer fits its objective. It does not tell whether the model generalizes, preserves prior behavior, obeys safety policy, or runs within the serving contract. A customization project needs four data roles whose access rules differ:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Set</th>
+<th>Used for</th>
+<th>Forbidden use</th>
+<th>Typical failure it reveals</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Train</td>
+<td>gradient updates</td>
+<td>reporting generalization</td>
+<td>memorization and source imbalance</td>
+</tr>
+<tr class="even">
+<td>Development</td>
+<td>hyperparameters, checkpoints, mixture and prompt selection</td>
+<td>final unbiased claim</td>
+<td>recipe sensitivity and overfitting to train</td>
+</tr>
+<tr class="odd">
+<td>Untouched task test</td>
+<td>one release decision after the recipe is frozen</td>
+<td>iterative tuning</td>
+<td>true in-scope generalization</td>
+</tr>
+<tr class="even">
+<td>General regression suite</td>
+<td>existing capability, safety, calibration, and operational invariants</td>
+<td>optimizing only an aggregate score</td>
+<td>collateral damage outside the target</td>
+</tr>
+</tbody>
+</table>
+<p>“Untouched” is a process property. Store access logs, restrict labels, and promote a test to development after repeated inspection. Create a new sealed set for the next release. Decontaminate by source, template, entity, and semantic overlap, not only exact strings.</p>
+<p>Predeclare a release rule. Let <span class="math inline">M_{task}</span> be task-test quality, <span class="math inline">R_j</span> be a regression loss for capability <span class="math inline">j</span>, <span class="math inline">\delta</span> the required task gain, and <span class="math inline">\epsilon_j</span> each tolerated regression. A simplified gate is</p>
+<p><span class="math display">
+\operatorname{ship}=
+\mathbf{1}\!\left[
+\Delta M_{task}\ge\delta
+\land
+\forall j:\Delta R_j\le\epsilon_j
+\land
+safety=pass
+\land
+serving=pass
+\right].
+</span></p>
+<p>Use paired confidence intervals or a test appropriate to the metric when samples are noisy. Report slices and worst-case constraints; an aggregate gain must not buy an unacceptable jurisdiction, language, safety, or accessibility regression. Run deterministic or executable metrics first. When model judges are needed, calibrate position, length, style, and self-preference biases as Chapter 22 describes.</p>
+<p>Hold the inference contract fixed: model base, adapter, tokenizer, template, prompt, tools, decoding, quantization, and context budget. Comparing a tuned model with greedy decoding to a base model with a different system prompt is a system comparison, not an isolated adaptation estimate. Both can be useful if labeled accurately.</p>
+<p>The gate should include deployment metrics when customization is motivated by economics: peak memory, cold start, time to first token, output rate, structured-output validity, and cost under the same workload. Distillation that loses one quality point but halves latency may win a predeclared utility function; a post hoc story does not.</p>
+<p>The lab encodes the minimum task gain and maximum regression drop before inspecting its final candidate:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch11/customization_lab.py — changed region: release_gate</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>task_gain <span class="op">=</span> candidate[<span class="st">"task_test"</span>] <span class="op">-</span> baseline[<span class="st">"task_test"</span>]</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>regression_drop <span class="op">=</span> baseline[<span class="st">"general_regression"</span>] <span class="op">-</span> candidate[<span class="st">"general_regression"</span>]</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>passed <span class="op">=</span> task_gain <span class="op">&gt;=</span> <span class="fl">0.08</span> <span class="kw">and</span> regression_drop <span class="op">&lt;=</span> <span class="fl">0.08</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>customization_lab.py</code> after the four-set gate</td>
+<td style="text-align: right;">22 lines</td>
+<td>A task improvement cannot ship by hiding an excessive general-regression loss.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch11-serving" class="level2" data-number="11.12">
+<h2 data-number="11.12" class="anchored" data-anchor-id="sec-ch11-serving"><span class="header-section-number">11.12</span> Serving customized models closes the loop</h2>
+<p>Training produces an artifact; deployment gives it identity, latency, and a failure radius. Register the complete lineage: base and tokenizer revisions, chat template, quantization recipe, adapter or merged weights, data manifest, training code and seed, licenses, evaluation record, and approval. A hash of only the adapter file cannot detect a mismatched base.</p>
+<p>An unmerged adapter preserves a small artifact, rapid rollback, and multi-tenant sharing. It adds adapter loading, residency, routing, and kernel compatibility to the serving lattice. Chapter 10’s multi-LoRA path is the canonical design for many adapters on one base. A merged checkpoint simplifies a single-model runtime and removes adapter lookup, but consumes a full artifact, weakens revocability, and requires another quantization and regression pass.</p>
+<p>QLoRA makes merging numerically delicate. The training base is a four-bit reconstruction, while an original higher-precision checkpoint may also exist. Adding <span class="math inline">\Delta W</span> to one and serving the other changes the model. Repeatedly merging into four-bit codes also re-quantizes the sum. Choose the target representation explicitly: dequantize the intended base, merge in adequate precision, quantize once under a pinned recipe, then rerun the gate. Do not assume <code>merge_and_unload</code> plus an arbitrary export format is equivalent to the training path.</p>
+<p>Canary on the traffic slice represented by the test set, with a base-model fallback and an adapter-specific kill switch. Monitor output-schema validity, refusal and safety rates, slice quality proxies with delayed labels, latency, cache identity, load failures, and distribution drift. Production corrections become candidate training records only after provenance, privacy, deduplication, and split assignment.</p>
+<p>This closes a controlled loop:</p>
+<ol type="1">
+<li>observe a reproducible failure;</li>
+<li>diagnose evidence, state, effect, representation, behavior, or economics;</li>
+<li>select the narrowest intervention and supervision;</li>
+<li>train against versioned data;</li>
+<li>pass task, regression, safety, and serving gates;</li>
+<li>canary, monitor, and retain rollback;</li>
+<li>admit new data only through the governed data boundary.</li>
+</ol>
+<p>The loop’s stable unit is not “a fine-tuned model.” It is a versioned hypothesis with evidence for where it works and a mechanism for withdrawing it.</p>
+</section>
+<section id="sec-ch11-landscape" class="level2" data-number="11.13">
+<h2 data-number="11.13" class="anchored" data-anchor-id="sec-ch11-landscape"><span class="header-section-number">11.13</span> Landscape 2026 (dated)</h2>
+<div class="landscape-2026">
+<p><strong>Verified on 2026-07-19.</strong> The current open-weight stack exposes most of this chapter as composable libraries. <a href="https://huggingface.co/docs/peft/developer_guides/lora">Hugging Face PEFT</a> documents LoRA configuration, rsLoRA, DoRA, quantized training preparation, adapter merge, and newer initialization/routing variants. <a href="https://huggingface.co/docs/transformers/quantization/bitsandbytes">Transformers bitsandbytes documentation</a> documents NF4, nested quantization, and higher-precision compute for QLoRA. <a href="https://huggingface.co/docs/trl/sft_trainer">TRL</a> provides SFT and <a href="https://huggingface.co/docs/trl/dpo_trainer">DPO</a> trainers. <a href="https://github.com/arcee-ai/mergekit">Mergekit</a> implements families of checkpoint-merging recipes. Their supported intersections move faster than the LoRA and task-vector equations.</p>
+<p>Managed customization now spans more than SFT. Official <a href="https://developers.openai.com/api/docs/guides/reinforcement-fine-tuning">OpenAI documentation</a> describes supervised fine-tuning, DPO, and grader-driven RFT. <a href="https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/tune-models">Google Vertex AI tuning documentation</a> lists supervised and preference tuning for selected Gemini models. <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/custom-models.html">Amazon Bedrock</a> documents supervised fine-tuning and managed model distillation, while its <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/reinforcement-fine-tuning.html">RFT documentation</a> exposes reward functions through code or model judges for selected models. Model lists, regions, quotas, data policies, and artifact access differ.</p>
+<p>The research frontier is moving toward feedback on the student’s own states. <a href="https://arxiv.org/abs/2602.12275">On-Policy Context Distillation</a> trains on student trajectories while comparing with a context-conditioned teacher and reports cross-size transfer of experiential and system-prompt behavior. Treat this as a paper result requiring reproduction, not a default production recipe. Structured pruning plus recovery distillation remains a practical route to model-family creation; current NVIDIA tooling documents the <a href="https://docs.nvidia.com/nemo-framework/user-guide/25.11/model-optimization/pruning/pruning.html">Minitron pruning workflow</a>.</p>
+<p>Hosted tuning buys managed training, security integration, and deployment but restricts available bases, algorithms, gradients/logits, merging, export, and sometimes data inspection. Open-weight DIY work grants tensor-level control, offline evaluation, adapter portability, distillation logits, pruning, and custom merges while making the team responsible for accelerator software, licenses, supply chain, privacy, kernels, serving, and incident response. Choose from the required control surface, not ideology.</p>
+<p><strong>Verify live:</strong> tunable model IDs and retirement dates; supported regions and modalities; SFT, preference, RFT, and distillation availability; grader semantics; training-data retention and use; output rights for distillation; whether weights or adapters can be exported; PEFT/TRL/bitsandbytes compatibility; target-module names; compute dtypes and accelerator support; merge methods and tokenizer handling; serving-engine adapter/quantization intersections; prices, quotas, licenses, security advisories, and deprecations.</p>
+</div>
+</section>
+<section id="sec-ch11-build" class="level2" data-number="11.14">
+<h2 data-number="11.14" class="anchored" data-anchor-id="sec-ch11-build"><span class="header-section-number">11.14</span> Build</h2>
+<p>Run the deterministic build from the <code>newbook</code> directory:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch11/customization_lab.py</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch11/render_metrics.py</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> unittest discover <span class="at">-s</span> code/ch11 <span class="at">-p</span> <span class="st">"test_*.py"</span> <span class="at">-v</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The fixture uses four classes and twelve features. A declared task update acts primarily on the first seven features; the general-regression distribution emphasizes the remaining features. That construction gives the gate a capability it should preserve without pretending to model language. The base is quantized and reconstructed in groups of sixteen with NF4, producing RMSE 0.0671 fixture units. Rank-two adapters train on 320 task examples, KD uses 400 additional inputs, and the untouched task test has 320 examples.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 15%">
+<col style="width: 21%">
+<col style="width: 21%">
+<col style="width: 21%">
+<col style="width: 21%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Candidate</th>
+<th style="text-align: right;">Train</th>
+<th style="text-align: right;">Development</th>
+<th style="text-align: right;">Untouched task test</th>
+<th style="text-align: right;">General regression</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Frozen NF4 base</td>
+<td style="text-align: right;">0.7625</td>
+<td style="text-align: right;">0.7583</td>
+<td style="text-align: right;">0.7750</td>
+<td style="text-align: right;">0.9625</td>
+</tr>
+<tr class="even">
+<td>QLoRA-style SFT adapter</td>
+<td style="text-align: right;">0.9438</td>
+<td style="text-align: right;">0.9125</td>
+<td style="text-align: right;">0.9313</td>
+<td style="text-align: right;">0.9333</td>
+</tr>
+<tr class="odd">
+<td>SFT plus logit KD</td>
+<td style="text-align: right;">0.9750</td>
+<td style="text-align: right;">0.9625</td>
+<td style="text-align: right;">0.9625</td>
+<td style="text-align: right;">0.9417</td>
+</tr>
+</tbody>
+</table>
+<p>The distilled candidate gains 0.1875 task-test accuracy and loses 0.0208 general-regression accuracy against the same NF4 baseline. It passes the predeclared gain and loss limits of 0.08. SFT cross-entropy falls from 0.5694 to 0.2825; KD KL falls from 0.0117 to 0.0044.</p>
+<p>At a 0.5/0.5 merge, linear task arithmetic reaches mean task accuracy 0.8469 and TIES reaches 0.8578. Sweeping coefficients reverses the simple ranking: linear reaches 0.8656 at adapter-A weight 0.8, while the best TIES point reaches 0.8578 at weight 0.7. Figure <a href="#fig-ch11-build-metrics" class="quarto-xref">Figure&nbsp;<span>11.4</span></a> shows both the release gate and the merge ablation.</p>
+<div id="fig-ch11-build-metrics" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two grayscale panels with zero-based accuracy axes. Labeled grouped bars compare base, QLoRA SFT, and logit KD accuracy on train, development, untouched task test, and general regression sets. Circle and square lines compare linear and TIES merging as adapter A weight moves from zero to one, with equal weighting marked.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch11-build-metrics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch11/customization_metrics.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;11.4: What changed after each customization stage, and did an interference-aware merge remove the need to tune coefficients? The left panel evaluates the frozen NF4 base, QLoRA-style SFT adapter, and logit-distilled adapter on all four deterministic fixture sets. The right panel sweeps linear and TIES merge weights; TIES wins at equal weights but not at each method’s best coefficient. All values are synthetic CPU measurements, not language-model estimates."><img src="../code/ch11/customization_metrics.svg" class="img-fluid figure-img" alt="Two grayscale panels with zero-based accuracy axes. Labeled grouped bars compare base, QLoRA SFT, and logit KD accuracy on train, development, untouched task test, and general regression sets. Circle and square lines compare linear and TIES merging as adapter A weight moves from zero to one, with equal weighting marked."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch11-build-metrics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11.4: What changed after each customization stage, and did an interference-aware merge remove the need to tune coefficients? The left panel evaluates the frozen NF4 base, QLoRA-style SFT adapter, and logit-distilled adapter on all four deterministic fixture sets. The right panel sweeps linear and TIES merge weights; TIES wins at equal weights but not at each method’s best coefficient. All values are synthetic CPU measurements, not language-model estimates.
+</figcaption>
+</figure>
+</div>
+<p>For a real seven-billion-parameter-class run, create conversational JSONL with one <code>messages</code> list per record. Generate teacher traces only in the training partition, validate and deduplicate them, and keep development, sealed task-test, and general-regression files independent. Install a compatible PyTorch/Transformers stack and invoke the optional seam:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch11/hf_qlora_adapter.py <span class="dt">\</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  data/train_teacher_traces.jsonl <span class="dt">\</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  data/development.jsonl <span class="dt">\</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  artifacts/support-qlora <span class="dt">\</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--model</span> MODEL_ID <span class="dt">\</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--epochs</span> 1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The adapter pins the mechanism: NF4 base storage, double quantization, bf16 compute, gradient checkpointing, rank 16, <span class="math inline">\alpha=32</span>, dropout 0.05, and all-linear targets. It does not claim those values are optimal. Start with roughly one to two thousand high-quality task records and a separately labeled set of teacher traces only when licensing and privacy permit, then sweep rank, learning rate, epochs, modules, and data mixtures on development data. Generate outputs from the frozen base and every candidate under identical decoding, score all four sets, and apply thresholds declared before the run. Pin the model revision and inspect target-module names before training.</p>
+<div class="callout callout-style-default callout-warning callout-titled" title="Honesty boundary">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Honesty boundary
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The default build is a linear classification proxy. Its NF4 codebook, LoRA algebra, gradients, KL loss, task vectors, TIES operations, splits, and gate are real; its features, labels, accuracy, and thresholds estimate no LLM, teacher, domain, or deployment. The optional adapter performs a real QLoRA training path when its third-party dependencies, checkpoint, data, license, and GPU are supplied, but task-specific generation and grading remain the user’s evaluation harness. A successful proxy run is evidence that the mechanisms execute, not that a seven-billion-parameter model will pass.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch11-endures" class="level2" data-number="11.15">
+<h2 data-number="11.15" class="anchored" data-anchor-id="sec-ch11-endures"><span class="header-section-number">11.15</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Diagnose evidence, state, effects, representation, behavior, and economics before changing weights. Match supervision to the signal: write for SFT, rank for preference tuning, verify for RFT, distribute probabilities or sequences for distillation. LoRA constrains an update but does not guarantee retained behavior. QLoRA quantizes a frozen base while optimizing higher-precision adapters. Distillation transfers behavior on a sampled envelope, not general intelligence. Task-vector arithmetic requires parameter alignment, and every merge coefficient is an empirical choice. Split before synthesis, preserve provenance, and quarantine tests. Every candidate must pass an untouched task test and general regressions under the intended serving representation.</p>
+<p><strong>What changes.</strong> Base models, tokenizer templates, provider tuning methods, trainable model lists, adapter variants, quantization kernels, managed graders, merge implementations, pruning tools, accelerator memory, prices, licenses, and benchmark status move. Keep them in pinned recipes and the dated landscape. Removing the landscape leaves the decision tree, low-rank algebra, distillation objectives, task-vector definition, data boundaries, and four-set gate intact.</p>
+<p>Chapter 14 completes the evidence branch with embeddings and RAG. Chapters 22 and 26 deepen evaluation validity and lifecycle economics, while Chapter 23 applies reinforcement training to agents rather than only model responses.</p>
+</section>
+<section id="sec-ch11-exercises" class="level2" data-number="11.16">
+<h2 data-number="11.16" class="anchored" data-anchor-id="sec-ch11-exercises"><span class="header-section-number">11.16</span> Exercises</h2>
+<ol type="1">
+<li><p><strong>Defend a non-training decision.</strong> Choose a real failure and classify it as evidence, state, effect, representation, behavior, or economics. Build the strongest prompt/schema/retrieval/tool baseline you can. State what new evidence would justify SFT, preference tuning, or RFT, and why training before that evidence would be premature.</p></li>
+<li><p><strong>Budget a LoRA configuration.</strong> For one transformer projection, compute trainable parameters for ranks 8, 16, 64, and 256, plus approximate mixed-precision Adam state. Compare <span class="math inline">\alpha/r</span> and <span class="math inline">\alpha/\sqrt{r}</span> scaling. Predict which rank will win on development data, run the sweep, and explain any non-monotonic result.</p></li>
+<li><p><strong>Audit QLoRA numerics.</strong> Extend <code>nf4_quantize</code> to return codes and scales. Implement double quantization of scales, calculate effective bits per parameter including metadata, and compare reconstruction error across group sizes. Break the exact-zero invariant, predict its effect on zero-valued groups, and add a failing test before repairing it.</p></li>
+<li><p><strong>Compare distillation signals.</strong> Add hard-label sequence KD, forward-KL logit KD, reverse KL, and an on-policy prefix sampler to the fixture or a small language model. Hold examples and compute constant. Compare task gain, calibration, regression, and sensitivity to temperature. For reasoning data, ablate answer-only, concise, long, and mixed-length traces.</p></li>
+<li><p><strong>Make merging earn its artifact.</strong> Add a third compatible adapter. Compare linear task arithmetic, model soup selection, TIES, and DARE across coefficient and density sweeps. Include all task tests and general regressions. Construct one sign-conflict failure, then determine whether keeping independently routed adapters is safer than any merge.</p></li>
+<li><p><strong>Operate the four-set gate.</strong> Replace the fixture thresholds with confidence intervals and at least three regression slices. Log every access to the sealed test. Simulate ten rounds of recipe selection, show how repeated test inspection biases the release decision, then design a rotation policy and a predeclared utility function that includes latency.</p></li>
+<li><p><strong>Create and serve a smaller specialist.</strong> Use licensed teacher outputs to QLoRA-tune a seven-billion-parameter-class or smaller open-weight model on one narrow task. Compare it with a stronger teacher and a natively small baseline. Quantize the winner under Chapter 10’s ladder, canary it with a fallback, and report training/data cost, break-even volume, task envelope, regression budget, model-card lineage, and residual risk.</p></li>
+</ol>
+</section>
+<section id="sec-ch11-sources" class="level2" data-number="11.17">
+<h2 data-number="11.17" class="anchored" data-anchor-id="sec-ch11-sources"><span class="header-section-number">11.17</span> Notes and sources</h2>
+<p><a href="https://arxiv.org/abs/2106.09685">LoRA</a> introduces frozen-base low-rank updates. <a href="https://papers.neurips.cc/paper_files/paper/2023/file/1feb87871436031bdc0f2beaa62a049b-Paper-Conference.pdf">QLoRA</a> introduces NF4, double quantization, and paged optimizers. <a href="https://arxiv.org/abs/2312.03732">rsLoRA</a> studies rank-stabilized scaling; <a href="https://arxiv.org/abs/2402.09353">DoRA</a> decomposes magnitude and direction.</p>
+<p><a href="https://arxiv.org/abs/1503.02531">Distilling the Knowledge in a Neural Network</a> establishes temperature-based KD. <a href="https://arxiv.org/abs/2306.08543">MiniLLM</a> develops reverse-KL generative distillation. <a href="https://arxiv.org/abs/2306.13649">Generalized Knowledge Distillation</a> trains on student-generated sequences. <a href="https://aclanthology.org/2025.findings-acl.1301/">Small Models Struggle to Learn from Strong Reasoners</a> documents the learnability gap for long traces and large teachers.</p>
+<p><a href="https://proceedings.mlr.press/v162/wortsman22a.html">Model Soups</a> studies checkpoint averaging. <a href="https://arxiv.org/abs/2212.04089">Task Arithmetic</a> defines task vectors; <a href="https://arxiv.org/abs/2306.01708">TIES-Merging</a> resolves redundancy and sign interference; <a href="https://proceedings.mlr.press/v235/yu24p.html">DARE</a> drops and rescales task deltas.</p>
+<p><a href="https://arxiv.org/abs/2203.02155">InstructGPT</a> gives the demonstration, preference-model, and RLHF pipeline. <a href="https://arxiv.org/abs/2305.18290">DPO</a> directly optimizes pairwise preferences. <a href="https://arxiv.org/abs/2411.15124">Tülu 3</a> provides an open SFT, DPO, RLVR, decontamination, and multi-task evaluation recipe.</p>
+<p><a href="https://aclanthology.org/2023.acl-long.754/">Self-Instruct</a> bootstraps instruction data; <a href="https://arxiv.org/abs/2406.08464">Magpie</a> synthesizes alignment prompts; <a href="https://arxiv.org/abs/2312.06585">ReST-EM</a> iterates generation, filtering, and training. <a href="https://doi.org/10.1038/s41586-024-07566-y">The Curse of Recursion</a> studies model collapse under recursive generated-data replacement. <a href="https://aclanthology.org/2020.acl-main.740/">Don’t Stop Pretraining</a> establishes domain- and task-adaptive pretraining.</p>
+<p><a href="https://arxiv.org/abs/2407.14679">Minitron</a> combines structured pruning with distillation, <a href="https://arxiv.org/abs/2310.06694">Sheared LLaMA</a> uses structured pruning and continued training, and <a href="https://arxiv.org/abs/2401.15024">SliceGPT</a> deletes rows and columns after computational invariance transformations. <a href="https://arxiv.org/abs/2211.09110">HELM</a> motivates multi-scenario, multi-metric evaluation; Chapter 22 owns the full evaluation system.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/10-serving-at-scale.html" class="pagination-link" aria-label="Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/12-api-surface.html" class="pagination-link" aria-label="The API Surface: Messages, Structured Outputs, and Tool Calling [F]">
+        <span class="nav-page-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

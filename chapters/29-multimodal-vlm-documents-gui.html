@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Understand how images become model tokens, then build evidence-carrying document extraction and screenshot-bound GUI action.">
+
+<title>29&nbsp; Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/30-multimodal-voice-video-media.html" rel="next">
+<link href="../chapters/28-products-people-organizations.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/29-multimodal-vlm-documents-gui.html">Part VIII — The Frontier and the Capstone</a></li><li class="breadcrumb-item"><a href="../chapters/29-multimodal-vlm-documents-gui.html"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-you-need-going-in" id="toc-what-you-need-going-in" class="nav-link active" data-scroll-target="#what-you-need-going-in"><span class="header-section-number">29.1</span> What you need going in</a></li>
+  <li><a href="#contents" id="toc-contents" class="nav-link" data-scroll-target="#contents"><span class="header-section-number">29.2</span> Contents</a></li>
+  <li><a href="#sec-ch29-loss" id="toc-sec-ch29-loss" class="nav-link" data-scroll-target="#sec-ch29-loss"><span class="header-section-number">29.3</span> Two workloads expose one lossy assumption</a></li>
+  <li><a href="#sec-ch29-artifact" id="toc-sec-ch29-artifact" class="nav-link" data-scroll-target="#sec-ch29-artifact"><span class="header-section-number">29.4</span> What you will build</a></li>
+  <li><a href="#sec-ch29-vlm" id="toc-sec-ch29-vlm" class="nav-link" data-scroll-target="#sec-ch29-vlm"><span class="header-section-number">29.5</span> A VLM turns patches into language-model vectors</a></li>
+  <li><a href="#sec-ch29-budget" id="toc-sec-ch29-budget" class="nav-link" data-scroll-target="#sec-ch29-budget"><span class="header-section-number">29.6</span> Instruction tuning and tiling create the image-token bill</a></li>
+  <li><a href="#sec-ch29-fusion" id="toc-sec-ch29-fusion" class="nav-link" data-scroll-target="#sec-ch29-fusion"><span class="header-section-number">29.7</span> Fusion decides when modalities can interact</a></li>
+  <li><a href="#sec-ch29-grounding" id="toc-sec-ch29-grounding" class="nav-link" data-scroll-target="#sec-ch29-grounding"><span class="header-section-number">29.8</span> Grounding turns words into regions and points</a></li>
+  <li><a href="#sec-ch29-documents" id="toc-sec-ch29-documents" class="nav-link" data-scroll-target="#sec-ch29-documents"><span class="header-section-number">29.9</span> Document understanding needs values, structure, and evidence</a></li>
+  <li><a href="#sec-ch29-visual-rag" id="toc-sec-ch29-visual-rag" class="nav-link" data-scroll-target="#sec-ch29-visual-rag"><span class="header-section-number">29.10</span> Visual retrieval preserves page-level interactions</a></li>
+  <li><a href="#sec-ch29-gui" id="toc-sec-ch29-gui" class="nav-link" data-scroll-target="#sec-ch29-gui"><span class="header-section-number">29.11</span> GUI perception must end in a fresh, gated proposal</a></li>
+  <li><a href="#sec-ch29-field-guide" id="toc-sec-ch29-field-guide" class="nav-link" data-scroll-target="#sec-ch29-field-guide"><span class="header-section-number">29.12</span> Choose the cheapest multimodal tier that passes</a></li>
+  <li><a href="#sec-ch29-eval" id="toc-sec-ch29-eval" class="nav-link" data-scroll-target="#sec-ch29-eval"><span class="header-section-number">29.13</span> Own an evaluation after the benchmark saturates</a></li>
+  <li><a href="#sec-ch29-build" id="toc-sec-ch29-build" class="nav-link" data-scroll-target="#sec-ch29-build"><span class="header-section-number">29.14</span> Build</a></li>
+  <li><a href="#sec-ch29-endures" id="toc-sec-ch29-endures" class="nav-link" data-scroll-target="#sec-ch29-endures"><span class="header-section-number">29.15</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch29-exercises" id="toc-sec-ch29-exercises" class="nav-link" data-scroll-target="#sec-ch29-exercises"><span class="header-section-number">29.16</span> Exercises</a></li>
+  <li><a href="#sec-ch29-sources" id="toc-sec-ch29-sources" class="nav-link" data-scroll-target="#sec-ch29-sources"><span class="header-section-number">29.17</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/29-multimodal-vlm-documents-gui.html">Part VIII — The Frontier and the Capstone</a></li><li class="breadcrumb-item"><a href="../chapters/29-multimodal-vlm-documents-gui.html"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch29" class="quarto-section-identifier"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-you-need-going-in" class="level2" data-number="29.1">
+<h2 data-number="29.1" class="anchored" data-anchor-id="what-you-need-going-in"><span class="header-section-number">29.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, matrix multiplication, basic image dimensions, JSON APIs, and the agent/tool boundary from Chapters 16–17.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/14-embeddings-rag.html#sec-ch14">Chapter 14</a> introduced dense and late-interaction retrieval, <a href="../chapters/15-agentic-retrieval.html#sec-ch15">Chapter 15</a> handled retrieval control and poisoning, <a href="../chapters/21-agent-applications.html#sec-ch21">Chapter 21</a> deliberately deferred pixel-level computer-use perception to this chapter, <a href="../chapters/22-evaluation.html#sec-ch22">Chapter 22</a> supplied the evaluation contract, and <a href="../chapters/24-agent-security.html#sec-ch24">Chapter 24</a> supplied the action gate.</p>
+<p><strong>Not required:</strong> prior computer vision, OCR, image-model training, browser automation, or a local GPU. The default build is deterministic and offline; an optional adapter exercises the same extraction interface against a local OpenAI-compatible multimodal endpoint.</p>
+</blockquote>
+<blockquote class="blockquote">
+<p><strong>Route B backfill</strong></p>
+<ul>
+<li><strong>Chapter 2, attention and embeddings sections (~8 pp).</strong> Read <a href="../chapters/02-transformer-first-principles.html#sec-ch02-attention">Attention as a learned weighted lookup</a>, <a href="../chapters/02-transformer-first-principles.html#sec-ch02-residual">The residual stream and a modern block</a>, and <a href="../chapters/02-transformer-first-principles.html#sec-ch02-decoder">Decoder-only: from embeddings to logits</a>. Skipping them leaves the production patterns usable but makes image patches and projected visual vectors feel like API magic rather than ordinary transformer inputs.</li>
+</ul>
+</blockquote>
+</section>
+<section id="contents" class="level2" data-number="29.2">
+<h2 data-number="29.2" class="anchored" data-anchor-id="contents"><span class="header-section-number">29.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch29-loss">Two workloads expose one lossy assumption</a></li>
+<li><a href="#sec-ch29-artifact">What you will build</a></li>
+<li><a href="#sec-ch29-vlm">A VLM turns patches into language-model vectors</a></li>
+<li><a href="#sec-ch29-budget">Instruction tuning and tiling create the image-token bill</a></li>
+<li><a href="#sec-ch29-fusion">Fusion decides when modalities can interact</a></li>
+<li><a href="#sec-ch29-grounding">Grounding turns words into regions and points</a></li>
+<li><a href="#sec-ch29-documents">Document understanding needs values, structure, and evidence</a></li>
+<li><a href="#sec-ch29-visual-rag">Visual retrieval preserves page-level interactions</a></li>
+<li><a href="#sec-ch29-gui">GUI perception must end in a fresh, gated proposal</a></li>
+<li><a href="#sec-ch29-field-guide">Choose the cheapest multimodal tier that passes</a></li>
+<li><a href="#sec-ch29-eval">Own an evaluation after the benchmark saturates</a></li>
+<li><a href="#sec-ch29-build">Build</a></li>
+<li><a href="#sec-ch29-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch29-exercises">Exercises</a></li>
+<li><a href="#sec-ch29-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch29-loss" class="level2" data-number="29.3">
+<h2 data-number="29.3" class="anchored" data-anchor-id="sec-ch29-loss"><span class="header-section-number">29.3</span> Two workloads expose one lossy assumption</h2>
+<p>An analyst asks, “Which quarter has the tallest revenue bar on page 17?” The ingestion pipeline runs OCR, extracts the title, axis labels, legend, and four numbers in reading order, then discards the bar geometry. Retrieval finds the right page. The language model sees every character and still cannot know which number belongs to the tallest rectangle.</p>
+<p>A computer-use agent receives “Delete the old draft, not the account.” Its text accessibility tree exposes two buttons with truncated names; the rendered screen distinguishes them by position, icon, warning color, and surrounding panel. The agent architecture from Chapter 21 can plan, but its perception surface is incomplete.</p>
+<p>Both failures came from treating two-dimensional evidence as if it were only a string. Documents communicate through tables, columns, font hierarchy, diagrams, spatial alignment, handwriting, and visual marks. Graphical interfaces communicate through layout, state, focus, icons, overlays, and coordinates. A <strong>vision-language model</strong> (VLM) maps images and text into a shared computation so a model can answer, extract, ground, or propose an action using both.</p>
+<p>This does not make OCR obsolete. Clean prose is often cheaper, more searchable, more accessible, and easier to cite as text. DOM and accessibility actions are often more stable than pixels. The engineering decision is per workload: preserve the visual channel when the task depends on it; prefer the cheapest structured channel that retains the needed evidence.</p>
+<p>The chapter builds one visual foundation, then applies it twice. For documents, a page image becomes schema-valid fields with evidence boxes and a measured accuracy/token tradeoff. For GUIs, a screenshot becomes a named click proposal bound to one screen digest; deterministic code revalidates freshness, geometry, and confirmation before acting. The pixel-perception deferral flagged in Chapter 21 is completed here.</p>
+</section>
+<section id="sec-ch29-artifact" class="level2" data-number="29.4">
+<h2 data-number="29.4" class="anchored" data-anchor-id="sec-ch29-artifact"><span class="header-section-number">29.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>The chapter artifact
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will build <a href="../code/ch29/page_reader.py"><code>page_reader.py</code></a>, a page-image extraction interface with an offline source-traceable fixture and an optional local VLM adapter. Twelve synthetic invoices supply 60 field values and evidence regions. The evaluator sweeps four tiling budgets, validates the result schema and boxes, and reports exact field accuracy beside image-token cost.</p>
+<p>Two small artifacts cover genuinely different mechanisms. <a href="../code/ch29/maxsim_demo.py"><code>maxsim_demo.py</code></a> makes pooled versus late-interaction retrieval visible on one transparent vector construction. <a href="../code/ch29/gui_step.py"><code>gui_step.py</code></a> grounds a screen label, binds the proposal to the screenshot, and demonstrates why stale or destructive actions need deterministic gates. They share the chapter’s principle—retain fine-grained visual evidence—but do not reimplement one another.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch29-vlm" class="level2" data-number="29.5">
+<h2 data-number="29.5" class="anchored" data-anchor-id="sec-ch29-vlm"><span class="header-section-number">29.5</span> A VLM turns patches into language-model vectors</h2>
+<p>A language model does not receive pixels directly. A visual preprocessing and encoder stack converts pixels into vectors that can enter attention beside text-token vectors.</p>
+<p>Start with an image of height <span class="math inline">H</span>, width <span class="math inline">W</span>, and <span class="math inline">C</span> channels. Split it into non-overlapping square patches of side <span class="math inline">P</span>. The number of patches is</p>
+<p><span class="math display">
+N=\frac{H}{P}\frac{W}{P},
+</span></p>
+<p>assuming both dimensions are divisible by <span class="math inline">P</span>. Flatten patch <span class="math inline">i</span> into <span class="math inline">\mathbf{x}_i\in\mathbb{R}^{P^2C}</span> and project it into visual width <span class="math inline">d_v</span>:</p>
+<p><span class="math display">
+\mathbf{p}_i=\mathbf{x}_i\mathbf{E}+\mathbf{e}_i,
+\qquad
+\mathbf{E}\in\mathbb{R}^{P^2C\times d_v}.
+</span></p>
+<p>Here <span class="math inline">\mathbf{E}</span> is the learned patch projection and <span class="math inline">\mathbf{e}_i</span> carries position. A 224-by-224 image with 16-by-16 patches yields a 14-by-14 grid, or 196 visual tokens. Smaller patches or larger images preserve more spatial detail while increasing sequence length and attention work. Modern encoders may use convolutional stems, resampling, variable resolution, or patch merging, but the budgeting intuition survives: spatial resolution becomes tokens.</p>
+<p>The <a href="https://arxiv.org/abs/2010.11929">Vision Transformer</a> applies transformer blocks to this sequence. A contrastively trained image encoder then learns representations aligned with text. For a batch of <span class="math inline">B</span> matched image/text pairs, let normalized image embedding <span class="math inline">\mathbf{v}_i</span>, text embedding <span class="math inline">\mathbf{t}_j</span>, similarity <span class="math inline">s_{ij}=\mathbf{v}_i^\top\mathbf{t}_j</span>, and temperature <span class="math inline">\tau&gt;0</span>. One direction of the CLIP-style InfoNCE loss is</p>
+<p><span class="math display">
+\mathcal{L}_{I\rightarrow T}
+=-\frac{1}{B}\sum_{i=1}^{B}
+\log\frac{\exp(s_{ii}/\tau)}{\sum_{j=1}^{B}\exp(s_{ij}/\tau)}.
+</span></p>
+<p>The text-to-image direction is symmetric and the losses are averaged. Each positive competes against the other batch texts. This creates useful joint embeddings, but it couples normalization to the batch.</p>
+<p>SigLIP instead treats every pair as a binary match. Let <span class="math inline">z_{ij}=1</span> for a matched pair and <span class="math inline">-1</span> otherwise, with learned scale <span class="math inline">a</span> and bias <span class="math inline">b</span>. A compact form is</p>
+<p><span class="math display">
+\mathcal{L}_{\text{sigmoid}}
+=-\frac{1}{B^2}\sum_{i,j}\log\sigma\!\left(z_{ij}(a s_{ij}+b)\right),
+</span></p>
+<p>where <span class="math inline">\sigma</span> is the logistic sigmoid. The <a href="https://arxiv.org/abs/2303.15343">SigLIP paper</a> motivates this pairwise loss without a global softmax normalization. Both objectives teach alignment. Neither alone makes an image encoder follow a conversation or emit a structured answer.</p>
+<p>A <strong>projector</strong> maps visual width <span class="math inline">d_v</span> to the language model’s residual width <span class="math inline">d_m</span>. A two-layer example is</p>
+<p><span class="math display">
+\mathbf{h}_i
+=\mathbf{W}_2\phi(\mathbf{W}_1\mathbf{p}_i+\mathbf{b}_1)+\mathbf{b}_2,
+</span></p>
+<p>with nonlinear function <span class="math inline">\phi</span>. The vectors <span class="math inline">\mathbf{h}_i\in\mathbb{R}^{d_m}</span> can then occupy designated positions in the language-model sequence. Some systems resample many visual tokens into fewer latent tokens; some train vision and language components together. The projector equation is still a useful boundary: it tells us where an image representation becomes compatible with the language model.</p>
+<p><a href="#fig-ch29-vlm" class="quarto-xref">Figure&nbsp;<span>29.1</span></a> answers where visual evidence enters context.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    IMAGE["Image pixels&lt;br/&gt;height × width × channels"] --&gt; PRE["Resize / tile / normalize"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    PRE --&gt; PATCH["Patch sequence&lt;br/&gt;N visual tokens"]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    PATCH --&gt; ENCODER["Vision transformer&lt;br/&gt;spatial contextualization"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    ENCODER --&gt; PROJECT["Project / resample&lt;br/&gt;visual width → LM width"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    TEXT["Text token embeddings"] --&gt; LM(["Language model&lt;br/&gt;cross-modal attention"])</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    PROJECT --&gt; LM</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    LM --&gt; OUT["Answer · JSON fields&lt;br/&gt;regions · action proposal"]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch29-vlm" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch29-vlm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch29-vlm">flowchart LR
+    IMAGE["Image pixels&lt;br/&gt;height × width × channels"] --&gt; PRE["Resize / tile / normalize"]
+    PRE --&gt; PATCH["Patch sequence&lt;br/&gt;N visual tokens"]
+    PATCH --&gt; ENCODER["Vision transformer&lt;br/&gt;spatial contextualization"]
+    ENCODER --&gt; PROJECT["Project / resample&lt;br/&gt;visual width → LM width"]
+    TEXT["Text token embeddings"] --&gt; LM(["Language model&lt;br/&gt;cross-modal attention"])
+    PROJECT --&gt; LM
+    LM --&gt; OUT["Answer · JSON fields&lt;br/&gt;regions · action proposal"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch29-vlm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;29.1: Where does an image become a sequence the language model can attend to?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The LLM sees projected vectors, not a photograph. Crop policy, orientation, scaling, compression, tiling, color conversion, and patch layout have already determined which evidence survives. Logging only the original file hash is not enough for reproducibility; record preprocessing and the actual rendered image or its immutable derivative.</p>
+</section>
+<section id="sec-ch29-budget" class="level2" data-number="29.6">
+<h2 data-number="29.6" class="anchored" data-anchor-id="sec-ch29-budget"><span class="header-section-number">29.6</span> Instruction tuning and tiling create the image-token bill</h2>
+<p>Image/text alignment teaches semantic proximity. A VLM assistant also needs examples that connect visual inputs and instructions to useful responses: description, question answering, OCR, chart reasoning, grounding, refusal, and structured output. A common staged recipe freezes or partly freezes pretrained components while training a projector, then instruction-tunes more of the stack on multimodal conversations. Exact recipes differ; the enduring distinction is encoder alignment versus task-following behavior.</p>
+<p>One fixed square view is poor for a dense page. <strong>Dynamic tiling</strong> divides a high-resolution image into model-sized crops and often adds a thumbnail for global layout. More tiles reveal small text but repeat context, raise image tokens, and can make cross-tile reading order harder. Document models may instead use native variable resolution, patch packing, or learned compression.</p>
+<p>For a model that emits <span class="math inline">k</span> tokens per tile plus <span class="math inline">t</span> thumbnail tokens, the page cost is</p>
+<p><span class="math display">
+V(n)=nk+t,
+</span></p>
+<p>where <span class="math inline">n</span> is tile count. The fixture uses <span class="math inline">k=256</span> and <span class="math inline">t=64</span> only to make the tradeoff tangible. At 1, 4, 9, and 16 tiles, it charges 320, 1,088, 2,368, and 4,160 image tokens per page. A real serving adapter must use the model’s processor or returned usage rather than this illustration.</p>
+<p>Resolution is a hyperparameter with an evaluation curve. Low resolution can merge characters, erase decimals, miss tiny controls, or make chart marks indistinguishable. Beyond the task’s spatial frequency, extra pixels add little accuracy. The chapter fixture reaches 59 of 60 exact fields at nine tiles and does not improve at sixteen, while token cost rises 76 percent.</p>
+<div id="fig-ch29-resolution" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-cap="Where does more page resolution stop paying? Deterministic synthetic invoices; token counts are illustrative processor units, not a provider price.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch29-resolution-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../assets/figures/ch29-resolution-tradeoff.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;29.2: Exact field accuracy rises from about 0.73 at one tile to 0.98 at nine tiles and remains flat at sixteen, while illustrative image tokens rise linearly from 320 to 4,160."><img src="../assets/figures/ch29-resolution-tradeoff.svg" class="img-fluid figure-img" data-fig-cap="Where does more page resolution stop paying? Deterministic synthetic invoices; token counts are illustrative processor units, not a provider price."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch29-resolution-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;29.2: Exact field accuracy rises from about 0.73 at one tile to 0.98 at nine tiles and remains flat at sixteen, while illustrative image tokens rise linearly from 320 to 4,160.
+</figcaption>
+</figure>
+</div>
+<p>Do not select the elbow on aggregate alone. Slice by scan quality, font size, orientation, tables, formulas, handwriting, language, page density, and field consequence. A total amount and a decorative logo may have equal field weight in a naive metric but very different product cost. Predeclare required fields and abstention behavior.</p>
+<p>VLMs can hallucinate visible objects and relationships just as text models confabulate facts. POPE-style probing tests object presence with controlled positive and negative questions. In production, use evidence regions, OCR or structured-source cross-checks, consistency constraints, and abstention. A fluent description is not page-grounded merely because an image was supplied.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 (dated)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Verify live: 2026-07-19. Appendix C owner: VLM model, processor, and serving matrix.</strong> Current open and hosted VLM families vary in native resolution, dynamic tiling, coordinate format, video support, schema enforcement, and image-token accounting. <a href="https://docs.vllm.ai/en/latest/features/multimodal_inputs/">vLLM’s maintained multimodal documentation</a> describes its current local-serving surface; model processor and endpoint behavior must be pinned together. Roster names, context sizes, supported media, and leaderboard positions change. The spine keeps only the processor-token-evaluation mechanism.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch29-fusion" class="level2" data-number="29.7">
+<h2 data-number="29.7" class="anchored" data-anchor-id="sec-ch29-fusion"><span class="header-section-number">29.7</span> Fusion decides when modalities can interact</h2>
+<p>“Multimodal” covers several architectures. The useful question is when information from one modality can alter the representation of another.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Pattern</th>
+<th>Interaction</th>
+<th>Strength</th>
+<th>Constraint</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>separate encoders + joint embedding</td>
+<td>modalities meet in a shared retrieval space</td>
+<td>cheap search and classification</td>
+<td>pooled vectors lose token/region interactions</td>
+</tr>
+<tr class="even">
+<td>vision encoder + projector + LLM</td>
+<td>projected visual tokens enter a language model</td>
+<td>reuse pretrained specialists; practical adaptation</td>
+<td>vision preprocessing may be a bottleneck</td>
+</tr>
+<tr class="odd">
+<td>cross-attention modules</td>
+<td>language states attend to visual states at selected layers</td>
+<td>controlled repeated fusion</td>
+<td>more architectural and serving complexity</td>
+</tr>
+<tr class="even">
+<td>early/native multimodal transformer</td>
+<td>modalities are trained in a more unified token stream</td>
+<td>rich interaction and potential any-to-any behavior</td>
+<td>expensive joint data/training; modality balance matters</td>
+</tr>
+</tbody>
+</table>
+<p>An <strong>omni model</strong> usually refers to a model intended to accept and possibly emit several modalities in one conversational system. The label says little about internal fusion or latency. Chapter 30 treats audio, video, and generated media at the production boundary.</p>
+<p>Do not confuse <strong>late fusion</strong> with <strong>late interaction</strong>. Late fusion is an architectural statement: independently formed modality representations meet late. Late interaction is a retrieval scoring statement: keep multiple query and document vectors, then compare them at search time. A system can use a late-fusion VLM encoder to produce vectors and late-interaction retrieval to score them.</p>
+<p>Native multimodality does not remove application preprocessing. Images still need size, orientation, frame, and safety policies; audio needs sampling and turn boundaries; documents need page selection; screens need freshness. The model may learn more of the mapping, but the caller still chooses which evidence enters the context and what authority follows.</p>
+</section>
+<section id="sec-ch29-grounding" class="level2" data-number="29.8">
+<h2 data-number="29.8" class="anchored" data-anchor-id="sec-ch29-grounding"><span class="header-section-number">29.8</span> Grounding turns words into regions and points</h2>
+<p><strong>Grounding</strong> connects a linguistic reference to image coordinates or a region. A model might answer “the total is 312.00” and emit <code>[820,1180,1080,1260]</code> as the supporting box. For GUI work, it might emit the center point of the button labeled “Save draft.” A grounding result is evidence or a proposal—not authorization.</p>
+<p>Coordinates need a declared convention. Absolute pixels depend on the exact rendered width and height. Normalized coordinates such as integers in a 0–1000 grid travel across image sizes but must be mapped back with known rounding and letterboxing. Some models emit <code>(x_0,y_0,x_1,y_1)</code>, others a point, polygon, mask, or tokenized region. Store the source image dimensions, transform, and model convention with every result.</p>
+<p>For a normalized point <span class="math inline">(u,v)</span> on scale <span class="math inline">M</span> and rendered image <span class="math inline">(W,H)</span>, one mapping is</p>
+<p><span class="math display">
+x=\operatorname{round}\!\left(\frac{u}{M}W\right),
+\qquad
+y=\operatorname{round}\!\left(\frac{v}{M}H\right).
+</span></p>
+<p>If preprocessing letterboxed an image, subtract padding and divide by the content scale before using page coordinates. A one-line normalization mismatch can move every click while language answers remain excellent.</p>
+<p>Grounding can be produced as ordinary coordinate tokens without a dedicated detector head. That makes the prompt convention and tokenizer part of the contract. It also means constrained syntax does not guarantee correct geometry. Validate bounds, shape, target identity, visibility, occlusion, and current screen state outside the model.</p>
+<p><strong>Pointing</strong> asks for one or more representative locations; boxes cover rectangular extent; segmentation masks cover shape. A point is compact for clicks but weak evidence for a table or chart. A box is useful for field citations and crop re-inspection. Choose the representation the downstream verifier can evaluate.</p>
+<p>Spatial reasoning often lags semantic recognition. A model can identify every UI control yet swap left/right after a crop, misread an overlapping modal, or fail to relate a legend color to a bar. Test relational and state-dependent cases rather than inferring grounding from VQA accuracy.</p>
+</section>
+<section id="sec-ch29-documents" class="level2" data-number="29.9">
+<h2 data-number="29.9" class="anchored" data-anchor-id="sec-ch29-documents"><span class="header-section-number">29.9</span> Document understanding needs values, structure, and evidence</h2>
+<p>Document extraction has at least four outputs: recognized content, layout structure, normalized business values, and evidence linking each value to the page. OCR produces characters and sometimes boxes. Layout models identify blocks, tables, formulas, and reading order. A VLM can perform end-to-end parsing or direct schema extraction. A deterministic layer must still validate types, constraints, and authoritative cross-checks.</p>
+<p>The cheapest pipeline for clean digital prose is often PDF text extraction plus layout metadata. OCR remains strong for scans and gives an independent numeric channel. VLM-native parsing becomes attractive when visual hierarchy, charts, handwriting, mixed scripts, or irregular tables dominate. Many production systems keep a <strong>dual representation</strong>: text for exact lexical search and validation, page images or visual embeddings for layout-dependent retrieval and answering.</p>
+<p>The reference schema requires five invoice fields, each with a value and evidence box. Validation checks the exact field set, string value type, all four box coordinates, and that every box lies inside the rendered page. The evaluator then compares normalized values to source truth. The core loop is:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># page_reader.py — one resolution sweep</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> page <span class="kw">in</span> pages:</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    extraction <span class="op">=</span> fixture_extract(page, tiles)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    validate_extraction(extraction, page)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    page_correct, page_total <span class="op">=</span> score_fields(extraction, page)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    correct <span class="op">+=</span> page_correct</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    total <span class="op">+=</span> page_total</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The deterministic adapter is not a model benchmark. It provides a stable failing curve so the chapter’s schema, scoring, evidence, and budget code always runs. <code>OpenAICompatibleVLM</code> encodes a real PNG, requests the same five values and boxes from a local endpoint, and parses JSON. A production version should use schema-constrained decoding where supported, retry only malformed responses within a budget, and preserve raw model evidence for adjudication.</p>
+<p>Field-level exact match needs domain normalization: currency separators, dates, Unicode, whitespace, identifiers, and tolerance where measurement is approximate. Score absent and abstained separately from wrong. Add table structure, reading order, formula, chart, and region-overlap metrics only when the product requires them. A composite parsing benchmark cannot select a system for a specific invoice policy without this task contract.</p>
+<p>Optical compression treats visual tokens as a compact representation from which text and structure can be decoded. The useful engineering question is not whether a page can theoretically compress, but how accuracy changes with scan quality, density, script, formulas, and token budget. Preserve the original and preprocessing lineage; a compressed representation is derived state, not the evidentiary document.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 (dated)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Verify live: 2026-07-19. Appendix C owner: document parsing and evaluation registry.</strong> <a href="https://arxiv.org/abs/2412.07626">OmniDocBench</a> established diverse component-level document parsing evaluation; 2026 work such as <a href="https://arxiv.org/abs/2603.04205">Real5-OmniDocBench</a> and <a href="https://arxiv.org/abs/2605.07492">PureDocBench</a> emphasizes physical degradation, source traceability, annotation audit, and saturation risk. Model names and top-line scores move rapidly. Retain a frozen public benchmark for comparability, a source-traceable internal set for field decisions, and fresh degraded/incident cases for deployment validity.</p>
+</div>
+</div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>page_reader.py</code> with schema, evidence, and sweep</td>
+<td style="text-align: right;">164 lines total; 7 shown</td>
+<td>Every scored value has in-page evidence, and resolution is selected from measured accuracy and image-token cost rather than intuition.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch29-visual-rag" class="level2" data-number="29.10">
+<h2 data-number="29.10" class="anchored" data-anchor-id="sec-ch29-visual-rag"><span class="header-section-number">29.10</span> Visual retrieval preserves page-level interactions</h2>
+<p>Chapter 14 represented a document as text chunks and dense vectors. Visual-document retrieval can instead encode each page image. A single pooled vector is compact, but pooling can dilute a small relevant region or be dominated by repeated generic material. <strong>Late interaction</strong> retains multiple vectors per page.</p>
+<p>Let query token vectors be <span class="math inline">\mathbf{q}_1,\ldots,\mathbf{q}_m</span> and page patch vectors be <span class="math inline">\mathbf{d}_1,\ldots,\mathbf{d}_n</span>, all normalized. MaxSim scoring is</p>
+<p><span class="math display">
+S(Q,D)=\sum_{i=1}^{m}\max_{1\le j\le n}\mathbf{q}_i^\top\mathbf{d}_j.
+</span></p>
+<p>Every query term finds its best patch, then those best matches are summed. The operation is asymmetric: query tokens ask questions of a larger page-vector set. A page cannot win merely because one patch matches one term if the remaining query terms find no home.</p>
+<p><a href="#fig-ch29-maxsim" class="quarto-xref">Figure&nbsp;<span>29.3</span></a> contrasts pooled and late-interaction paths.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>flowchart TB</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    Q["Query token vectors"] --&gt; QPOOL["Pool to one query vector"]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    PAGE["Page patch vectors"] --&gt; DPOOL["Pool to one page vector"]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    QPOOL --&gt; ONE["One similarity"]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    DPOOL --&gt; ONE</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    Q --&gt; EACH["For each query token"]</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    PAGE --&gt; MATCH["Compare with every page patch"]</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    EACH --&gt; MATCH</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    MATCH --&gt; MAX["Keep best patch per query token"]</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    MAX --&gt; SUM["Sum MaxSim score"]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch29-maxsim" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch29-maxsim-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch29-maxsim">flowchart TB
+    Q["Query token vectors"] --&gt; QPOOL["Pool to one query vector"]
+    PAGE["Page patch vectors"] --&gt; DPOOL["Pool to one page vector"]
+    QPOOL --&gt; ONE["One similarity"]
+    DPOOL --&gt; ONE
+
+    Q --&gt; EACH["For each query token"]
+    PAGE --&gt; MATCH["Compare with every page patch"]
+    EACH --&gt; MATCH
+    MATCH --&gt; MAX["Keep best patch per query token"]
+    MAX --&gt; SUM["Sum MaxSim score"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch29-maxsim-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;29.3: Why can late interaction preserve a small visual region that pooling dilutes?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The runnable example asks for two orthogonal concepts. The relevant page contains one perfect patch for each plus eight unrelated patches; pooling dilutes it. The flooded page repeats a generic vector halfway between the concepts. Pooled similarity chooses the flood 1.0 to 0.174. MaxSim chooses the relevant page 2.0 to 1.414. This is a constructed explanation, not a theorem that MaxSim defeats poisoning.</p>
+<p>A practical cost ladder is:</p>
+<ol type="1">
+<li>caption or OCR and use the existing text index;</li>
+<li>one joint image/text embedding per page;</li>
+<li>a document-specific single-vector encoder;</li>
+<li>multivector visual embeddings with late interaction;</li>
+<li>agentic retrieval that selects pages, crops, tools, and follow-up queries.</li>
+</ol>
+<p>Storage rises with page count, vectors per page, dimension, and bytes per component. Reduce it through patch pooling, lower dimensions, quantization, centroid/residual compression, candidate generation before exact scoring, and tiered storage. Each lever can destroy tiny-region recall; evaluate after every transformation. Do not cite a generic terabyte-to-gigabyte ratio without your page count and representation.</p>
+<p>Visual retrieval complements rather than automatically replaces text. Text indexes give exact identifiers, filters, phrase search, and cheap snippets. Visual multivectors retain layout and figure evidence. A dual index can union or cascade candidates, rerank with query-specific policy, and cross-check extracted numbers. Tenant filters and source authorization apply before either search. Visual prompt injection and poisoned pages still require Chapters 15 and 24’s defenses.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 (dated)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Verify live: 2026-07-19. Appendix C owner: visual-retrieval models, benchmarks, and engines.</strong> <a href="https://arxiv.org/abs/2407.01449">ColPali</a> introduced page-image multivectors and ViDoRe alongside a late-interaction recipe. Current libraries and vector engines differ in native multivector indexing, MaxSim execution, compression, and filters. ViDoRe revisions and leaderboards continue to move. Benchmark the exact encoder, preprocessing, index, compression, filter order, and reranker on your own pages.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch29-gui" class="level2" data-number="29.11">
+<h2 data-number="29.11" class="anchored" data-anchor-id="sec-ch29-gui"><span class="header-section-number">29.11</span> GUI perception must end in a fresh, gated proposal</h2>
+<p>This section completes the pixel-based computer-use perception deferred in Chapter 21. A GUI loop observes a screen, grounds the intended control, proposes a semantic action and coordinates, passes deterministic policy and freshness checks, acts, then observes again. The model never receives raw authority to click arbitrary coordinates.</p>
+<p>Prefer a stable semantic channel when available. DOM selectors, accessibility nodes, native automation identifiers, and application APIs are cheaper and easier to verify than pixels. Use the screenshot to resolve visual-only state and fall back to coordinates when structured surfaces are missing or untrustworthy. Hybrid agents can ask the VLM which named element matters, then let code target it.</p>
+<p>Screen parsers can detect icons, text, and controls, while <strong>Set-of-Marks</strong> overlays give candidate regions short speakable identifiers. This can reduce free-coordinate error: the model says “mark 17” and code maps it to a known box. It can also clutter dense screens, miss custom controls, or expose a stale parse. The unmarked screenshot, marks, element table, and coordinate transform must share one revision.</p>
+<p>The reference screen has <code>Save draft</code>, <code>Delete account</code>, and <code>Email address</code> elements. <code>ground</code> stands in for a VLM: it finds exactly one label and proposes the element’s center plus the screen digest. <code>authorize</code> then rechecks:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># gui_step.py — deterministic boundary after visual grounding</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> proposal.screen_digest <span class="op">!=</span> screen.digest:</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"deny:stale_screen"</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>element <span class="op">=</span> find_element(screen, proposal.element_id)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> point_inside(proposal, element.box):</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"deny:coordinates_outside_target"</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> element.destructive <span class="kw">and</span> <span class="kw">not</span> confirmed:</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"review:confirmation_required"</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="st">"allow"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The source file spells out the helpers rather than hiding them. A safe click is allowed. Deleting the account requires confirmation. After the delete button moves and the screen revision changes, the previously confirmed proposal is denied as stale. Confirmation authorized the semantic action on one state, not a coordinate forever.</p>
+<p><a href="#fig-ch29-gui" class="quarto-xref">Figure&nbsp;<span>29.4</span></a> shows the trust boundary between perception and effect.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    participant R as Runtime</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    participant V as VLM perception</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    participant G as Deterministic gate</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    participant U as User/reviewer</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    participant UI as GUI</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    R-&gt;&gt;UI: capture screenshot + revision</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    UI--&gt;&gt;R: pixels + structured elements</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    R-&gt;&gt;V: task + bounded screen evidence</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    V--&gt;&gt;R: proposal(element, point, screen digest)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    R-&gt;&gt;G: proposal + current authenticated state</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    G-&gt;&gt;UI: re-read target and screen revision</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    alt destructive and current</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        G-&gt;&gt;U: exact semantic action + consequence</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        U--&gt;&gt;G: bound confirmation</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    G--&gt;&gt;R: allow / deny / review</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    R-&gt;&gt;UI: execute only if allowed</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    R-&gt;&gt;UI: capture post-action screen</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch29-gui" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch29-gui-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch29-gui">sequenceDiagram
+    participant R as Runtime
+    participant V as VLM perception
+    participant G as Deterministic gate
+    participant U as User/reviewer
+    participant UI as GUI
+
+    R-&gt;&gt;UI: capture screenshot + revision
+    UI--&gt;&gt;R: pixels + structured elements
+    R-&gt;&gt;V: task + bounded screen evidence
+    V--&gt;&gt;R: proposal(element, point, screen digest)
+    R-&gt;&gt;G: proposal + current authenticated state
+    G-&gt;&gt;UI: re-read target and screen revision
+    alt destructive and current
+        G-&gt;&gt;U: exact semantic action + consequence
+        U--&gt;&gt;G: bound confirmation
+    end
+    G--&gt;&gt;R: allow / deny / review
+    R-&gt;&gt;UI: execute only if allowed
+    R-&gt;&gt;UI: capture post-action screen
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch29-gui-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;29.4: What must happen between a VLM grounding a control and the runtime clicking it?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Cost grows per step. If each screenshot costs <span class="math inline">v</span> image tokens, planning adds <span class="math inline">t</span> text tokens, and a task takes <span class="math inline">s</span> observed steps, the input scale is roughly <span class="math inline">s(v+t)</span> before cache effects. Twelve pixel steps at 1,088 image tokens already consume 13,056 visual tokens. Reduce steps through APIs, DOM actions, deterministic workflows, cropped search regions, state-difference processing, and better stopping—not by silently lowering resolution below the target size.</p>
+<p>Evaluate grounding hit rate separately from task success. Test small and dense controls, high-resolution professional software, overlays, scrolling, scaling, multiple displays, lookalike labels, disabled state, and moving targets. One misgrounding can be harmless on <code>Save draft</code> and catastrophic on <code>Delete account</code>; report risk-weighted errors and gate containment.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 (dated)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Verify live: 2026-07-19. Appendix C owner: GUI grounding models and benchmarks.</strong> <a href="https://arxiv.org/abs/2310.11441">Set-of-Mark prompting</a>, screen parsers, native GUI models, and hybrid browser/computer-use products form a fast-moving stack. The original <a href="https://arxiv.org/abs/2504.07981">ScreenSpot-Pro</a> results exposed large gaps on high-resolution professional interfaces; newer systems and leaderboard entries improve, so verify current numbers rather than copying them. Benchmark revisions, OS images, scaling, coordinate conventions, and allowed action surfaces are part of the evaluated system.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch29-field-guide" class="level2" data-number="29.12">
+<h2 data-number="29.12" class="anchored" data-anchor-id="sec-ch29-field-guide"><span class="header-section-number">29.12</span> Choose the cheapest multimodal tier that passes</h2>
+<p>Begin from the question whose answer must survive preprocessing:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Workload</th>
+<th>Start with</th>
+<th>Escalate when</th>
+<th>Dominant failure to measure</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>clean contracts and articles</td>
+<td>native text + layout metadata</td>
+<td>scans, signatures, tables, or visual citations matter</td>
+<td>reading order and exact identifiers</td>
+</tr>
+<tr class="even">
+<td>invoices and forms</td>
+<td>OCR/layout + schema rules, optionally VLM cross-check</td>
+<td>irregular layouts, handwriting, charts, or long-tail templates dominate</td>
+<td>required-field error and evidence validity</td>
+</tr>
+<tr class="odd">
+<td>visually rich legal discovery</td>
+<td>dual text and visual page indexes</td>
+<td>single-vector visual recall misses fine regions</td>
+<td>tenant-filtered recall and storage/latency</td>
+</tr>
+<tr class="even">
+<td>product-image search</td>
+<td>joint image/text embeddings</td>
+<td>queries name multiple local attributes</td>
+<td>slice recall and near-duplicate confusion</td>
+</tr>
+<tr class="odd">
+<td>chart/figure questions</td>
+<td>retrieve page then crop-aware VLM</td>
+<td>answer spans pages or requires calculation</td>
+<td>numeric grounding and unsupported inference</td>
+</tr>
+<tr class="even">
+<td>browser or desktop control</td>
+<td>DOM/accessibility/API action</td>
+<td>state is visible only in pixels</td>
+<td>grounding, stale-screen containment, cost per step</td>
+</tr>
+</tbody>
+</table>
+<p>The default is not the accuracy frontier. It is the least expensive representation and model that passes the deployment contract with acceptable residual risk. A large general VLM may lose to a small document specialist on parsing, while being more robust to unusual pages. A multivector index may improve visual recall but be unnecessary for a prose knowledge base. A pixel loop may demo broadly while a narrow API workflow is cheaper and safer.</p>
+<p>Use cascades. Extract digital text first, route only low-confidence or visually dependent pages to a VLM, and require independent checks for consequential numbers. Search text and visual indexes in parallel for high-value queries, or use a single-vector first stage before multivector reranking. Crop a GUI search area before expensive grounding, then revalidate against the full current state.</p>
+<p>Batch offline documents; keep interactive screens latency-bound. Cache immutable page renderings and embeddings under document and processor hashes. Do not cache GUI coordinates across revisions. Include image storage, preprocessing CPU, visual tokens, vector storage, MaxSim compute, model latency, step count, and review in cost per successful outcome.</p>
+<p>The field guide ends in an experiment. Select two plausible tiers, freeze a source-traceable task set, measure quality, latency, cost, security containment, and operational burden, then keep the simpler tier unless the next one earns its complexity. Chapter 32 applies this rule across the whole agent stack.</p>
+</section>
+<section id="sec-ch29-eval" class="level2" data-number="29.13">
+<h2 data-number="29.13" class="anchored" data-anchor-id="sec-ch29-eval"><span class="header-section-number">29.13</span> Own an evaluation after the benchmark saturates</h2>
+<p>Multimodal benchmarks saturate for familiar reasons: models improve, public tasks enter training ecosystems, annotations contain errors, and the remaining deployment distribution is harder than clean pages or consumer screens. A “v2” usually adds harder sources, better annotations, professional interfaces, degradation, or contamination controls. It does not invalidate the first benchmark; keep a stable subset for regression and add fresh evidence for selection.</p>
+<p>Build task-specific outcome metrics. Document extraction needs schema validity, required-field exactness, normalized numeric/date accuracy, evidence-region validity, table/formula/reading-order metrics where relevant, latency, image tokens, and abstention. Visual retrieval needs recall at candidate depth, tenant-filter correctness, reranking gain, storage, latency, and poisoning slices. GUI work needs element grounding, coordinate hit, task completion, destructive-error rate, stale-screen containment, steps, visual tokens, and confirmation burden.</p>
+<p>The independent unit matters. Fifty fields on one invoice are correlated; resampling fields pretends to have more documents than you do. Cluster uncertainty by page or document. Repeated GUI attempts on one screen share layout. Pair systems on the same pages and screen states, preserve clean environment resets, and use the Chapter 22 statistics.</p>
+<p>Evaluate preprocessing as part of the system. A model comparison with different DPI, crop, color conversion, tile count, prompt, coordinate mapping, or schema decoder is not a base-model comparison. Record every surface. Test rotations, skew, blur, compression, screen photography, dark mode, scaling, localization, tiny targets, overlays, and assistive settings that appear in use.</p>
+<p>Adversarial cases belong beside quality cases. Render an indirect prompt into a retrieved page, hide text at small scale, insert a lookalike button, change the screen after proposal, poison a visual index, and attempt cross-tenant retrieval. Measure whether the model follows the attack and whether the gate contains the effect separately.</p>
+<p>Benchmark literacy is the ability to read construction, annotation, contamination, splits, harness, and error slices—not memorize a leaderboard. The evaluation you own should decide processor budget, retrieval tier, gate policy, and release. A saturated public score never proves your invoices or professional GUI are solved.</p>
+</section>
+<section id="sec-ch29-build" class="level2" data-number="29.14">
+<h2 data-number="29.14" class="anchored" data-anchor-id="sec-ch29-build"><span class="header-section-number">29.14</span> Build</h2>
+<p>Run the deterministic build from <code>newbook/</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> pytest tests/test_ch29_multimodal.py <span class="at">-q</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch29/page_reader.py</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch29/maxsim_demo.py</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch29/gui_step.py</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch29/render_tradeoff.py <span class="dt">\</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--plot</span> assets/figures/ch29-resolution-tradeoff.svg</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The document sweep returns:</p>
+<pre class="text"><code>tiles   image tokens/page   correct/60   field accuracy
+1                    320          44          0.7333
+4                  1,088          57          0.9500
+9                  2,368          59          0.9833
+16                 4,160          59          0.9833</code></pre>
+<p>The source-traceable pages guarantee every gold value and region came from the generator rather than manual transcription. At one tile, every chart peak and four due dates are unreadable. At four, three chart peaks remain wrong. At nine and sixteen, one deliberately difficult chart remains wrong. Every returned field still carries a valid in-page box, which lets a reviewer or verifier inspect the claim.</p>
+<p>The retrieval construction produces:</p>
+<pre class="text"><code>             relevant page   flooded page   winner
+pooled              0.174          1.000    flooded
+MaxSim               2.000          1.414    relevant</code></pre>
+<p>The flooded page repeats a generic vector aligned with the pooled query. The relevant page contains exact patches for both query concepts plus eight distractors. Late interaction preserves the two local matches. Change pooling, vector counts, or embeddings and the example may flip; the test teaches the mechanism, not a universal robustness guarantee.</p>
+<p>The GUI fixture returns:</p>
+<pre class="text"><code>safe action                         allow
+destructive, no confirmation        review:confirmation_required
+destructive, confirmed              allow
+same proposal after screen change   deny:stale_screen
+illustrative image tokens/step      1,088</code></pre>
+<p>To replace the document fixture with a real local VLM, render or select a PNG and run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch29/page_reader.py <span class="dt">\</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--base-url</span> http://127.0.0.1:8000 <span class="dt">\</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--model</span> YOUR_PINNED_VLM <span class="dt">\</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--image</span> path/to/page.png</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The adapter uses the common <code>/v1/chat/completions</code> shape with an image data URL. Verify the current server’s multimodal and structured-output contract, pin model and processor, and validate the result with the same <code>validate_extraction</code> and <code>score_fields</code> functions. Never publish the fixture numbers as model performance.</p>
+<p>The build succeeds when three invariants hold: resolution selection is justified by a measured field/token curve; every document value has bounded page evidence; and no GUI coordinate executes after the observed screen changes or before a destructive confirmation. A production system still needs real images, calibrated abstention, a secured local endpoint, authoritative DOM/screen capture, OS-level isolation, and the policy architecture from Chapter 24.</p>
+</section>
+<section id="sec-ch29-endures" class="level2" data-number="29.15">
+<h2 data-number="29.15" class="anchored" data-anchor-id="sec-ch29-endures"><span class="header-section-number">29.15</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Images become a budgeted sequence of representations before language attention. Preserve preprocessing lineage. Choose resolution from a task curve. Distinguish alignment, instruction following, grounding, and authorization. Carry evidence regions with extracted values. Keep OCR/text and visual representations when each preserves different truth. Use late interaction when local page matches justify its storage and compute. Prefer semantic GUI actions, bind coordinate proposals to fresh screens, and gate consequential effects in deterministic code. Evaluate the full processor-model-index-gate system on source-traceable tasks and degraded/adversarial slices.</p>
+<p><strong>What changes.</strong> VLM families, native resolution, image-token accounting, document parsers, visual retrievers, vector engines, GUI models, screen parsers, endpoint schemas, and benchmark leaderboards will change. Appendix C records those dated facts. Removing every Landscape box leaves the visual mechanisms and build intact.</p>
+</section>
+<section id="sec-ch29-exercises" class="level2" data-number="29.16">
+<h2 data-number="29.16" class="anchored" data-anchor-id="sec-ch29-exercises"><span class="header-section-number">29.16</span> Exercises</h2>
+<ol type="1">
+<li>For images at 224, 448, and 896 square with patch sizes 14 and 16, compute patch-token counts before any resampling. Add a four-tile plus thumbnail processor and identify which term dominates long-document context.</li>
+<li>Extend <code>maxsim_demo.py</code> with four-to-one patch pooling and int8 quantization. Find a construction where compression changes the winner, then state which real retrieval slice should catch that loss.</li>
+<li>Add rotation, skew, blur, and a photographed-screen artifact to the invoice generator or a real page set. Measure field and evidence accuracy separately, apply one preprocessing repair, and report which page clusters—not fields—enter the confidence interval.</li>
+<li>Generate Set-of-Marks overlays from the deterministic screen elements. Compare label-to-mark grounding with raw coordinates under screen scaling, a modal overlay, and duplicate labels. Keep the same freshness gate.</li>
+<li>Render an indirect instruction into a page image and pass it through extraction and retrieval. Record instruction-following and final-effect containment separately; apply the controls from Chapters 15 and 24 without calling the page trusted.</li>
+<li>Size multivector storage for ten million pages under a 100-GB budget. State vectors per page, dimension, bytes per component, metadata, replicas, and index overhead; order pooling, lower dimension, quantization, and candidate reranking by expected recall risk.</li>
+<li>Compare a twelve-step pixel loop with a hybrid DOM/API path on image tokens, text tokens, latency, grounding errors, stale-state errors, and review burden. Decide which steps genuinely require pixels.</li>
+<li>Defend a dual OCR-plus-visual index against a pure visual proposal for legal discovery. Include exact identifier search, layout questions, tenant filtering, storage, rebuild time, citation evidence, poisoning, and the evaluation that would change your decision.</li>
+</ol>
+</section>
+<section id="sec-ch29-sources" class="level2" data-number="29.17">
+<h2 data-number="29.17" class="anchored" data-anchor-id="sec-ch29-sources"><span class="header-section-number">29.17</span> Notes and sources</h2>
+<ul>
+<li>Dosovitskiy et al., <a href="https://arxiv.org/abs/2010.11929">“An Image Is Worth 16×16 Words”</a>, introduce the Vision Transformer patch-sequence construction.</li>
+<li>Radford et al., <a href="https://arxiv.org/abs/2103.00020">“Learning Transferable Visual Models From Natural Language Supervision”</a>, describe CLIP’s contrastive image-text training.</li>
+<li>Zhai et al., <a href="https://arxiv.org/abs/2303.15343">“Sigmoid Loss for Language Image Pre-Training”</a>, introduce the pairwise sigmoid alternative used in the derivation.</li>
+<li>Liu et al., <a href="https://arxiv.org/abs/2304.08485">“Visual Instruction Tuning”</a>, establish the LLaVA-style projector and visual instruction-tuning recipe.</li>
+<li>Li et al., <a href="https://arxiv.org/abs/2305.10355">“Evaluating Object Hallucination in Large Vision-Language Models”</a>, introduce POPE’s controlled object-presence probing.</li>
+<li>Faysse et al., <a href="https://arxiv.org/abs/2407.01449">“ColPali: Efficient Document Retrieval with Vision Language Models”</a>, introduce page-image multivectors, late interaction, and ViDoRe.</li>
+<li>Santhanam et al., <a href="https://arxiv.org/abs/2205.09707">“PLAID: An Efficient Engine for Late Interaction Retrieval”</a>, provide a systems route for pruning and compressed late-interaction search.</li>
+<li>Ouyang et al., <a href="https://arxiv.org/abs/2412.07626">“OmniDocBench”</a>, provide diverse parsing tasks and component-level evaluation.</li>
+<li>Yang et al., <a href="https://arxiv.org/abs/2310.11441">“Set-of-Mark Prompting”</a>, introduce speakable region overlays for visual grounding.</li>
+<li>Li et al., <a href="https://arxiv.org/abs/2504.07981">“ScreenSpot-Pro”</a>, evaluate GUI grounding on professional high-resolution interfaces.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/28-products-people-organizations.html" class="pagination-link" aria-label="Agent Products, People, and Organizations [S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/30-multimodal-voice-video-media.html" class="pagination-link" aria-label="Multimodal Agents II: Voice, Video, and Generative Media [S]">
+        <span class="nav-page-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

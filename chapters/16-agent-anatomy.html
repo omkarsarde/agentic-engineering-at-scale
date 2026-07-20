@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Build one bounded agent loop, specify its invariants, and reuse it across workflows without duplicating the control kernel.">
+
+<title>16&nbsp; Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/17-tool-harness-engineering.html" rel="next">
+<link href="../chapters/15-agentic-retrieval.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/16-agent-anatomy.html">Part V — Building Agents</a></li><li class="breadcrumb-item"><a href="../chapters/16-agent-anatomy.html"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-you-need-going-in" id="toc-what-you-need-going-in" class="nav-link active" data-scroll-target="#what-you-need-going-in"><span class="header-section-number">16.1</span> What you need going in</a></li>
+  <li><a href="#contents" id="toc-contents" class="nav-link" data-scroll-target="#contents"><span class="header-section-number">16.2</span> Contents</a></li>
+  <li><a href="#sec-ch16-boundaries" id="toc-sec-ch16-boundaries" class="nav-link" data-scroll-target="#sec-ch16-boundaries"><span class="header-section-number">16.3</span> The missing boundary</a></li>
+  <li><a href="#sec-ch16-will-build" id="toc-sec-ch16-will-build" class="nav-link" data-scroll-target="#sec-ch16-will-build"><span class="header-section-number">16.4</span> What you will build</a></li>
+  <li><a href="#sec-ch16-specification" id="toc-sec-ch16-specification" class="nav-link" data-scroll-target="#sec-ch16-specification"><span class="header-section-number">16.5</span> An agent as an executable specification</a></li>
+  <li><a href="#sec-ch16-kernel" id="toc-sec-ch16-kernel" class="nav-link" data-scroll-target="#sec-ch16-kernel"><span class="header-section-number">16.6</span> The proposal–gate–execute–observe kernel</a></li>
+  <li><a href="#sec-ch16-denial" id="toc-sec-ch16-denial" class="nav-link" data-scroll-target="#sec-ch16-denial"><span class="header-section-number">16.7</span> A denial trace: the action that must not happen</a></li>
+  <li><a href="#sec-ch16-lifecycle" id="toc-sec-ch16-lifecycle" class="nav-link" data-scroll-target="#sec-ch16-lifecycle"><span class="header-section-number">16.8</span> Termination, budgets, and typed failure</a></li>
+  <li><a href="#sec-ch16-workflows" id="toc-sec-ch16-workflows" class="nav-link" data-scroll-target="#sec-ch16-workflows"><span class="header-section-number">16.9</span> Workflows are strategies, not new loops</a></li>
+  <li><a href="#sec-ch16-planning" id="toc-sec-ch16-planning" class="nav-link" data-scroll-target="#sec-ch16-planning"><span class="header-section-number">16.10</span> ReAct, planning, and replanning</a></li>
+  <li><a href="#sec-ch16-verification" id="toc-sec-ch16-verification" class="nav-link" data-scroll-target="#sec-ch16-verification"><span class="header-section-number">16.11</span> Execution-grounded verification</a></li>
+  <li><a href="#sec-ch16-build" id="toc-sec-ch16-build" class="nav-link" data-scroll-target="#sec-ch16-build"><span class="header-section-number">16.12</span> Build</a>
+  <ul class="collapse">
+  <li><a href="#acceptance-checks" id="toc-acceptance-checks" class="nav-link" data-scroll-target="#acceptance-checks"><span class="header-section-number">16.12.1</span> Acceptance checks</a></li>
+  <li><a href="#honesty-note" id="toc-honesty-note" class="nav-link" data-scroll-target="#honesty-note"><span class="header-section-number">16.12.2</span> Honesty note</a></li>
+  </ul></li>
+  <li><a href="#sec-ch16-endures" id="toc-sec-ch16-endures" class="nav-link" data-scroll-target="#sec-ch16-endures"><span class="header-section-number">16.13</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch16-exercises" id="toc-sec-ch16-exercises" class="nav-link" data-scroll-target="#sec-ch16-exercises"><span class="header-section-number">16.14</span> Exercises</a></li>
+  <li><a href="#sec-ch16-sources" id="toc-sec-ch16-sources" class="nav-link" data-scroll-target="#sec-ch16-sources"><span class="header-section-number">16.15</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/16-agent-anatomy.html">Part V — Building Agents</a></li><li class="breadcrumb-item"><a href="../chapters/16-agent-anatomy.html"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch16" class="quarto-section-identifier"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-you-need-going-in" class="level2" data-number="16.1">
+<h2 data-number="16.1" class="anchored" data-anchor-id="what-you-need-going-in"><span class="header-section-number">16.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, basic Python, HTTP APIs, tests, and the distinction between authentication and authorization.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/12-api-surface.html">Chapter 12</a> provides message and tool-call wire contracts; <a href="../chapters/13-prompting-context-engineering.html">Chapter 13</a> provides the caller-side context boundary; <a href="../chapters/14-embeddings-rag.html">Chapter 14</a> and <a href="../chapters/15-agentic-retrieval.html">Chapter 15</a> provide retrieval as one possible tool-backed subsystem.</p>
+<p><strong>Not required:</strong> an agent framework, a vendor SDK, reinforcement learning, or access to a hosted model. The default build uses deterministic strategies so that control-flow failures are reproducible.</p>
+</blockquote>
+<div class="route-b">
+<p><strong>Route B backfill.</strong> Read <a href="../chapters/08-reasoning-test-time-compute.html#sec-ch08-verifiers">Chapter 8, “Verifiers set the ceiling”</a> (about 6 pages) before <strong>Execution-grounded verification</strong> if you want the full generator–verifier argument. If you skip it, you can still build the loop, but the distinction between a model revising its own text and an external system verifying an outcome will have less foundation.</p>
+</div>
+</section>
+<section id="contents" class="level2" data-number="16.2">
+<h2 data-number="16.2" class="anchored" data-anchor-id="contents"><span class="header-section-number">16.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch16-boundaries">The missing boundary</a></li>
+<li><a href="#sec-ch16-will-build">What you will build</a></li>
+<li><a href="#sec-ch16-specification">An agent as an executable specification</a></li>
+<li><a href="#sec-ch16-kernel">The proposal–gate–execute–observe kernel</a></li>
+<li><a href="#sec-ch16-denial">A denial trace: the action that must not happen</a></li>
+<li><a href="#sec-ch16-lifecycle">Termination, budgets, and typed failure</a></li>
+<li><a href="#sec-ch16-workflows">Workflows are strategies, not new loops</a></li>
+<li><a href="#sec-ch16-planning">ReAct, planning, and replanning</a></li>
+<li><a href="#sec-ch16-verification">Execution-grounded verification</a></li>
+<li><a href="#sec-ch16-build">Build</a></li>
+<li><a href="#sec-ch16-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch16-exercises">Exercises</a></li>
+<li><a href="#sec-ch16-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch16-boundaries" class="level2" data-number="16.3">
+<h2 data-number="16.3" class="anchored" data-anchor-id="sec-ch16-boundaries"><span class="header-section-number">16.3</span> The missing boundary</h2>
+<p>A customer writes, “Order A-17 arrived damaged. Please make this right.” A language model can compose a sympathetic reply. Give the same model a lookup tool and it can retrieve the order. Give it a refund tool and it can propose a remedy. None of those additions answers the most important engineering question: <strong>what stands between the proposal and the movement of money?</strong></p>
+<p>Suppose the system prompt says, “Never refund more than 50 dollars without approval,” but the Python handler accepts any integer. The model emits <code>amount_cents=999999</code>, the caller invokes the handler, and the payment provider accepts it. The prompt expressed an intention; the executable path granted authority. The real limit was not 50 dollars. It was whatever the handler and payment account permitted.</p>
+<p>That gap is where agent engineering begins. A model call returns a candidate output. An agent system interprets candidate outputs as proposals inside a code-owned control system. The proposal can be useful, malformed, repetitive, unaffordable, or unsafe. The surrounding system must remain correct under all five possibilities.</p>
+<p>The words <em>model</em>, <em>workflow</em>, <em>agent</em>, <em>harness</em>, <em>runtime</em>, and <em>platform</em> are often used as if they named the same object. They do not:</p>
+<ul>
+<li>A <strong>model</strong> maps context to a distribution over possible outputs. It has no direct authority over an external system.</li>
+<li>A <strong>workflow</strong> has a control path chosen primarily by code. Models may fill individual steps, but code determines which step follows.</li>
+<li>An <strong>agent</strong> lets a model choose at least some next actions or control transitions from a bounded action space.</li>
+<li>A <strong>harness</strong> assembles context, exposes tools, manages a workspace, records events, and applies local policy around the loop.</li>
+<li>A <strong>runtime</strong> schedules and persists runs, interrupts them, resumes them, streams events, and coordinates concurrent work.</li>
+<li>A <strong>platform</strong> supplies shared identity, gateways, deployment, evaluation, observability, cost controls, and governance.</li>
+</ul>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart TB</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    subgraph Platform["Platform: identity, gateway, evals, deployment"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>      subgraph Runtime["Runtime: persist, schedule, interrupt, resume"]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        subgraph Harness["Harness: context, tools, workspace, policy"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>          Loop["Control kernel"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>          Model(["Model"])</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>          Gate["Code-owned gate"]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>          Tools["Tool registry"]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>          Model --&gt;|proposal| Loop</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>          Loop --&gt; Gate</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>          Gate --&gt;|allowed call| Tools</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>          Tools --&gt;|typed observation| Loop</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        end</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>      end</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    External[("External systems")]</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    Tools --&gt;|effect| External</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch16-boundaries" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch16-boundaries-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch16-boundaries">flowchart TB
+    subgraph Platform["Platform: identity, gateway, evals, deployment"]
+      subgraph Runtime["Runtime: persist, schedule, interrupt, resume"]
+        subgraph Harness["Harness: context, tools, workspace, policy"]
+          Loop["Control kernel"]
+          Model(["Model"])
+          Gate["Code-owned gate"]
+          Tools["Tool registry"]
+          Model --&gt;|proposal| Loop
+          Loop --&gt; Gate
+          Gate --&gt;|allowed call| Tools
+          Tools --&gt;|typed observation| Loop
+        end
+      end
+    end
+    External[("External systems")]
+    Tools --&gt;|effect| External
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch16-boundaries-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;16.1: Which layer owns each decision around an agent run?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The figure is nested because ownership is nested. The loop is not the harness; the harness is not the runtime; the runtime is not the platform. A library may package several layers, but the engineering responsibilities remain distinct. When a framework advertises “memory,” for example, ask whether it means a serialized run checkpoint, a long-term user fact, or durable recovery after an external effect. Those are different contracts even when one product exposes all three.</p>
+<p>Two rules travel through the rest of the book. First, <strong>prompt text is not enforcement</strong>. A restriction that must hold belongs in a schema, policy check, capability boundary, transaction, or human process. Second, <strong>autonomy is assigned per action, not per agent</strong>. One support agent may autonomously read order status, propose a refund, require approval to issue it, and be forbidden from changing a bank account. Calling the whole agent “level three” hides the authority that matters.</p>
+</section>
+<section id="sec-ch16-will-build" class="level2" data-number="16.4">
+<h2 data-number="16.4" class="anchored" data-anchor-id="sec-ch16-will-build"><span class="header-section-number">16.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>One loop, several policies, measurable endings
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The chapter artifact is <code>code/ch16/agent_loop.py</code>: a vendor-neutral, typed proposal–gate–execute–observe kernel. A deterministic fixture supplies a support task, three workflow strategies, one adaptive strategy, and a code-owned refund policy. You will run all strategies through the same kernel, inspect their steps and modeled cost, deliberately propose an over-limit refund, and verify that the effect handler was never called. Four focused tests establish the central invariants without a network connection.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch16-specification" class="level2" data-number="16.5">
+<h2 data-number="16.5" class="anchored" data-anchor-id="sec-ch16-specification"><span class="header-section-number">16.5</span> An agent as an executable specification</h2>
+<p>An informal definition such as “an LLM that uses tools in a loop” identifies the shape but not the contract. We need a definition that tells us what to test.</p>
+<p>Let <span class="math inline">h_t</span> be the history visible at step <span class="math inline">t</span>: the original task, prior proposals, and correlated observations. The model or deterministic strategy samples a proposal</p>
+<p><span class="math display">
+a_t \sim \pi_\theta(\cdot \mid h_t),
+</span></p>
+<p>where <span class="math inline">\pi_\theta</span> is the proposal policy parameterized by model weights <span class="math inline">\theta</span>. A code-owned gate evaluates the proposal against current state <span class="math inline">s_t</span> and caller context <span class="math inline">c</span>:</p>
+<p><span class="math display">
+G(s_t, a_t, c) \in \{\text{allow},\ \text{deny},\ \text{escalate}\}.
+</span></p>
+<p>Only an allowed proposal reaches an executor. The executor returns an observation <span class="math inline">o_{t+1}</span>, and a transition function computes the next explicit state:</p>
+<p><span class="math display">
+s_{t+1} = \tau(s_t, a_t, o_{t+1}).
+</span></p>
+<p>This gives a useful agent specification</p>
+<p><span class="math display">
+\mathcal{A} = (S, A, O, \pi_\theta, G, E, \tau, B, \Phi),
+</span></p>
+<p>where <span class="math inline">S</span> is the state space, <span class="math inline">A</span> the proposal space, <span class="math inline">O</span> the observation space, <span class="math inline">E</span> the effect executor, <span class="math inline">B</span> the resource budget, and <span class="math inline">\Phi</span> the set of success, failure, escalation, and termination predicates. A typed implementation does not prove every property of this tuple, but it makes the properties nameable.</p>
+<p>The first version of the artifact defines proposals, observations, tools, explicit run state, and typed endings. Notice that <code>ToolCall</code> is named a proposal in its documentation. Describing an action does not confer permission to execute it.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># agent_loop.py — public contracts introduced once</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ToolCall:</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""A model proposal; it has no authority by itself."""</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    call_id: <span class="bu">str</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    arguments: <span class="bu">dict</span>[<span class="bu">str</span>, Any]</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Observation:</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""A correlated, typed result returned to the strategy."""</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    call_id: <span class="bu">str</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    ok: <span class="bu">bool</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    kind: <span class="bu">str</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    content: Any</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> RunState:</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Serializable state visible at each decision boundary."""</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    task: <span class="bu">str</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    observations: <span class="bu">list</span>[Observation] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    trace: <span class="bu">list</span>[<span class="bu">dict</span>[<span class="bu">str</span>, Any]] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    steps: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    cost_units: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A useful specification states invariants before implementation details. This chapter uses five:</p>
+<ol type="1">
+<li><strong>Effect authorization:</strong> every handler invocation corresponds to a proposal that passed schema validation and policy at the execution boundary.</li>
+<li><strong>Correlation:</strong> every tool observation carries the call identifier of the proposal that caused it.</li>
+<li><strong>Boundedness:</strong> the kernel stops after finite step and modeled-cost budgets, even when the proposal policy never chooses to stop.</li>
+<li><strong>Typed endings:</strong> answering, exhausting a budget, and making no progress are different results that a caller can branch on.</li>
+<li><strong>Outcome separation:</strong> “the model returned an answer” is not the same predicate as “the task succeeded.” An external verifier decides the latter.</li>
+</ol>
+<p>The fifth invariant prevents a common measurement error. A polite final message can accompany an unchanged database. The loop should report that it reached an answer boundary; the evaluator should inspect the environment and decide whether the requested outcome occurred.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>agent_loop.py</code> with public contracts</td>
+<td style="text-align: right;">37 lines</td>
+<td>Proposals, observations, state, and stop reasons have distinct types.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch16-kernel" class="level2" data-number="16.6">
+<h2 data-number="16.6" class="anchored" data-anchor-id="sec-ch16-kernel"><span class="header-section-number">16.6</span> The proposal–gate–execute–observe kernel</h2>
+<p>The core loop has four verbs. Keeping them separate is more important than the choice of framework.</p>
+<p><strong>Propose.</strong> A strategy receives explicit state and returns either a <code>ToolCall</code> or a <code>FinalAnswer</code>. In a live adapter, the strategy serializes state into messages and parses the model’s tool call. In the deterministic fixture, it returns the same types directly.</p>
+<p><strong>Gate.</strong> Code verifies that the tool exists, arguments match the declared contract, and current policy permits this exact proposal. Validation answers “is this well formed?” Authorization answers “may this caller perform this effect now?” Neither can be delegated to model obedience.</p>
+<p><strong>Execute.</strong> Only the allowed path invokes a handler. Expected failures become typed observations. Unexpected programming faults should still fail loudly rather than being converted into plausible text.</p>
+<p><strong>Observe.</strong> The result, denial, or expected error is correlated to the proposal and appended to state. The strategy can adapt on its next decision.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    autonumber</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    participant S as Strategy / model</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    participant K as Control kernel</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    participant G as Validation + policy gate</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    participant T as Tool handler</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    participant X as External system</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    S-&gt;&gt;K: ToolCall(call_id, name, arguments)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    K-&gt;&gt;G: Validate exact proposal in current context</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    alt denied or malformed</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        G--&gt;&gt;K: Denial(reason)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        K--&gt;&gt;S: Observation(call_id, denied, reason)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    else allowed</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        G--&gt;&gt;K: Allow</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>        K-&gt;&gt;T: Invoke typed handler</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        T-&gt;&gt;X: Read or effect</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        X--&gt;&gt;T: Result / expected error</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        T--&gt;&gt;K: Typed outcome</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        K--&gt;&gt;S: Observation(call_id, kind, content)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    end</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch16-kernel" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch16-kernel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch16-kernel">sequenceDiagram
+    autonumber
+    participant S as Strategy / model
+    participant K as Control kernel
+    participant G as Validation + policy gate
+    participant T as Tool handler
+    participant X as External system
+    S-&gt;&gt;K: ToolCall(call_id, name, arguments)
+    K-&gt;&gt;G: Validate exact proposal in current context
+    alt denied or malformed
+        G--&gt;&gt;K: Denial(reason)
+        K--&gt;&gt;S: Observation(call_id, denied, reason)
+    else allowed
+        G--&gt;&gt;K: Allow
+        K-&gt;&gt;T: Invoke typed handler
+        T-&gt;&gt;X: Read or effect
+        X--&gt;&gt;T: Result / expected error
+        T--&gt;&gt;K: Typed outcome
+        K--&gt;&gt;S: Observation(call_id, kind, content)
+    end
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch16-kernel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;16.2: How does one proposed action cross—or fail to cross—the effect boundary?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The denied branch is a normal control path. The handler does not receive the call and the model receives useful information. This is stronger than asking the model to reconsider before execution because the same component that grants authority evaluates the final arguments.</p>
+<p>The implementation follows the diagram. This excerpt is the stable center of the artifact; later additions bound it without introducing another loop.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># agent_loop.py — run_agent(), proposal through observation</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>decision <span class="op">=</span> strategy.decide(state)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>state.steps <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>state.cost_units <span class="op">+=</span> <span class="dv">2</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>state.trace.append({<span class="st">"event"</span>: <span class="st">"proposal"</span>, <span class="st">"value"</span>: <span class="bu">repr</span>(decision)})</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">isinstance</span>(decision, FinalAnswer):</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> RunResult(Stop.ANSWERED, decision.text, state)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>tool <span class="op">=</span> tools.get(decision.name)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>error <span class="op">=</span> <span class="st">"unknown tool"</span> <span class="cf">if</span> tool <span class="kw">is</span> <span class="va">None</span> <span class="cf">else</span> _validate(decision, tool)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>allowed, reason <span class="op">=</span> gate(decision, state) <span class="cf">if</span> error <span class="kw">is</span> <span class="va">None</span> <span class="cf">else</span> (<span class="va">False</span>, error)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> allowed:</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    observation <span class="op">=</span> Observation(decision.call_id, <span class="va">False</span>, <span class="st">"denied"</span>, reason)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    state.observations.append(observation)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    state.trace.append({<span class="st">"event"</span>: <span class="st">"gate"</span>, <span class="st">"allowed"</span>: <span class="va">False</span>, <span class="st">"reason"</span>: reason})</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ... bounded no-progress handling is added in Section 16.5 ...</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    content <span class="op">=</span> tool.handler(<span class="op">**</span>decision.arguments)</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    observation <span class="op">=</span> Observation(decision.call_id, <span class="va">True</span>, <span class="st">"result"</span>, content)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    state.observations.append(observation)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The example uses an exact top-level <code>name -&gt; type</code> schema so the mechanism is visible. Production tools normally use JSON Schema or an equivalent typed contract, including ranges, enumerations, nested objects, defaults, and explicit rejection of unknown fields. Schema validation still does not establish business authorization. <code>amount_cents</code> can be a valid integer and an impermissible refund.</p>
+<p>Call identifiers matter as soon as calls can be parallel, retried, or streamed. Position in a list is not a stable identity under concurrency. A result without correlation can be attached to the wrong proposal and contaminate later decisions.</p>
+<p>This in-process kernel establishes a narrow guarantee: within one Python process, a denied call cannot reach a registered handler through <code>run_agent</code>. It does not authenticate a tenant, protect a secret, bind a human approval, isolate untrusted code, survive a crash, or reconcile an ambiguous remote effect. Later chapters add those responsibilities at their canonical boundaries.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>agent_loop.py</code> after gate and dispatch</td>
+<td style="text-align: right;">31 lines</td>
+<td>No handler call occurs unless validation and policy both allow the exact proposal.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch16-denial" class="level2" data-number="16.7">
+<h2 data-number="16.7" class="anchored" data-anchor-id="sec-ch16-denial"><span class="header-section-number">16.7</span> A denial trace: the action that must not happen</h2>
+<p>The fixture models a damaged order paid at 4,999 cents. Its <code>refund_order</code> handler appends a receipt to an effect log. The policy gate permits automatic refunds up to 5,000 cents. An adaptive strategy initially proposes 9,999 cents.</p>
+<p>The interesting event is not a successful lookup. It is the missing receipt after the over-limit proposal:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 23%">
+<col style="width: 23%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">Step</th>
+<th>Proposal or observation</th>
+<th>Gate</th>
+<th>Effect log</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td><code>lookup_order(A-17)</code></td>
+<td>allowed</td>
+<td>empty</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td><code>refund_order(A-17, 9999)</code></td>
+<td>denied: above authority</td>
+<td>empty</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td><code>refund_order(A-17, 4999)</code></td>
+<td>allowed</td>
+<td>one receipt</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td>final answer references the receipt</td>
+<td>not applicable</td>
+<td>still one receipt</td>
+</tr>
+</tbody>
+</table>
+<p>The denial becomes an observation, not an exception that destroys the run. That lets the strategy reduce the proposal to the actual purchase amount. More important, adaptation happens without weakening the gate. The model is free to propose another value; code remains free to deny it.</p>
+<p>The policy itself is intentionally small:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># fixture.py — gate(), value boundary for the teaching fixture</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> gate(call: ToolCall, _: RunState) <span class="op">-&gt;</span> <span class="bu">tuple</span>[<span class="bu">bool</span>, <span class="bu">str</span>]:</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> call.name <span class="op">==</span> <span class="st">"refund_order"</span> <span class="kw">and</span> call.arguments[<span class="st">"amount_cents"</span>] <span class="op">&gt;</span> <span class="dv">5_000</span>:</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">False</span>, <span class="st">"refund exceeds automatic authority"</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">True</span>, <span class="st">"policy permits proposal"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This proves one value-limit property and nothing broader. It does not verify that the caller owns A-17, that the currency is correct, that a previous refund has not occurred, that the policy version is current, or that 4,999 cents is a desirable remedy. A trustworthy example states those gaps instead of letting a short function borrow the reputation of a production authorization service.</p>
+<p>A denial must also be designed as data. It needs a stable category, a safe explanation, and enough detail for a strategy or human to choose a legal next step. Returning a raw stack trace may leak internals. Returning only “failed” encourages blind retries. The <code>Observation.kind</code> field distinguishes a denial from a transient dependency failure and a permanent domain error.</p>
+<p>The focused test makes the safety claim executable. It lowers the repeat threshold to one, submits an over-limit proposal, and checks the effect log:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test_ch16_agent_loop.py — denied effect invariant</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>tools, gate, effects <span class="op">=</span> fixture()</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> run_agent(</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Refund A-17"</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    SupportStrategy(<span class="st">"chain"</span>, refund_cents<span class="op">=</span><span class="dv">9_999</span>),</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    tools,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    gate,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    Limits(max_steps<span class="op">=</span><span class="dv">5</span>, repeated_denials<span class="op">=</span><span class="dv">1</span>),</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> result.stop <span class="op">==</span> Stop.NO_PROGRESS</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> effects <span class="op">==</span> []</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The empty list is the decisive assertion. Testing that the model <em>said</em> it was denied would not test containment. The code asserts the state owned by the effect boundary.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>fixture plus denial test</td>
+<td style="text-align: right;">17 lines shown</td>
+<td>An over-limit refund creates no receipt, even when proposed correctly.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch16-lifecycle" class="level2" data-number="16.8">
+<h2 data-number="16.8" class="anchored" data-anchor-id="sec-ch16-lifecycle"><span class="header-section-number">16.8</span> Termination, budgets, and typed failure</h2>
+<p>A gate can contain an action while the loop still fails operationally. A strategy may repeat the same denied proposal forever, wander across harmless reads, or retry a timed-out dependency until the caller’s budget is gone. “The model will eventually stop” is not a termination condition.</p>
+<p>Finite step and cost limits give the in-process kernel a simple liveness property: each iteration consumes at least one step, so the loop must return after at most <code>max_steps</code> decisions. The artifact also charges two synthetic cost units per strategy decision. Real systems use observed input/output tokens, tool charges, wall-clock deadlines, and sometimes energy or scarce-resource quotas. The counter’s unit is less important than its code-owned enforcement.</p>
+<p>Repeated denials reveal one form of no progress. The artifact hashes the tool name and canonicalized arguments, counts repeated denied proposals, and ends with <code>NO_PROGRESS</code> when the threshold is reached. This is intentionally narrower than a semantic stuck detector. A strategy that alternates between two denied values can evade it; Exercise 3 asks you to close that gap without treating a legitimate transient retry as a loop.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>stateDiagram-v2</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    [*] --&gt; Ready</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    Ready --&gt; Proposed: strategy decision</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    Proposed --&gt; Answered: final answer</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    Proposed --&gt; Denied: validation or policy rejects</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    Proposed --&gt; Executing: gate allows</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    Denied --&gt; Ready: new information and budget remain</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    Denied --&gt; NoProgress: repeat threshold reached</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    Executing --&gt; Observed: result / transient / permanent</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    Observed --&gt; Ready: budget remains</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    Ready --&gt; StepLimit: no step remains</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    Ready --&gt; CostLimit: next call exceeds budget</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    Answered --&gt; [*]</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    NoProgress --&gt; [*]</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    StepLimit --&gt; [*]</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    CostLimit --&gt; [*]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch16-lifecycle" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch16-lifecycle-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch16-lifecycle">stateDiagram-v2
+    [*] --&gt; Ready
+    Ready --&gt; Proposed: strategy decision
+    Proposed --&gt; Answered: final answer
+    Proposed --&gt; Denied: validation or policy rejects
+    Proposed --&gt; Executing: gate allows
+    Denied --&gt; Ready: new information and budget remain
+    Denied --&gt; NoProgress: repeat threshold reached
+    Executing --&gt; Observed: result / transient / permanent
+    Observed --&gt; Ready: budget remains
+    Ready --&gt; StepLimit: no step remains
+    Ready --&gt; CostLimit: next call exceeds budget
+    Answered --&gt; [*]
+    NoProgress --&gt; [*]
+    StepLimit --&gt; [*]
+    CostLimit --&gt; [*]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch16-lifecycle-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;16.3: Which typed states make every in-process run end?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Typed endings let callers choose different recovery policies. <code>ANSWERED</code> can proceed to outcome verification. <code>NO_PROGRESS</code> can request a human decision with the last denial. <code>STEP_LIMIT</code> can return partial findings. <code>COST_LIMIT</code> can stop before admitting another paid call. Merging all four into a string such as “Agent failed” discards the state needed for safe recovery.</p>
+<p>Expected tool failures are observations too. A timeout is usually transient: retry may be legal if the operation is idempotent and the deadline allows it. A missing order is permanent for the current identifier: blind retry wastes budget. A policy denial is neither; changing the proposal or escalating may help. The artifact catches only the expected exceptions used by the fixture:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># agent_loop.py — execution delta for typed expected failures</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    content <span class="op">=</span> tool.handler(<span class="op">**</span>decision.arguments)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    observation <span class="op">=</span> Observation(decision.call_id, <span class="va">True</span>, <span class="st">"result"</span>, content)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">TimeoutError</span> <span class="im">as</span> exc:</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    observation <span class="op">=</span> Observation(decision.call_id, <span class="va">False</span>, <span class="st">"transient"</span>, <span class="bu">str</span>(exc))</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> (<span class="pp">KeyError</span>, <span class="pp">ValueError</span>) <span class="im">as</span> exc:</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    observation <span class="op">=</span> Observation(decision.call_id, <span class="va">False</span>, <span class="st">"permanent"</span>, <span class="bu">str</span>(exc))</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>state.observations.append(observation)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>state.trace.append({<span class="st">"event"</span>: <span class="st">"observation"</span>, <span class="st">"value"</span>: asdict(observation)})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Do not turn every exception into an observation. An assertion failure, corrupted registry, or programming error should normally stop the process and alert an operator. Otherwise the model may improvise around broken safety code.</p>
+<p>The deadline in a production runtime also needs precise semantics. Checking elapsed time between calls prevents admission of another call after a deadline; it does not preempt a model or tool already in flight. Stronger cancellation requires timeouts propagated to the client, cooperative cancellation inside tools, and a plan for effects that may have completed remotely. Chapter 26 owns that durable-effect problem.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>agent_loop.py</code> with limits and typed failures</td>
+<td style="text-align: right;">34 lines shown</td>
+<td>Wandering, repeated denial, and expected tool failure end in distinguishable states.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch16-workflows" class="level2" data-number="16.9">
+<h2 data-number="16.9" class="anchored" data-anchor-id="sec-ch16-workflows"><span class="header-section-number">16.9</span> Workflows are strategies, not new loops</h2>
+<p>The same task can be organized by different control policies. Implementing a prompt chain, router, evaluator loop, and adaptive agent as four separate runtimes repeats message handling, tool dispatch, trace capture, and error handling. The duplicated machinery hides the policy difference and lets safety behavior drift across paths.</p>
+<p>Keep the execution kernel fixed and vary only the strategy that selects the next proposal. Then every comparison shares the same gate, effect handler, budget accounting, and trace contract; the strategy is the only meaningful variable.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode dot code-with-copy"><code class="sourceCode dot"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">digraph</span> <span class="va">strategies</span> <span class="ot">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">graph</span><span class="co"> </span><span class="ot">[</span><span class="at">rankdir</span><span class="ot">=</span><span class="va">LR</span><span class="co">, </span><span class="at">bgcolor</span><span class="ot">=</span><span class="st">"transparent"</span><span class="co">, </span><span class="at">nodesep</span><span class="ot">=</span><span class="dv">0.28</span><span class="co">, </span><span class="at">ranksep</span><span class="ot">=</span><span class="dv">0.5</span><span class="ot">]</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="kw">node</span><span class="co"> </span><span class="ot">[</span><span class="at">shape</span><span class="ot">=</span><span class="va">box</span><span class="co">, </span><span class="at">style</span><span class="ot">=</span><span class="st">"rounded,filled"</span><span class="co">, </span><span class="at">fillcolor</span><span class="ot">=</span><span class="st">"#eef4f8"</span><span class="co">, </span><span class="at">color</span><span class="ot">=</span><span class="st">"#40637a"</span><span class="ot">]</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">chain</span><span class="co"> </span><span class="ot">[</span><span class="at">label</span><span class="ot">=</span><span class="st">"Prompt chain\nfixed next step"</span><span class="ot">]</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">router</span><span class="co"> </span><span class="ot">[</span><span class="at">label</span><span class="ot">=</span><span class="st">"Router\ncode/model selects branch"</span><span class="ot">]</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">eval</span><span class="co"> </span><span class="ot">[</span><span class="at">label</span><span class="ot">=</span><span class="st">"Evaluator–optimizer\nrevise until criterion"</span><span class="ot">]</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">adaptive</span><span class="co"> </span><span class="ot">[</span><span class="at">label</span><span class="ot">=</span><span class="st">"Adaptive agent\nmodel selects next action"</span><span class="ot">]</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">kernel</span><span class="co"> </span><span class="ot">[</span><span class="at">label</span><span class="ot">=</span><span class="st">"Shared kernel\npropose → gate → execute → observe"</span><span class="co">, </span><span class="at">fillcolor</span><span class="ot">=</span><span class="st">"#e7f2e8"</span><span class="co">, </span><span class="at">color</span><span class="ot">=</span><span class="st">"#3a7d44"</span><span class="ot">]</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">trace</span><span class="co"> </span><span class="ot">[</span><span class="at">label</span><span class="ot">=</span><span class="st">"Shared typed trace + budgets"</span><span class="co">, </span><span class="at">fillcolor</span><span class="ot">=</span><span class="st">"#f4eee2"</span><span class="co">, </span><span class="at">color</span><span class="ot">=</span><span class="st">"#9a6b1f"</span><span class="ot">]</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">chain</span><span class="co"> </span><span class="ot">-&gt;</span><span class="co"> </span><span class="va">kernel</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">router</span><span class="co"> </span><span class="ot">-&gt;</span><span class="co"> </span><span class="va">kernel</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">eval</span><span class="co"> </span><span class="ot">-&gt;</span><span class="co"> </span><span class="va">kernel</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">adaptive</span><span class="co"> </span><span class="ot">-&gt;</span><span class="co"> </span><span class="va">kernel</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co">  </span><span class="va">kernel</span><span class="co"> </span><span class="ot">-&gt;</span><span class="co"> </span><span class="va">trace</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="ot">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch16-strategies" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch16-strategies-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<svg width="672" height="480" viewbox="0.00 0.00 644.76 235.60" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" style="; max-width: none; max-height: none">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 231.6)">
+<title>strategies</title>
+<!-- chain -->
+<g id="node1" class="node">
+<title>chain</title>
+<path fill="#eef4f8" stroke="#40637a" d="M119.28,-227.4C119.28,-227.4 44.44,-227.4 44.44,-227.4 38.44,-227.4 32.44,-221.4 32.44,-215.4 32.44,-215.4 32.44,-198.2 32.44,-198.2 32.44,-192.2 38.44,-186.2 44.44,-186.2 44.44,-186.2 119.28,-186.2 119.28,-186.2 125.28,-186.2 131.28,-192.2 131.28,-198.2 131.28,-198.2 131.28,-215.4 131.28,-215.4 131.28,-221.4 125.28,-227.4 119.28,-227.4"></path>
+<text text-anchor="middle" x="81.86" y="-211" font-family="Times,serif" font-size="14.00">Prompt chain</text>
+<text text-anchor="middle" x="81.86" y="-194.2" font-family="Times,serif" font-size="14.00">fixed next step</text>
+</g>
+<!-- kernel -->
+<g id="node5" class="node">
+<title>kernel</title>
+<path fill="#e7f2e8" stroke="#3a7d44" d="M410.36,-134.4C410.36,-134.4 211.5,-134.4 211.5,-134.4 205.5,-134.4 199.5,-128.4 199.5,-122.4 199.5,-122.4 199.5,-105.2 199.5,-105.2 199.5,-99.2 205.5,-93.2 211.5,-93.2 211.5,-93.2 410.36,-93.2 410.36,-93.2 416.36,-93.2 422.36,-99.2 422.36,-105.2 422.36,-105.2 422.36,-122.4 422.36,-122.4 422.36,-128.4 416.36,-134.4 410.36,-134.4"></path>
+<text text-anchor="middle" x="310.93" y="-118" font-family="Times,serif" font-size="14.00">Shared kernel</text>
+<text text-anchor="middle" x="310.93" y="-101.2" font-family="Times,serif" font-size="14.00">propose → gate → execute → observe</text>
+</g>
+<!-- chain&#45;&gt;kernel -->
+<g id="edge1" class="edge">
+<title>chain-&gt;kernel</title>
+<path fill="none" stroke="black" d="M131.28,-188.55C141.99,-184.43 153.26,-180.02 163.72,-175.8 193.34,-163.85 226.09,-150.02 253.07,-138.45"></path>
+<polygon fill="black" stroke="black" points="254.56,-141.63 262.36,-134.47 251.79,-135.2 254.56,-141.63"></polygon>
+</g>
+<!-- router -->
+<g id="node2" class="node">
+<title>router</title>
+<path fill="#eef4f8" stroke="#40637a" d="M151.58,-165.4C151.58,-165.4 12.14,-165.4 12.14,-165.4 6.14,-165.4 0.14,-159.4 0.14,-153.4 0.14,-153.4 0.14,-136.2 0.14,-136.2 0.14,-130.2 6.14,-124.2 12.14,-124.2 12.14,-124.2 151.58,-124.2 151.58,-124.2 157.58,-124.2 163.58,-130.2 163.58,-136.2 163.58,-136.2 163.58,-153.4 163.58,-153.4 163.58,-159.4 157.58,-165.4 151.58,-165.4"></path>
+<text text-anchor="middle" x="81.86" y="-149" font-family="Times,serif" font-size="14.00">Router</text>
+<text text-anchor="middle" x="81.86" y="-132.2" font-family="Times,serif" font-size="14.00">code/model selects branch</text>
+</g>
+<!-- router&#45;&gt;kernel -->
+<g id="edge2" class="edge">
+<title>router-&gt;kernel</title>
+<path fill="none" stroke="black" d="M163.88,-133.74C172.21,-132.6 180.79,-131.43 189.43,-130.25"></path>
+<polygon fill="black" stroke="black" points="190.15,-133.68 199.59,-128.86 189.2,-126.75 190.15,-133.68"></polygon>
+</g>
+<!-- eval -->
+<g id="node3" class="node">
+<title>eval</title>
+<path fill="#eef4f8" stroke="#40637a" d="M136.93,-103.4C136.93,-103.4 26.79,-103.4 26.79,-103.4 20.79,-103.4 14.79,-97.4 14.79,-91.4 14.79,-91.4 14.79,-74.2 14.79,-74.2 14.79,-68.2 20.79,-62.2 26.79,-62.2 26.79,-62.2 136.93,-62.2 136.93,-62.2 142.93,-62.2 148.93,-68.2 148.93,-74.2 148.93,-74.2 148.93,-91.4 148.93,-91.4 148.93,-97.4 142.93,-103.4 136.93,-103.4"></path>
+<text text-anchor="middle" x="81.86" y="-87" font-family="Times,serif" font-size="14.00">Evaluator–optimizer</text>
+<text text-anchor="middle" x="81.86" y="-70.2" font-family="Times,serif" font-size="14.00">revise until criterion</text>
+</g>
+<!-- eval&#45;&gt;kernel -->
+<g id="edge3" class="edge">
+<title>eval-&gt;kernel</title>
+<path fill="none" stroke="black" d="M149.15,-91.85C161.89,-93.59 175.61,-95.46 189.46,-97.35"></path>
+<polygon fill="black" stroke="black" points="189.17,-100.85 199.56,-98.73 190.12,-93.91 189.17,-100.85"></polygon>
+</g>
+<!-- adaptive -->
+<g id="node4" class="node">
+<title>adaptive</title>
+<path fill="#eef4f8" stroke="#40637a" d="M148.48,-41.4C148.48,-41.4 15.24,-41.4 15.24,-41.4 9.24,-41.4 3.24,-35.4 3.24,-29.4 3.24,-29.4 3.24,-12.2 3.24,-12.2 3.24,-6.2 9.24,-0.2 15.24,-0.2 15.24,-0.2 148.48,-0.2 148.48,-0.2 154.48,-0.2 160.48,-6.2 160.48,-12.2 160.48,-12.2 160.48,-29.4 160.48,-29.4 160.48,-35.4 154.48,-41.4 148.48,-41.4"></path>
+<text text-anchor="middle" x="81.86" y="-25" font-family="Times,serif" font-size="14.00">Adaptive agent</text>
+<text text-anchor="middle" x="81.86" y="-8.2" font-family="Times,serif" font-size="14.00">model selects next action</text>
+</g>
+<!-- adaptive&#45;&gt;kernel -->
+<g id="edge4" class="edge">
+<title>adaptive-&gt;kernel</title>
+<path fill="none" stroke="black" d="M137.76,-41.55C146.47,-44.93 155.35,-48.42 163.72,-51.8 193.34,-63.75 226.09,-77.58 253.07,-89.15"></path>
+<polygon fill="black" stroke="black" points="251.79,-92.4 262.36,-93.13 254.56,-85.97 251.79,-92.4"></polygon>
+</g>
+<!-- trace -->
+<g id="node6" class="node">
+<title>trace</title>
+<path fill="#f4eee2" stroke="#9a6b1f" d="M624.57,-131.8C624.57,-131.8 470.33,-131.8 470.33,-131.8 464.33,-131.8 458.33,-125.8 458.33,-119.8 458.33,-119.8 458.33,-107.8 458.33,-107.8 458.33,-101.8 464.33,-95.8 470.33,-95.8 470.33,-95.8 624.57,-95.8 624.57,-95.8 630.57,-95.8 636.57,-101.8 636.57,-107.8 636.57,-107.8 636.57,-119.8 636.57,-119.8 636.57,-125.8 630.57,-131.8 624.57,-131.8"></path>
+<text text-anchor="middle" x="547.45" y="-109.6" font-family="Times,serif" font-size="14.00">Shared typed trace + budgets</text>
+</g>
+<!-- kernel&#45;&gt;trace -->
+<g id="edge5" class="edge">
+<title>kernel-&gt;trace</title>
+<path fill="none" stroke="black" d="M422.32,-113.8C430.85,-113.8 439.43,-113.8 447.88,-113.8"></path>
+<polygon fill="black" stroke="black" points="448.11,-117.3 458.11,-113.8 448.11,-110.3 448.11,-117.3"></polygon>
+</g>
+</g>
+</svg>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch16-strategies-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;16.4: What changes across workflow patterns, and what must remain shared?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>A <strong>prompt chain</strong> chooses a fixed sequence: extract fields, retrieve policy, draft answer. It is easy to test and should be the default when the path is known. A <strong>router</strong> selects one of several bounded branches, such as billing versus technical support. A <strong>parallel fan-out</strong> sends independent subproblems to workers and joins typed results; it is useful only when the subproblems are genuinely independent and write conflicts are controlled. An <strong>evaluator–optimizer</strong> alternates generation with an external criterion until the criterion passes or a budget ends. An <strong>adaptive agent</strong> lets the proposal policy choose among available tools based on observations.</p>
+<p>The differences belong in a small strategy surface:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># agent_loop.py — the only behavior a strategy must provide</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Strategy(Protocol):</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Choose the next proposal from explicit run state."""</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> decide(<span class="va">self</span>, state: RunState) <span class="op">-&gt;</span> Decision: ...</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The chapter fixture implements chain, router, evaluator, and adaptive modes as thin deterministic strategies. They all use the same tool registry, validation, gate, budgets, trace, and stop types. This makes a cost/reliability comparison meaningful: the measured delta comes from control policy rather than from four unrelated implementations.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Pattern</th>
+<th>Who chooses the next branch?</th>
+<th>Best fit</th>
+<th>Characteristic failure</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Chain</td>
+<td>Code</td>
+<td>Stable, known sequence</td>
+<td>Cannot adapt to an unmodeled branch</td>
+</tr>
+<tr class="even">
+<td>Router</td>
+<td>Code or one bounded model decision</td>
+<td>Distinct task families</td>
+<td>Misrouting contaminates the entire branch</td>
+</tr>
+<tr class="odd">
+<td>Parallel fan-out</td>
+<td>Code-owned scheduler</td>
+<td>Independent reads or analyses</td>
+<td>Cost growth and conflicting writes</td>
+</tr>
+<tr class="even">
+<td>Evaluator–optimizer</td>
+<td>Code owns loop; verifier decides acceptance</td>
+<td>Output with an executable rubric</td>
+<td>Weak verifier rewards cosmetic revision</td>
+</tr>
+<tr class="odd">
+<td>Adaptive agent</td>
+<td>Model within a bounded action space</td>
+<td>Path depends on new observations</td>
+<td>Wandering, compounding error, larger attack surface</td>
+</tr>
+</tbody>
+</table>
+<p>The autonomy slider is continuous. A system can use deterministic routing and an agentic substep, or an adaptive read phase followed by a deterministic write transaction. The engineering question is not “workflow or agent?” as a global label. It is “which transition benefits from model choice, and what evidence pays for that choice?”</p>
+</section>
+<section id="sec-ch16-planning" class="level2" data-number="16.10">
+<h2 data-number="16.10" class="anchored" data-anchor-id="sec-ch16-planning"><span class="header-section-number">16.10</span> ReAct, planning, and replanning</h2>
+<p>ReAct popularized an effective pattern: interleave reasoning with environment actions and observations rather than asking the model to produce a complete answer from its initial context. The engineering value is not that private reasoning text becomes trustworthy. The value is that each consequential step can be grounded in a new observation before the next proposal.</p>
+<p>A production loop should therefore make <strong>actions and observations</strong> explicit. It need not expose or persist hidden chain-of-thought. A concise decision summary, cited evidence, and structured action are usually better operational records: they are smaller, easier to redact, and tied to observable behavior. Chapter 25 returns to the limits of chain-of-thought monitoring.</p>
+<p>Planning adds a proposed future path. A plan is not an execution grant. It is a hypothesis about dependencies and useful next actions. Treat its steps as typed intentions, then apply the normal gate at execution time. This matters because state can change between planning and acting.</p>
+<p>Three planning styles cover many systems:</p>
+<p><strong>Plan then execute.</strong> The model produces a dependency graph or ordered list once. Code executes eligible steps and verifies results. This works when the environment is stable and the cost of planning is small relative to execution.</p>
+<p><strong>Rolling plan.</strong> The model maintains a short horizon and revises after each observation. This reduces stale long plans but spends more model calls and can oscillate.</p>
+<p><strong>Planner–executor–verifier.</strong> Separate roles propose steps, execute through the same gate, and check outcomes. Separation can reduce correlated errors only when the verifier receives independent evidence or a different capability. Three prompts to the same model over the same context do not automatically create independence.</p>
+<p>Replanning should be triggered by code-visible events: a precondition failed, a dependency changed, a verifier rejected an outcome, a budget crossed a threshold, or a human altered the goal. “Reflect whenever uncertain” gives neither the runtime nor evaluator a stable event to inspect.</p>
+<p>Search over possible reasoning paths and verifier-guided allocation were developed in Chapter 8. Here the systems conclusion is narrower: any search procedure must consume an explicit budget, and a candidate plan must still pass the action gate one step at a time. More inference-time thought does not enlarge authority.</p>
+</section>
+<section id="sec-ch16-verification" class="level2" data-number="16.11">
+<h2 data-number="16.11" class="anchored" data-anchor-id="sec-ch16-verification"><span class="header-section-number">16.11</span> Execution-grounded verification</h2>
+<p>The kernel returns <code>ANSWERED</code> when the strategy emits a final answer. That is a control-flow fact, not a task-quality judgment. The build evaluates a refund task by inspecting the effect log for exactly one receipt with the intended order and amount. A response saying “Your refund is complete” receives a zero if no receipt exists.</p>
+<p>Verifiers come in three useful layers:</p>
+<ol type="1">
+<li><strong>Invariant checks</strong> ask whether the system stayed inside its rules: no denied handler invocation, no unmatched call identifier, no budget overrun.</li>
+<li><strong>Process checks</strong> ask whether required evidence or steps occurred: the order was read before a refund, the final answer cites the resulting receipt, the test command ran after a code edit.</li>
+<li><strong>Outcome checks</strong> inspect the environment: database state, passing tests, a compiled artifact, account balance, or simulator goal state.</li>
+</ol>
+<p>Outcome checks are strongest when the environment exposes a deterministic final-state predicate. Process checks are necessary when some outcomes are delayed or partially observable. Model-based judges can cover semantic qualities that code cannot express, but they need calibration and isolation from hostile candidate content. Chapter 22 treats that measurement problem in depth.</p>
+<p>The chapter’s four tests form a small executable specification:</p>
+<ul>
+<li>an over-limit refund creates no effect;</li>
+<li>an adaptive strategy can use a denial as information and complete within policy;</li>
+<li>a strategy that keeps reading stops at the step budget;</li>
+<li>a final answer ends with <code>ANSWERED</code> and causes no effect by itself.</li>
+</ul>
+<p>These tests point toward framework-independent operating principles:</p>
+<ul>
+<li>Keep control flow and budgets in code.</li>
+<li>Treat model outputs as untrusted typed proposals.</li>
+<li>Keep state explicit at every recoverable boundary.</li>
+<li>Correlate every observation to the proposal that caused it.</li>
+<li>Gate the exact arguments immediately before execution.</li>
+<li>Verify outcomes from environment state when possible.</li>
+<li>Distinguish answer completion, task success, denial, escalation, and exhaustion.</li>
+<li>Record enough typed evidence to reproduce a decision without logging secrets or hidden reasoning.</li>
+</ul>
+<p>They also expose the remaining work. Chapter 17 designs tool surfaces, workspaces, approval binding, and the harness. Chapter 18 owns cross-session memory policy. Chapter 19 shows protocol and framework state machinery. Chapter 24 develops the full action-security architecture. Chapter 26 makes effects durable across crashes. The raw loop is valuable because those later abstractions can be judged against a mechanism the reader already understands.</p>
+</section>
+<section id="sec-ch16-build" class="level2" data-number="16.12">
+<h2 data-number="16.12" class="anchored" data-anchor-id="sec-ch16-build"><span class="header-section-number">16.12</span> Build</h2>
+<p>The build uses only the Python standard library. From the <code>newbook</code> directory, run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch16<span class="op">/</span>fixture<span class="op">.</span><span class="fu">py</span> <span class="op">--</span>pretty</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>python <span class="op">-</span>m pytest tests<span class="op">/</span>test_ch16_agent_loop<span class="op">.</span><span class="fu">py</span> <span class="op">-</span>q</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The comparison command sends four thin policies through one kernel. On the deterministic fixture, the expected result is:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 19%">
+<col style="width: 19%">
+<col style="width: 19%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Mode</th>
+<th>Answer boundary</th>
+<th style="text-align: right;">Steps</th>
+<th style="text-align: right;">Cost units</th>
+<th style="text-align: right;">Effects</th>
+<th>Outcome verifier</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>chain</td>
+<td>answered</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">1</td>
+<td>pass</td>
+</tr>
+<tr class="even">
+<td>router</td>
+<td>answered</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">1</td>
+<td>pass</td>
+</tr>
+<tr class="odd">
+<td>evaluator</td>
+<td>answered</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">1</td>
+<td>pass</td>
+</tr>
+<tr class="even">
+<td>adaptive</td>
+<td>answered</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">1</td>
+<td>pass after one denial</td>
+</tr>
+</tbody>
+</table>
+<p>The first three rows share the happy path in this tiny fixture, so equal measurements are expected. The adaptive row spends one extra proposal because it begins above its authority and recovers from a typed denial. The table is not evidence that these patterns have equal reliability in general. It establishes that the harness can compare them without changing the kernel.</p>
+<p>Now break the system deliberately:</p>
+<ol type="1">
+<li>Set the chain’s refund to 9,999 cents and <code>repeated_denials=1</code>.</li>
+<li>Run the denial test and inspect both the typed stop reason and the effect log.</li>
+<li>Remove the gate call temporarily; confirm that the test fails because the receipt appears.</li>
+<li>Restore the gate before continuing.</li>
+</ol>
+<p>Next, add one outcome verifier to <code>compare_modes()</code> rather than trusting <code>Stop.ANSWERED</code>. The shipped fixture already reports <code>task_success</code> from the exact receipt. Add a second condition that the lookup observation preceded the effect, then make the router violate it. You should see control-flow completion remain <code>answered</code> while task success becomes false.</p>
+<p>For an optional live adapter, implement <code>Strategy.decide()</code> with raw OpenAI-compatible HTTP against a local vLLM endpoint. Serialize only <code>RunState.task</code> and typed observations; publish the tool schemas; parse either one tool call or a final answer into the existing union. Do not change <code>run_agent</code>, <code>ToolSpec</code>, the gate, or the tests. The adapter is successful when replacing the deterministic strategy cannot bypass a single invariant.</p>
+<section id="acceptance-checks" class="level3" data-number="16.12.1">
+<h3 data-number="16.12.1" class="anchored" data-anchor-id="acceptance-checks"><span class="header-section-number">16.12.1</span> Acceptance checks</h3>
+<ul>
+<li>All four shipped tests pass.</li>
+<li>A denied proposal leaves <code>effects</code> empty.</li>
+<li>A wanderer stops after exactly the configured number of decisions.</li>
+<li>Every observation has a call identifier present in a prior proposal.</li>
+<li>The live adapter, if added, changes only proposal selection.</li>
+<li>Task success is computed from fixture state, not the final prose.</li>
+</ul>
+</section>
+<section id="honesty-note" class="level3" data-number="16.12.2">
+<h3 data-number="16.12.2" class="anchored" data-anchor-id="honesty-note"><span class="header-section-number">16.12.2</span> Honesty note</h3>
+<p>This build is an in-process control kernel. It does not provide authenticated tenant context, distributed cancellation, durable checkpoints, exactly-once effects, sandbox isolation, schema evolution, concurrent branch merging, human approval, or remote-effect reconciliation. The code is complete for the invariants it claims and deliberately silent about guarantees it does not implement.</p>
+</section>
+</section>
+<section id="sec-ch16-endures" class="level2" data-number="16.13">
+<h2 data-number="16.13" class="anchored" data-anchor-id="sec-ch16-endures"><span class="header-section-number">16.13</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> A model proposes; code grants authority. State, observations, budgets, stop reasons, and success predicates should be explicit. Denials and expected failures are information. A workflow and an agent can share the same execution kernel; the difference is who selects transitions. Task success should be grounded in the environment rather than inferred from confident language.</p>
+<p><strong>What changes.</strong> Provider tool-call envelopes, model reasoning surfaces, context limits, agent SDK APIs, and orchestration products will keep changing. Frameworks will package different combinations of harness, runtime, memory, tracing, and deployment. Those changes do not remove the need to locate the proposal boundary, the policy decision, the effect path, and the outcome verifier.</p>
+</section>
+<section id="sec-ch16-exercises" class="level2" data-number="16.14">
+<h2 data-number="16.14" class="anchored" data-anchor-id="sec-ch16-exercises"><span class="header-section-number">16.14</span> Exercises</h2>
+<ol type="1">
+<li><strong>Trace by hand.</strong> For <code>Limits(max_steps=3, max_cost_units=4)</code>, write the exact stop reason and counters for a strategy that proposes two successful reads and then a final answer. Run it and reconcile any difference.</li>
+<li><strong>Schema before policy.</strong> Propose <code>{"order": "A-17", "amount_cents": 4999}</code>. Verify that exact-field validation denies it before the policy function. Add a range constraint without mixing it into business authorization.</li>
+<li><strong>Detect oscillation.</strong> Defeat the current no-progress detector by alternating between refunds of 9,998 and 9,999 cents. Extend detection to a bounded recent window while allowing one retry after a <code>transient</code> observation.</li>
+<li><strong>Add parallel reads.</strong> Add a code-owned fan-out strategy for order and policy reads. Preserve call correlation when observations arrive in reverse order. Do not create a second execution kernel.</li>
+<li><strong>Separate completion from success.</strong> Make a strategy answer “refund complete” without calling the refund tool. Add an outcome verifier that rejects it and a process verifier that explains the missing step.</li>
+<li><strong>Design defense.</strong> A reviewer proposes moving the 5,000-cent rule into the system prompt so policy can change without deployment. Defend or reject the proposal, identify a safe configuration boundary, and name the residual stale-policy risk.</li>
+</ol>
+</section>
+<section id="sec-ch16-sources" class="level2" data-number="16.15">
+<h2 data-number="16.15" class="anchored" data-anchor-id="sec-ch16-sources"><span class="header-section-number">16.15</span> Notes and sources</h2>
+<p>The workflow-versus-agent distinction and “start with the simplest sufficient pattern” are consistent with Anthropic’s <a href="https://www.anthropic.com/research/building-effective-agents">Building effective agents</a>. The interleaving of reasoning, action, and observation originates in the <a href="https://arxiv.org/abs/2210.03629">ReAct paper</a>. The practical emphasis on owning control flow and keeping state explicit is also developed in <a href="https://github.com/humanlayer/12-factor-agents">12-Factor Agents</a>.</p>
+<p>Those sources motivate patterns; the executable specification, effect-boundary invariant, typed endings, and one-kernel comparison in this chapter are the book’s organizing treatment. Framework-specific execution begins in Chapter 19 after the raw mechanism is established.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/15-agentic-retrieval.html" class="pagination-link" aria-label="Advanced and Agentic Retrieval [S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/17-tool-harness-engineering.html" class="pagination-link" aria-label="Tool Engineering and Harness Design [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

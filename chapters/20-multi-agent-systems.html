@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Decide when not to add agents, design typed and isolated handoffs when parallelism is justified, and evaluate teams under matched compute with attributable failures.">
+
+<title>20&nbsp; Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/21-agent-applications.html" rel="next">
+<link href="../chapters/19-protocols-frameworks.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/16-agent-anatomy.html">Part V — Building Agents</a></li><li class="breadcrumb-item"><a href="../chapters/20-multi-agent-systems.html"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-you-need-going-in" id="toc-what-you-need-going-in" class="nav-link active" data-scroll-target="#what-you-need-going-in"><span class="header-section-number">20.1</span> What you need going in</a></li>
+  <li><a href="#contents" id="toc-contents" class="nav-link" data-scroll-target="#contents"><span class="header-section-number">20.2</span> Contents</a></li>
+  <li><a href="#what-you-will-build" id="toc-what-you-will-build" class="nav-link" data-scroll-target="#what-you-will-build"><span class="header-section-number">20.3</span> What you will build</a></li>
+  <li><a href="#sec-ch20-single-first" id="toc-sec-ch20-single-first" class="nav-link" data-scroll-target="#sec-ch20-single-first"><span class="header-section-number">20.4</span> When a single agent wins</a></li>
+  <li><a href="#sec-ch20-context" id="toc-sec-ch20-context" class="nav-link" data-scroll-target="#sec-ch20-context"><span class="header-section-number">20.5</span> Context is the architecture</a></li>
+  <li><a href="#sec-ch20-orchestrator" id="toc-sec-ch20-orchestrator" class="nav-link" data-scroll-target="#sec-ch20-orchestrator"><span class="header-section-number">20.6</span> Orchestrator–worker and parallel fan-out</a></li>
+  <li><a href="#sec-ch20-coordination" id="toc-sec-ch20-coordination" class="nav-link" data-scroll-target="#sec-ch20-coordination"><span class="header-section-number">20.7</span> Handoffs, topologies, and classical coordination</a></li>
+  <li><a href="#sec-ch20-debate" id="toc-sec-ch20-debate" class="nav-link" data-scroll-target="#sec-ch20-debate"><span class="header-section-number">20.8</span> Debate, ensembles, and emergent behavior</a></li>
+  <li><a href="#sec-ch20-mast" id="toc-sec-ch20-mast" class="nav-link" data-scroll-target="#sec-ch20-mast"><span class="header-section-number">20.9</span> MAST: classify and attribute team failures</a></li>
+  <li><a href="#sec-ch20-security" id="toc-sec-ch20-security" class="nav-link" data-scroll-target="#sec-ch20-security"><span class="header-section-number">20.10</span> Contain error cascades and cross-agent attacks</a></li>
+  <li><a href="#sec-ch20-economics" id="toc-sec-ch20-economics" class="nav-link" data-scroll-target="#sec-ch20-economics"><span class="header-section-number">20.11</span> Economics and cost-matched evaluation</a></li>
+  <li><a href="#sec-ch20-build" id="toc-sec-ch20-build" class="nav-link" data-scroll-target="#sec-ch20-build"><span class="header-section-number">20.12</span> Build</a>
+  <ul class="collapse">
+  <li><a href="#acceptance-checks" id="toc-acceptance-checks" class="nav-link" data-scroll-target="#acceptance-checks"><span class="header-section-number">20.12.1</span> Acceptance checks</a></li>
+  <li><a href="#honesty-note" id="toc-honesty-note" class="nav-link" data-scroll-target="#honesty-note"><span class="header-section-number">20.12.2</span> Honesty note</a></li>
+  </ul></li>
+  <li><a href="#sec-ch20-endures" id="toc-sec-ch20-endures" class="nav-link" data-scroll-target="#sec-ch20-endures"><span class="header-section-number">20.13</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch20-exercises" id="toc-sec-ch20-exercises" class="nav-link" data-scroll-target="#sec-ch20-exercises"><span class="header-section-number">20.14</span> Exercises</a></li>
+  <li><a href="#sec-ch20-sources" id="toc-sec-ch20-sources" class="nav-link" data-scroll-target="#sec-ch20-sources"><span class="header-section-number">20.15</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/16-agent-anatomy.html">Part V — Building Agents</a></li><li class="breadcrumb-item"><a href="../chapters/20-multi-agent-systems.html"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch20" class="quarto-section-identifier"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-you-need-going-in" class="level2" data-number="20.1">
+<h2 data-number="20.1" class="anchored" data-anchor-id="what-you-need-going-in"><span class="header-section-number">20.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> concurrency, queues, schemas, optimistic concurrency, budgets, and basic evaluation design.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/16-agent-anatomy.html">Chapter 16</a> supplies the single-agent baseline and workflow patterns. <a href="../chapters/17-tool-harness-engineering.html">Chapter 17</a> supplies tool and workspace boundaries. <a href="../chapters/18-memory-experiential-learning.html">Chapter 18</a> owns memory semantics. <a href="../chapters/19-protocols-frameworks.html">Chapter 19</a> owns A2A and framework mechanics.</p>
+<p><strong>Not required:</strong> distributed-agent frameworks, game theory, multi-agent RL, or a hosted model. This chapter starts with the decision to keep one agent.</p>
+</blockquote>
+</section>
+<section id="contents" class="level2" data-number="20.2">
+<h2 data-number="20.2" class="anchored" data-anchor-id="contents"><span class="header-section-number">20.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch20-single-first">When a single agent wins</a></li>
+<li><a href="#sec-ch20-context">Context is the architecture</a></li>
+<li><a href="#sec-ch20-orchestrator">Orchestrator–worker and parallel fan-out</a></li>
+<li><a href="#sec-ch20-coordination">Handoffs, topologies, and classical coordination</a></li>
+<li><a href="#sec-ch20-debate">Debate, ensembles, and emergent behavior</a></li>
+<li><a href="#sec-ch20-mast">MAST: classify and attribute team failures</a></li>
+<li><a href="#sec-ch20-security">Contain error cascades and cross-agent attacks</a></li>
+<li><a href="#sec-ch20-economics">Economics and cost-matched evaluation</a></li>
+<li><a href="#sec-ch20-build">Build</a></li>
+<li><a href="#sec-ch20-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch20-exercises">Exercises</a></li>
+<li><a href="#sec-ch20-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="what-you-will-build" class="level2" data-number="20.3">
+<h2 data-number="20.3" class="anchored" data-anchor-id="what-you-will-build"><span class="header-section-number">20.3</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>A team that must earn its coordination cost
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The artifact under <code>code/ch20/</code> splits a read-only policy task into three independent shards. Workers write typed JSON reports with provenance; one orchestrator validates and merges them. A single agent receives the team’s measured total token budget. Both produce the same answer, while the parallel team halves modeled critical-path latency. Then one worker omits provenance. The merge gate contains the result and attributes the failure to that worker and handoff.</p>
+<p>There is one runtime and one experiment—not a gallery of supervisor, swarm, debate, and hierarchy implementations.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch20-single-first" class="level2" data-number="20.4">
+<h2 data-number="20.4" class="anchored" data-anchor-id="sec-ch20-single-first"><span class="header-section-number">20.4</span> When a single agent wins</h2>
+<p>Adding agents creates a distributed system whose messages are lossy, expensive, and partly generated. Before asking which topology to use, ask whether the task should be split at all.</p>
+<p>A multi-agent design needs three positive conditions:</p>
+<ol type="1">
+<li><strong>The work is genuinely decomposable.</strong> Independent or weakly coupled read-heavy branches can run concurrently. A single chain of dependent reasoning cannot be accelerated by pretending its steps are peers.</li>
+<li><strong>The split creates a useful boundary.</strong> Each worker gets a smaller context, different tools or permissions, a distinct model capability, or an independently operated service. Renaming identical prompts “researcher,” “critic,” and “writer” does not create specialization.</li>
+<li><strong>A measured single-agent failure remains.</strong> The best simple baseline has already tried sharper tools, just-in-time context, compaction, a deterministic workflow, a specialist call, or ordinary parallel functions. The proposed team targets a named failure or latency constraint.</li>
+</ol>
+<p>If any condition is absent, retain one agent or a deterministic workflow. The test is not whether multiple agents can finish the task. It is whether they outperform the strongest simpler system under the resource constraint the product actually has.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart TD</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    Start["strong single-agent / workflow baseline"] --&gt; Failure{"measured failure or deadline remains?"}</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    Failure --&gt;|no| One["keep one agent"]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    Failure --&gt;|yes| Parallel{"independent or weakly coupled subproblems?"}</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    Parallel --&gt;|no| Improve["improve tools, context, planning, or verifier"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    Parallel --&gt;|yes| Boundary{"useful context, permission, model, or ownership boundary?"}</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    Boundary --&gt;|no| Functions["parallel functions, not agent personas"]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    Boundary --&gt;|yes| Writes{"concurrent unresolved writes to same state?"}</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    Writes --&gt;|yes| Veto["veto split or appoint one writer"]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    Writes --&gt;|no| Trial["cost-matched team experiment"]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    Trial --&gt; Gate{"quality / latency gain exceeds coordination risk?"}</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    Gate --&gt;|yes| Team["ship bounded topology"]</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    Gate --&gt;|no| One</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch20-split-decision" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch20-split-decision-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch20-split-decision">flowchart TD
+    Start["strong single-agent / workflow baseline"] --&gt; Failure{"measured failure or deadline remains?"}
+    Failure --&gt;|no| One["keep one agent"]
+    Failure --&gt;|yes| Parallel{"independent or weakly coupled subproblems?"}
+    Parallel --&gt;|no| Improve["improve tools, context, planning, or verifier"]
+    Parallel --&gt;|yes| Boundary{"useful context, permission, model, or ownership boundary?"}
+    Boundary --&gt;|no| Functions["parallel functions, not agent personas"]
+    Boundary --&gt;|yes| Writes{"concurrent unresolved writes to same state?"}
+    Writes --&gt;|yes| Veto["veto split or appoint one writer"]
+    Writes --&gt;|no| Trial["cost-matched team experiment"]
+    Trial --&gt; Gate{"quality / latency gain exceeds coordination risk?"}
+    Gate --&gt;|yes| Team["ship bounded topology"]
+    Gate --&gt;|no| One
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch20-split-decision-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;20.1: When does a task earn the coordination cost of multiple agents?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>This decision can be formalized as an incremental utility test:</p>
+<p><span class="math display">
+\Delta U = w_q\Delta Q - w_c\Delta C - w_l\Delta L - w_r\Delta R,
+</span></p>
+<p>where <span class="math inline">Q</span> is task quality, <span class="math inline">C</span> total compute or spend, <span class="math inline">L</span> deadline-relevant latency, and <span class="math inline">R</span> operational risk. Weights reflect the product. Parallel research may accept higher total tokens to cut wall time and raise source coverage. A low-latency transaction flow may not.</p>
+<p>Compare <strong>systems</strong>, not call counts. Holding “one turn per agent” constant gives the team more model compute. Hold total input/output or reasoning tokens, modeled spend, wall-clock budget, tool calls, and environment access as appropriate. <a href="https://arxiv.org/abs/2407.01502">AI Agents That Matter</a> argues for cost-aware, reproducible agent evaluation; the requirement is even more important when one architecture silently multiplies calls.</p>
+<p>Task coupling is the practical veto. If worker B needs the exact rejected alternatives, uncertainty, and intermediate observations produced by worker A, a short handoff damages the computation. Passing the full trace restores information but erases much of the context and cost benefit. The system has discovered that the work was one chain.</p>
+<p>The best reason for multiple agents is often not “collective intelligence.” It is ordinary parallelism plus isolation: search independent sources concurrently, run reviews with disjoint permissions, or delegate to an external owner. State that reason in the design document. If “agent count” is itself the success metric, the architecture has no falsifiable objective.</p>
+</section>
+<section id="sec-ch20-context" class="level2" data-number="20.5">
+<h2 data-number="20.5" class="anchored" data-anchor-id="sec-ch20-context"><span class="header-section-number">20.5</span> Context is the architecture</h2>
+<p>Once a task is split, the decisive design question is what crosses each boundary. Every handoff compresses one agent’s state into another agent’s context. Missing facts, duplicated history, conflicting versions, and adversarial instructions all enter here.</p>
+<p>Common strategies trade fidelity for cost:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Handoff</th>
+<th>Preserves</th>
+<th>Loses or risks</th>
+<th>Good fit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Full trace</td>
+<td>Decisions, uncertainty, rejected paths</td>
+<td>Context cost, pollution, hidden instructions</td>
+<td>Tightly coupled continuation</td>
+</tr>
+<tr class="even">
+<td>Rolling summary</td>
+<td>Compact progress</td>
+<td>Quietly drops constraints and provenance</td>
+<td>Low-risk conversation continuity</td>
+</tr>
+<tr class="odd">
+<td>Last <span class="math inline">k</span> turns</td>
+<td>Recent local detail</td>
+<td>Early requirements and rationale</td>
+<td>Short recency-dominated loops</td>
+</tr>
+<tr class="even">
+<td>Typed artifact</td>
+<td>Declared fields, validation, diffability</td>
+<td>Undeclared nuance</td>
+<td>Bounded delegation and merge</td>
+</tr>
+<tr class="odd">
+<td>Shared store/blackboard</td>
+<td>Common named state</td>
+<td>Races, stale reads, write conflicts</td>
+<td>Coordinated tasks with ownership</td>
+</tr>
+<tr class="even">
+<td>Retrieved handoff</td>
+<td>Just-in-time relevance</td>
+<td>Retrieval misses and permission errors</td>
+<td>Large evidence collections</td>
+</tr>
+</tbody>
+</table>
+<p>A summary can be fluent and incomplete. Suppose a user says “on-premises only” early in a long trace. The researcher later compares five services and a summarizer emits “prefers a secure enterprise option.” The writer may recommend a hosted product while believing it respected the handoff. A typed requirement field—<code>deployment: on_prem_only</code>—fails validation if absent and survives paraphrase.</p>
+<p>A useful delegation envelope includes:</p>
+<ul>
+<li>parent run, task, and worker identity;</li>
+<li>objective and excluded work;</li>
+<li>input snapshot or evidence handles;</li>
+<li>output schema and acceptance predicate;</li>
+<li>allowed tools, data, destinations, and effects;</li>
+<li>token, call, time, and hop budgets;</li>
+<li>deadline and cancellation behavior;</li>
+<li>provenance and confidence requirements;</li>
+<li>where to write the artifact and who may merge it.</li>
+</ul>
+<p>The worker cannot mint new authority. If the parent delegates read-only access to three files, a worker’s plan to “also update the database” is a rejected proposal. Child budgets are carved from a parent-owned total so spawning more workers cannot evade cost or action limits.</p>
+<p>Use <strong>isolated context</strong> when specialization, privacy, or injection containment matters. Give a payroll reviewer only payroll policy and a redacted case; give a code reviewer read-only repository access. Use <strong>shared context</strong> only for state every participant genuinely needs, and prefer append-only evidence or proposals over mutable prose.</p>
+<p>Shared files work well as handoff artifacts because they are addressable, bounded, and inspectable. A worker writes <code>worker-2.json</code>; the orchestrator reads it after completion and verifies its schema and evidence. The file is not automatically trustworthy because it resides in the same workspace. It is another agent’s output.</p>
+<p>Keep conversational coordination small. Chat is suitable for clarification and status. Durable facts, task claims, outputs, and decisions belong in structured artifacts or an event store. Otherwise a reconnect or compaction turns “the agent said it finished” into the only completion record.</p>
+<p>Memory follows the same ownership. Private working memory belongs to a worker thread. A shared semantic record goes through the Chapter 18 memory policy. Do not concatenate every worker’s transcript into a permanent team memory; doing so amplifies poisoning, retention, and deletion problems.</p>
+</section>
+<section id="sec-ch20-orchestrator" class="level2" data-number="20.6">
+<h2 data-number="20.6" class="anchored" data-anchor-id="sec-ch20-orchestrator"><span class="header-section-number">20.6</span> Orchestrator–worker and parallel fan-out</h2>
+<p>The most useful production topology is often one orchestrator with bounded workers. The orchestrator decomposes the objective, issues task briefs, watches global budgets, validates reports, and synthesizes the answer. Workers perform independent searches, analyses, or reviews. They return artifacts; they do not decide the parent task is complete.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>flowchart TB</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    User["objective + constraints"] --&gt; O["orchestrator\nplan, budget, terminate"]</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    O --&gt; B1["typed brief A"]</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    O --&gt; B2["typed brief B"]</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    O --&gt; B3["typed brief C"]</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    subgraph Isolated["isolated workers — read/propose only"]</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>      B1 --&gt; W1["worker 1"]</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>      B2 --&gt; W2["worker 2"]</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      B3 --&gt; W3["worker 3"]</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    W1 --&gt; A1["report A + evidence"]</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    W2 --&gt; A2["report B + evidence"]</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    W3 --&gt; A3["report C + evidence"]</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    A1 --&gt; Gate["schema, scope, provenance, version gate"]</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    A2 --&gt; Gate</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    A3 --&gt; Gate</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    Gate --&gt; Merge["single-writer merge"]</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    Merge --&gt; Verify["outcome verifier"]</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    Verify --&gt; Answer["answer / commit / escalation"]</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    W1 -. no direct global write .-&gt; Merge</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    W2 -. no direct global write .-&gt; Merge</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    W3 -. no direct global write .-&gt; Merge</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch20-orchestrator" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch20-orchestrator-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch20-orchestrator">flowchart TB
+    User["objective + constraints"] --&gt; O["orchestrator\nplan, budget, terminate"]
+    O --&gt; B1["typed brief A"]
+    O --&gt; B2["typed brief B"]
+    O --&gt; B3["typed brief C"]
+    subgraph Isolated["isolated workers — read/propose only"]
+      B1 --&gt; W1["worker 1"]
+      B2 --&gt; W2["worker 2"]
+      B3 --&gt; W3["worker 3"]
+    end
+    W1 --&gt; A1["report A + evidence"]
+    W2 --&gt; A2["report B + evidence"]
+    W3 --&gt; A3["report C + evidence"]
+    A1 --&gt; Gate["schema, scope, provenance, version gate"]
+    A2 --&gt; Gate
+    A3 --&gt; Gate
+    Gate --&gt; Merge["single-writer merge"]
+    Merge --&gt; Verify["outcome verifier"]
+    Verify --&gt; Answer["answer / commit / escalation"]
+    W1 -. no direct global write .-&gt; Merge
+    W2 -. no direct global write .-&gt; Merge
+    W3 -. no direct global write .-&gt; Merge
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch20-orchestrator-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;20.2: How does orchestrator–worker parallelism preserve isolation and single-writer ownership?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Parallel fan-out changes critical-path latency from a sum toward a maximum:</p>
+<p><span class="math display">
+L_{fanout} \approx L_{plan} + \max_i L_{worker_i} + L_{merge}.
+</span></p>
+<p>The total compute remains approximately the sum of worker compute plus planning and merging. Parallelism buys time, not free reasoning. Tail latency depends on the slowest required worker. Retries, rate limits, shared bottlenecks, and stragglers can erase the gain.</p>
+<p>Shard boundaries should minimize cross-worker dependence. “Search sources A, B, and C independently” is strong. “Worker 1 invents the plan, worker 2 interprets its summary, worker 3 fixes both” is a serial chain with lossy links. If results must be combined, specify compatible schemas and stable entity identifiers before dispatch.</p>
+<p>Fan-out needs bounds:</p>
+<ul>
+<li>maximum workers per parent and per tenant;</li>
+<li>maximum nesting depth and handoff count;</li>
+<li>token, tool-call, wall-time, and monetary sub-budgets;</li>
+<li>cancellation propagation and orphan cleanup;</li>
+<li>deadline behavior for partial results;</li>
+<li>concurrency caps for downstream systems;</li>
+<li>deterministic tie-breaking and a single completion owner.</li>
+</ul>
+<p>The orchestrator should decide whether partial success is usable. A research report might publish three of four independent sections with a visible gap. A compliance decision may require every shard and fail closed. Encode quorum and required-shard rules rather than asking the model whether the answer “seems complete.”</p>
+<p>Workers can use different models or tools when specialization is measured. A cheap extraction model may process tables while a stronger model synthesizes. Heterogeneity may improve diversity, but it complicates calibration, security review, capacity, and attribution. Start homogeneous unless the eval demonstrates a slice-specific reason.</p>
+<p>The artifact uses deterministic workers to isolate orchestration mechanics. Each consumes 220 token units and five latency units. Three run concurrently; planning costs two latency units and merge costs three. The team and single-agent baseline each consume 1,140 token units, but the modeled critical path is ten versus twenty. This is an example of a justified benefit—latency on independent read work—not a claim that three agents reason better.</p>
+</section>
+<section id="sec-ch20-coordination" class="level2" data-number="20.7">
+<h2 data-number="20.7" class="anchored" data-anchor-id="sec-ch20-coordination"><span class="header-section-number">20.7</span> Handoffs, topologies, and classical coordination</h2>
+<p>Topology determines who can send work, share state, and end the run.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Topology</th>
+<th>Routing owner</th>
+<th>Context path</th>
+<th>Strength</th>
+<th>Characteristic failure</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Star/supervisor</td>
+<td>Central parent</td>
+<td>Worker ↔︎ parent</td>
+<td>Budgets and attribution</td>
+<td>Parent bottleneck</td>
+</tr>
+<tr class="even">
+<td>Direct handoff</td>
+<td>Current agent</td>
+<td>Agent → agent</td>
+<td>Natural specialization chain</td>
+<td>Telephone-game drift</td>
+</tr>
+<tr class="odd">
+<td>Tree/hierarchy</td>
+<td>Parent at each level</td>
+<td>Up/down branches</td>
+<td>Scales decomposition</td>
+<td>Hidden cost and depth explosion</td>
+</tr>
+<tr class="even">
+<td>Blackboard</td>
+<td>Shared scheduler/state</td>
+<td>Artifact store</td>
+<td>Flexible contributors</td>
+<td>Races and stale state</td>
+</tr>
+<tr class="odd">
+<td>Peer network</td>
+<td>Any peer</td>
+<td>Arbitrary graph</td>
+<td>Adaptive coordination</td>
+<td>Cycles, authority spread, hard termination</td>
+</tr>
+</tbody>
+</table>
+<p>Use the smallest topology that expresses the dependency graph. A star is easier to observe and contain than a peer mesh. Hierarchy helps only if branches remain independent and sub-orchestrators receive real budgets. Direct handoff is useful for an ownership transfer, such as intake to a specialized regulated workflow, but the handoff must carry identity, constraints, and acceptance state.</p>
+<p>Classical multi-agent and distributed-systems ideas are more useful than new persona names.</p>
+<p><strong>Contract Net</strong> coordination announces a task, receives bids, awards work, and evaluates results. A modern router can use deterministic capability metadata, cost, deadline, and load instead of free-form agents persuading one another. The parent still verifies the winner’s output.</p>
+<p>A <strong>blackboard</strong> lets specialized processes read and contribute to shared problem state. Make entries typed and append-only where possible. Use claims or leases for work ownership, versions for reads, and idempotent completion records. A shared chat log is not a concurrency protocol.</p>
+<p>The <strong>single-writer principle</strong> is central. Parallel agents may inspect, test, and propose, while one owner commits a file, account, or deployment under a version check. If two code agents edit the same file independently, the issue is not how to make them debate the merge. Change the shape: parallel reviewers return findings; one writer applies them.</p>
+<p>Conflicts become observations. A rejected compare-and-swap tells the orchestrator that state changed; it reloads, replans, or escalates. Last-write-wins hides which evidence and approval were overwritten. Chapter 26 provides the durable effect ledger and reconciliation for external writes.</p>
+<p>Role specialization should follow authority and context, not theater. “Database migration reviewer with schema-read and test tools” is a real role. “Optimist agent” and “pessimist agent” are sampling prompts unless repeated evaluation shows complementary error. Mirroring an organization chart usually imports human communication overhead without the tacit knowledge that makes the human organization function.</p>
+<p>For remote ownership, use the A2A task boundary from Chapter 19. Do not teach the remote agent your internal framework state. Send a task brief and receive typed artifacts. The parent remains responsible for using them safely.</p>
+</section>
+<section id="sec-ch20-debate" class="level2" data-number="20.8">
+<h2 data-number="20.8" class="anchored" data-anchor-id="sec-ch20-debate"><span class="header-section-number">20.8</span> Debate, ensembles, and emergent behavior</h2>
+<p>Multiple model calls can generate diverse candidates, critique an answer, vote, or debate. These are test-time inference patterns before they are production organizations.</p>
+<p><strong>Independent sampling plus aggregation</strong> works when errors are not perfectly correlated and an answer can be verified or voted. Self-consistency is the simplest case. It needs no agents with identities or persistent chat. Spend the same compute first on best-of-<span class="math inline">N</span>, verifier-guided search, or a stronger model as developed in Chapter 8.</p>
+<p><strong>Debate</strong> exposes candidate reasoning to peers over several rounds. It can surface missed evidence, but it also creates anchoring, conformity, verbosity, and persuasive-error failure modes. A majority can converge on the same injected premise. More turns are not monotonically better, and a judge may reward rhetorical agreement over correctness.</p>
+<p>Use debate as an evaluated subroutine when the task has independent perspectives and a final verifier. Bound rounds, preserve original evidence, prevent debaters from rewriting one another’s sources, and compare with equally priced independent samples. Do not deploy a permanent council because one benchmark improved without a compute-matched baseline.</p>
+<p><strong>Ensembles</strong> gain most when channels differ in a meaningful way: model family, data, retrieval source, tool, or inductive bias. Five copies of one model with near-identical context have correlated blind spots. Diversity without aggregation quality can lower performance because the final synthesizer must discriminate more plausible errors.</p>
+<p>Emergence and game-theoretic language can help analyze behavior, not replace a contract. Local incentives, information asymmetry, repeated interaction, and shared resources may produce specialization, collusion, free riding, or escalation. An agent that appears cooperative in a simulation has not acquired a deployable service-level guarantee.</p>
+<p>The transferable lessons from social simulations and role-playing systems are modest but useful:</p>
+<ul>
+<li>environment and action constraints shape behavior more than character prose;</li>
+<li>memory changes repeated interaction;</li>
+<li>communication topology changes which errors propagate;</li>
+<li>incentives and termination conditions need explicit ownership;</li>
+<li>observed group behavior may disappear under a new model or prompt.</li>
+</ul>
+<p>Multi-agent RL and co-training can teach policies that anticipate peers instead of prompting independent models to cooperate at inference. That is a different mechanism, introduced in Chapter 23. This chapter evaluates inference-time systems as deployed software.</p>
+</section>
+<section id="sec-ch20-mast" class="level2" data-number="20.9">
+<h2 data-number="20.9" class="anchored" data-anchor-id="sec-ch20-mast"><span class="header-section-number">20.9</span> MAST: classify and attribute team failures</h2>
+<p>“The team failed” is too coarse to guide a fix. <a href="https://arxiv.org/abs/2503.13657">MAST</a>, the Multi-Agent System Failure Taxonomy, organizes 14 observed failure modes into three categories. Its initial study used expert annotation and reported strong inter-annotator agreement. The exact prevalence depends on the systems and dataset; the vocabulary is useful because it directs attention to specification, coordination, and verification rather than blaming every outcome on model capability.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 23%">
+<col style="width: 30%">
+<col style="width: 23%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Category</th>
+<th style="text-align: right;">Code</th>
+<th>Failure mode</th>
+<th>Engineering signal</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Specification/system design</td>
+<td style="text-align: right;">1.1</td>
+<td>Disobey task specification</td>
+<td>Output violates an explicit constraint</td>
+</tr>
+<tr class="even">
+<td></td>
+<td style="text-align: right;">1.2</td>
+<td>Disobey role specification</td>
+<td>Worker uses authority or work outside its brief</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td style="text-align: right;">1.3</td>
+<td>Step repetition</td>
+<td>Same work or message cycle repeats</td>
+</tr>
+<tr class="even">
+<td></td>
+<td style="text-align: right;">1.4</td>
+<td>Loss of conversation history</td>
+<td>Required earlier state disappears</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td style="text-align: right;">1.5</td>
+<td>Unaware of termination conditions</td>
+<td>Team continues after success or cannot decide to stop</td>
+</tr>
+<tr class="even">
+<td>Inter-agent misalignment</td>
+<td style="text-align: right;">2.1</td>
+<td>Conversation reset</td>
+<td>Dialogue unexpectedly restarts and loses progress</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td style="text-align: right;">2.2</td>
+<td>Fail to ask for clarification</td>
+<td>Agent guesses across an ambiguous handoff</td>
+</tr>
+<tr class="even">
+<td></td>
+<td style="text-align: right;">2.3</td>
+<td>Task derailment</td>
+<td>Interaction drifts from the objective</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td style="text-align: right;">2.4</td>
+<td>Information withholding</td>
+<td>Agent fails to pass material evidence</td>
+</tr>
+<tr class="even">
+<td></td>
+<td style="text-align: right;">2.5</td>
+<td>Ignored other agent’s input</td>
+<td>Received contribution is not incorporated</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td style="text-align: right;">2.6</td>
+<td>Reasoning–action mismatch</td>
+<td>Declared plan and executed action diverge</td>
+</tr>
+<tr class="even">
+<td>Task verification</td>
+<td style="text-align: right;">3.1</td>
+<td>Premature termination</td>
+<td>System ends before required objectives are met</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td style="text-align: right;">3.2</td>
+<td>No or incomplete verification</td>
+<td>Required checks are missing</td>
+</tr>
+<tr class="even">
+<td></td>
+<td style="text-align: right;">3.3</td>
+<td>Incorrect verification</td>
+<td>The verifier approves bad work or rejects correct work</td>
+</tr>
+</tbody>
+</table>
+<p>One trace can contain several modes. “Step repetition” describes behavior; the root cause may be a missing parent hop budget or completion event. Do not treat taxonomy labels as causal proof. Use them to cluster failures, inspect first divergence, and choose an owned intervention.</p>
+<p>Attribution adds <strong>who and when</strong>. Record agent identity, model and prompt version, task brief, state snapshot, incoming artifact identifiers, proposed action, gate decision, observation, and outgoing artifact. Find the earliest decisive step after which the run cannot recover under normal policy. Later agents may amplify an error without originating it.</p>
+<p>The artifact’s poisoned worker omits an evidence identifier. Its finding happens to be correct, but the handoff contract requires provenance. The validator returns:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"category"</span><span class="fu">:</span> <span class="st">"inter-agent misalignment"</span><span class="fu">,</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"agent"</span><span class="fu">:</span> <span class="st">"worker-2"</span><span class="fu">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"step"</span><span class="fu">:</span> <span class="st">"handoff"</span><span class="fu">,</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"reason"</span><span class="fu">:</span> <span class="st">"missing provenance"</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This coarse category corresponds most closely to information withholding. The run status is <code>contained</code>, not <code>completed</code>: a gate prevented an unsupported answer, but the user’s task remains unsatisfied. Containment success and task success must be separate metrics.</p>
+<p>Automated taxonomy judges require calibration. A model may infer motives or hidden state not present in the trace. Maintain human-reviewed examples, permit multiple labels, report per-mode precision/recall, and keep the raw evidence span. Chapter 22 supplies judge and statistical discipline.</p>
+</section>
+<section id="sec-ch20-security" class="level2" data-number="20.10">
+<h2 data-number="20.10" class="anchored" data-anchor-id="sec-ch20-security"><span class="header-section-number">20.10</span> Contain error cascades and cross-agent attacks</h2>
+<p>Every worker output is untrusted input, even when all workers run in one application. A mistaken premise, poisoned document, or malicious instruction can cross several model calls and acquire credibility through repetition.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    autonumber</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    participant D as Retrieved document</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    participant W as Worker 2</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    participant A as Report artifact</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    participant G as Merge gate</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    participant O as Orchestrator</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    participant E as Effect tool</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    D-&gt;&gt;W: evidence plus injected instruction</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    W-&gt;&gt;A: confident finding, provenance omitted</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    A-&gt;&gt;G: typed report</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    G-&gt;&gt;G: validate schema, scope, evidence, version</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    alt fail closed</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>        G--&gt;&gt;O: attributed rejection: missing provenance</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>        O--&gt;&gt;O: retry, omit shard, or escalate</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    else unchecked propagation</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>        G--&gt;&gt;O: accepted claim</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>        O-&gt;&gt;E: action based on laundered premise</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    end</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch20-cascade" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch20-cascade-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch20-cascade">sequenceDiagram
+    autonumber
+    participant D as Retrieved document
+    participant W as Worker 2
+    participant A as Report artifact
+    participant G as Merge gate
+    participant O as Orchestrator
+    participant E as Effect tool
+    D-&gt;&gt;W: evidence plus injected instruction
+    W-&gt;&gt;A: confident finding, provenance omitted
+    A-&gt;&gt;G: typed report
+    G-&gt;&gt;G: validate schema, scope, evidence, version
+    alt fail closed
+        G--&gt;&gt;O: attributed rejection: missing provenance
+        O--&gt;&gt;O: retry, omit shard, or escalate
+    else unchecked propagation
+        G--&gt;&gt;O: accepted claim
+        O-&gt;&gt;E: action based on laundered premise
+    end
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch20-cascade-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;20.3: Where can one poisoned worker report be stopped before it becomes a team conclusion or effect?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The merge boundary should validate:</p>
+<ul>
+<li>schema and bounded size;</li>
+<li>worker and task identity;</li>
+<li>allowed shard, subject, and target;</li>
+<li>evidence identifiers and source policy;</li>
+<li>artifact and source versions;</li>
+<li>unsupported instructions or executable content;</li>
+<li>confidence and conflict state;</li>
+<li>signature or integrity metadata for remote peers.</li>
+</ul>
+<p>Do not paste worker reports into the orchestrator’s system prompt. Delimit them as data. Preserve quotations and source handles so the parent can inspect evidence rather than trust a summary. A worker may recommend an action but cannot sign an approval or elevate the parent’s credentials.</p>
+<p>Topology affects blast radius. A star routes every cross-worker claim through a validation point. A peer mesh lets an infection propagate laterally. Hierarchy can contain branches if sub-orchestrators have disjoint permissions; it can also launder content through several summaries. Give one agent final effect authority and keep other agents read-only or proposal-only when possible.</p>
+<p>The “chained low-risk actions” problem becomes worse with teams. Worker A reads a secret, worker B opens an external channel, and worker C combines both even if no individual tool looks high-risk. Policy evaluates information flow and aggregate run authority, not only each call. Chapter 24 develops taint, injection, and least-privilege defenses.</p>
+<p>Cross-agent denial of service also matters. A malicious or confused worker can spawn children, bounce handoffs, emit huge artifacts, hold a required shard, or force repeated clarification. Parent-owned fan-out, depth, size, deadline, and total-token limits prevent local decisions from expanding the run indefinitely.</p>
+<p>Verification should be independent of the producer’s claim. Re-run tests, query the source of truth, compare versions, or use a separately controlled verifier. Asking the same worker “are you sure?” often preserves the premise that caused the error.</p>
+</section>
+<section id="sec-ch20-economics" class="level2" data-number="20.11">
+<h2 data-number="20.11" class="anchored" data-anchor-id="sec-ch20-economics"><span class="header-section-number">20.11</span> Economics and cost-matched evaluation</h2>
+<p>Multi-agent cost is not simply agent count times one call. Each loop re-reads instructions, tools, conversation, and artifacts; parents also read worker outputs and may retry. Context topology determines repeated input.</p>
+<p>For workers <span class="math inline">i=1\ldots n</span> and a parent, a useful accounting identity is</p>
+<p><span class="math display">
+C_{team}=C_{plan}+\sum_i(C_{worker,i}+C_{handoff,i})+C_{merge}+C_{verify}+C_{retry}.
+</span></p>
+<p>Break each term into input, output, cached input, tool, and infrastructure units. Attribute them to the parent run and task slice. A fixed “cost per agent” obscures long traces and large tool catalogs.</p>
+<div id="fig-ch20-cost-latency" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two bar charts. Single and team token units are equal at 1,140; latency units are 20 for single and 10 for team.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch20-cost-latency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../assets/figures/ch20-cost-latency.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;20.4: At equal token budget, this decomposable fixture buys latency rather than extra quality."><img src="../assets/figures/ch20-cost-latency.svg" class="img-fluid figure-img" alt="Two bar charts. Single and team token units are equal at 1,140; latency units are 20 for single and 10 for team."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch20-cost-latency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;20.4: At equal token budget, this decomposable fixture buys latency rather than extra quality.
+</figcaption>
+</figure>
+</div>
+<p>The build’s result is intentionally restrained. The team does not score higher. It returns the same three evidence-backed findings with the same measured token units. Its twofold modeled speedup comes from three independent five-unit workers running concurrently. A sequential task would not get that benefit.</p>
+<p>Compare at least these baselines:</p>
+<ol type="1">
+<li>deterministic workflow;</li>
+<li>one agent with all relevant context;</li>
+<li>one agent with retrieval, tool search, and compaction;</li>
+<li>deterministic parallel workers with a non-model merge;</li>
+<li>one orchestrator with model workers;</li>
+<li>richer handoffs or peer coordination only if earlier variants fail.</li>
+</ol>
+<p>For each, report task success, slice floors, total tokens/spend, wall-clock distribution, tool calls, retries, handoffs, reviewer work, and forbidden effects. Use the same task snapshots, models, tool state, concurrency limits, and success predicates. Run enough repetitions for stochastic variance.</p>
+<p>Evaluate milestones as well as outcomes. Did decomposition cover the requirements? Did every required worker finish? Did reports pass schema and provenance? Did the merge preserve constraints? Did the verifier check the result? These signals localize gains and regressions.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — measured scaling replaced “more agents” as the default story
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Verified <strong>2026-07-19</strong>: Anthropic’s engineering report says its agents used roughly four times the tokens of chat interactions and its production multi-agent research system roughly fifteen times, while describing gains on breadth-first research. These are vendor-reported workload figures, not constants. <a href="https://arxiv.org/abs/2512.08296">Towards a Science of Scaling Agent Systems</a> reports controlled comparisons across many configurations and finds strong dependence on task parallelism and topology. A 2026 equal-thinking-budget study, <a href="https://arxiv.org/abs/2604.02460">Single-Agent LLMs Outperform Multi-Agent Systems on Multi-Hop Reasoning</a>, reports single-agent advantages on coupled multi-hop tasks under its tested conditions.</p>
+<p>SDK names, hosted team features, model families, and quantitative rankings are volatile. <strong>Verify live:</strong> recheck paper revisions, exact budgets, task definitions, model versions, and production reports before quoting a multiplier or recommending a framework.</p>
+</div>
+</div>
+<p>The decision artifact should state why the team exists, which simpler variants were tested, the budget, the residual gain, failure distribution, rollback trigger, and owner. A well-supported rejection of multi-agent architecture is a successful engineering result.</p>
+<p>Chapter 26 turns this accounting into platform cost and capacity controls. Here the invariant is simple: complexity must earn measurable utility under matched resources.</p>
+</section>
+<section id="sec-ch20-build" class="level2" data-number="20.12">
+<h2 data-number="20.12" class="anchored" data-anchor-id="sec-ch20-build"><span class="header-section-number">20.12</span> Build</h2>
+<p>Run the deterministic experiment from <code>newbook</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch20<span class="op">/</span>fixture<span class="op">.</span><span class="fu">py</span> <span class="op">--</span>plot assets<span class="op">/</span>figures<span class="op">/</span>ch20-cost-latency<span class="op">.</span><span class="fu">svg</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>python <span class="op">-</span>m pytest tests<span class="op">/</span>test_ch20_team_runtime<span class="op">.</span><span class="fu">py</span> <span class="op">-</span>q</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The central result should be:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"cost_matched"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"single"</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">"score"</span><span class="fu">:</span> <span class="fl">1.0</span><span class="fu">,</span> <span class="dt">"tokens"</span><span class="fu">:</span> <span class="dv">1140</span><span class="fu">,</span> <span class="dt">"latency_units"</span><span class="fu">:</span> <span class="dv">20</span><span class="fu">},</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"team"</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">"score"</span><span class="fu">:</span> <span class="fl">1.0</span><span class="fu">,</span> <span class="dt">"tokens"</span><span class="fu">:</span> <span class="dv">1140</span><span class="fu">,</span> <span class="dt">"latency_units"</span><span class="fu">:</span> <span class="dv">10</span><span class="fu">},</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"team_speedup"</span><span class="fu">:</span> <span class="fl">2.0</span><span class="fu">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"same_answer"</span><span class="fu">:</span> <span class="kw">true</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"fault_injection"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"status"</span><span class="fu">:</span> <span class="st">"contained"</span><span class="fu">,</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"failure"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"category"</span><span class="fu">:</span> <span class="st">"inter-agent misalignment"</span><span class="fu">,</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"agent"</span><span class="fu">:</span> <span class="st">"worker-2"</span><span class="fu">,</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"step"</span><span class="fu">:</span> <span class="st">"handoff"</span><span class="fu">,</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"reason"</span><span class="fu">:</span> <span class="st">"missing provenance"</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Work through one runtime in six passes.</p>
+<p><strong>1. Defend the split.</strong> Read <code>CORPUS</code>: three independent regions, one finding each. Call <code>should_split</code> with each condition false in turn. Write down why a coupled chain or an unmeasured single-agent baseline should veto this architecture.</p>
+<p><strong>2. Inspect task briefs.</strong> In <code>Orchestrator.run</code>, verify each worker receives one shard, one read tool, an output schema, and budgets. Add an unauthorized write tool and make the worker reject the brief.</p>
+<p><strong>3. Follow file handoffs.</strong> Each worker writes one immutable JSON report. Inspect the temporary artifacts by replacing <code>TemporaryDirectory</code> with a test-owned directory. Add a fourth shard and confirm the orchestrator, not a worker, still owns the final answer.</p>
+<p><strong>4. Reproduce the cost match.</strong> The team spends 180 planning units, three times 220 worker units, and 300 merge units. Pass that measured total to <code>SingleAgent</code>. Change one budget and make the comparison report itself as unmatched rather than silently plotting it.</p>
+<p><strong>5. Break provenance.</strong> Set <code>poison_worker="worker-2"</code>. The finding remains textually correct, but the evidence tuple is empty. Follow the first decisive failure from report creation to gate rejection. Change the gate to accept it and observe how unsupported content becomes a final answer.</p>
+<p><strong>6. Change task shape.</strong> Replace the three shards with a dependent chain where each input requires the prior result. Model the team’s communication latency and repeated context. The single agent should now win or the splitter should veto the run.</p>
+<section id="acceptance-checks" class="level3" data-number="20.12.1">
+<h3 data-number="20.12.1" class="anchored" data-anchor-id="acceptance-checks"><span class="header-section-number">20.12.1</span> Acceptance checks</h3>
+<ul>
+<li>All three split conditions are necessary.</li>
+<li>Worker authority is narrower than parent authority.</li>
+<li>Reports are typed, immutable, scoped, and provenance-bearing.</li>
+<li>Exactly one component merges final state.</li>
+<li>Single and team runs use equal measured token units.</li>
+<li>Parallel latency uses the maximum worker path, not the sum.</li>
+<li>Missing provenance is contained and attributed; it is not called task success.</li>
+</ul>
+</section>
+<section id="honesty-note" class="level3" data-number="20.12.2">
+<h3 data-number="20.12.2" class="anchored" data-anchor-id="honesty-note"><span class="header-section-number">20.12.2</span> Honesty note</h3>
+<p>The workers are deterministic functions, token and latency units are modeled, and the fixture has perfectly independent shards. It isolates decomposition, accounting, handoff, and attribution properties; it does not estimate the quality of a particular model or hosted agent product. Re-run the same contract with a local model and repeated task suite before making a deployment decision.</p>
+</section>
+</section>
+<section id="sec-ch20-endures" class="level2" data-number="20.13">
+<h2 data-number="20.13" class="anchored" data-anchor-id="sec-ch20-endures"><span class="header-section-number">20.13</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Multiple agents are a decomposition choice, not a maturity level. A team needs parallelizable work, a useful boundary, and a measured failure of a simpler baseline. Context architecture determines whether information survives a handoff. Typed artifacts beat conversational summaries for bounded delegation. Parent-owned budgets, isolated authority, validation, and a single writer contain distributed failure. Evaluate under matched compute and report containment separately from task success. Attribute the first decisive error by agent and step.</p>
+<p><strong>What changes.</strong> Model coordination ability, long-context quality, SDK team features, learned topologies, co-trained policies, and benchmark results will move. Named agent roles will come and go. The stable questions are: why split, what travels, who may write, what is the total budget, where can an error propagate, how is success verified, and does the team beat one well-equipped agent?</p>
+</section>
+<section id="sec-ch20-exercises" class="level2" data-number="20.14">
+<h2 data-number="20.14" class="anchored" data-anchor-id="sec-ch20-exercises"><span class="header-section-number">20.14</span> Exercises</h2>
+<ol type="1">
+<li><strong>Compression trap.</strong> Take a real long trace containing five hard constraints and three rejected alternatives. Compare full trace, rolling summary, last-<span class="math inline">k</span>, and typed-artifact handoffs. Measure retained constraints and token units.</li>
+<li><strong>Tail latency.</strong> Give three workers different latency distributions and retry policies. Simulate the fan-out p50 and p95, then choose a deadline and partial-result policy.</li>
+<li><strong>Single writer.</strong> Convert two parallel code writers into parallel reviewers plus one writer. Add a stale-version conflict and compare regression rate.</li>
+<li><strong>MAST injection suite.</strong> Inject one failure from each MAST category. Attribute the earliest decisive agent and step, and measure the classifier against human labels.</li>
+<li><strong>Topology defense.</strong> Compare star, direct handoff, hierarchy, and blackboard for an incident-response task. State context, permission, termination, and write ownership for each; select one.</li>
+<li><strong>Cost curve.</strong> Repeat the build at three total budgets and two task shapes. Plot quality, latency, and cost; identify the range, if any, where a team has positive <span class="math inline">\Delta U</span>.</li>
+<li><strong>Design rejection.</strong> A product manager proposes five persona agents for a tightly coupled refactor. Write <code>MULTI_AGENT_DECISION.md</code> with the baseline, veto condition, evidence, and a simpler alternative.</li>
+</ol>
+</section>
+<section id="sec-ch20-sources" class="level2" data-number="20.15">
+<h2 data-number="20.15" class="anchored" data-anchor-id="sec-ch20-sources"><span class="header-section-number">20.15</span> Notes and sources</h2>
+<p>The decision and cost discipline builds on <a href="https://arxiv.org/abs/2407.01502">AI Agents That Matter</a>, the controlled experiments in <a href="https://arxiv.org/abs/2512.08296">Towards a Science of Scaling Agent Systems</a>, and the equal-budget analysis in <a href="https://arxiv.org/abs/2604.02460">Single-Agent LLMs Outperform Multi-Agent Systems on Multi-Hop Reasoning</a>. The production orchestrator–worker example and reported token magnitudes come from Anthropic’s dated engineering account, <a href="https://www.anthropic.com/engineering/multi-agent-research-system">How we built our multi-agent research system</a>.</p>
+<p>The failure vocabulary follows <a href="https://arxiv.org/abs/2503.13657">Why Do Multi-Agent LLM Systems Fail?</a>, with failure-attribution motivation from <a href="https://proceedings.mlr.press/v267/zhang25cq.html">Which Agent Causes Task Failures and When?</a>. Classical coordination predates LLM agents: Reid Smith’s Contract Net Protocol and the Hearsay-II blackboard architecture remain useful foundations. <a href="https://arxiv.org/abs/2305.14325">Multiagent Debate</a> motivates the debate discussion; Chapter 8 remains the canonical home for verifier-guided inference. Chapter 24 develops cross-agent injection and Chapter 23 develops agent-policy training.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/19-protocols-frameworks.html" class="pagination-link" aria-label="Protocols and Frameworks: MCP, A2A, and Agent↔UI [S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/21-agent-applications.html" class="pagination-link" aria-label="Agent Applications: Coding, Deep Research, and Computer Use [S]">
+        <span class="nav-page-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Connect language, perception, learned dynamics, simulation, and physical safety, then grade a closed-loop VLA episode by what happened in the environment.">
+
+<title>31&nbsp; World Models, VLA, and Embodied Agents [S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/32-capstone.html" rel="next">
+<link href="../chapters/30-multimodal-voice-video-media.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/29-multimodal-vlm-documents-gui.html">Part VIII — The Frontier and the Capstone</a></li><li class="breadcrumb-item"><a href="../chapters/31-world-models-vla-embodied.html"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch31-prerequisites" id="toc-sec-ch31-prerequisites" class="nav-link active" data-scroll-target="#sec-ch31-prerequisites"><span class="header-section-number">31.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch31-contents" id="toc-sec-ch31-contents" class="nav-link" data-scroll-target="#sec-ch31-contents"><span class="header-section-number">31.2</span> Contents</a></li>
+  <li><a href="#sec-ch31-loop" id="toc-sec-ch31-loop" class="nav-link" data-scroll-target="#sec-ch31-loop"><span class="header-section-number">31.3</span> Acting is different: the closed physical loop</a></li>
+  <li><a href="#sec-ch31-artifact" id="toc-sec-ch31-artifact" class="nav-link" data-scroll-target="#sec-ch31-artifact"><span class="header-section-number">31.4</span> What you will build</a></li>
+  <li><a href="#sec-ch31-spatial" id="toc-sec-ch31-spatial" class="nav-link" data-scroll-target="#sec-ch31-spatial"><span class="header-section-number">31.5</span> Spatial representations in brief: the demoted bridge</a></li>
+  <li><a href="#sec-ch31-vla-actions" id="toc-sec-ch31-vla-actions" class="nav-link" data-scroll-target="#sec-ch31-vla-actions"><span class="header-section-number">31.6</span> VLA I: actions as tokens</a></li>
+  <li><a href="#sec-ch31-vla-data" id="toc-sec-ch31-vla-data" class="nav-link" data-scroll-target="#sec-ch31-vla-data"><span class="header-section-number">31.7</span> VLA II: data engines and the 2026 frontier</a></li>
+  <li><a href="#sec-ch31-world-models" id="toc-sec-ch31-world-models" class="nav-link" data-scroll-target="#sec-ch31-world-models"><span class="header-section-number">31.8</span> World models and interactive generation</a></li>
+  <li><a href="#sec-ch31-decision-grade" id="toc-sec-ch31-decision-grade" class="nav-link" data-scroll-target="#sec-ch31-decision-grade"><span class="header-section-number">31.9</span> The decision-grade criterion</a></li>
+  <li><a href="#sec-ch31-simulators" id="toc-sec-ch31-simulators" class="nav-link" data-scroll-target="#sec-ch31-simulators"><span class="header-section-number">31.10</span> Simulators as infrastructure</a></li>
+  <li><a href="#sec-ch31-agents" id="toc-sec-ch31-agents" class="nav-link" data-scroll-target="#sec-ch31-agents"><span class="header-section-number">31.11</span> Embodied agents in simulation</a></li>
+  <li><a href="#sec-ch31-safety" id="toc-sec-ch31-safety" class="nav-link" data-scroll-target="#sec-ch31-safety"><span class="header-section-number">31.12</span> Embodied and physical-world safety</a></li>
+  <li><a href="#sec-ch31-open" id="toc-sec-ch31-open" class="nav-link" data-scroll-target="#sec-ch31-open"><span class="header-section-number">31.13</span> Open problems</a></li>
+  <li><a href="#sec-ch31-build" id="toc-sec-ch31-build" class="nav-link" data-scroll-target="#sec-ch31-build"><span class="header-section-number">31.14</span> Build</a></li>
+  <li><a href="#sec-ch31-endures" id="toc-sec-ch31-endures" class="nav-link" data-scroll-target="#sec-ch31-endures"><span class="header-section-number">31.15</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch31-exercises" id="toc-sec-ch31-exercises" class="nav-link" data-scroll-target="#sec-ch31-exercises"><span class="header-section-number">31.16</span> Exercises</a></li>
+  <li><a href="#sec-ch31-sources" id="toc-sec-ch31-sources" class="nav-link" data-scroll-target="#sec-ch31-sources"><span class="header-section-number">31.17</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/29-multimodal-vlm-documents-gui.html">Part VIII — The Frontier and the Capstone</a></li><li class="breadcrumb-item"><a href="../chapters/31-world-models-vla-embodied.html"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch31" class="quarto-section-identifier"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch31-prerequisites" class="level2" data-number="31.1">
+<h2 data-number="31.1" class="anchored" data-anchor-id="sec-ch31-prerequisites"><span class="header-section-number">31.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, probability, basic Python and NumPy, and production-backend concepts such as latency, tests, and typed interfaces.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/17-tool-harness-engineering.html#sec-ch17-approval">Chapter 17</a> owns approval mechanics; <a href="../chapters/22-evaluation.html#sec-ch22-graders">Chapter 22</a> owns statistical evaluation and graders; <a href="../chapters/23-training-agents-rl.html#sec-ch23">Chapter 23</a> owns reinforcement-learning machinery; <a href="../chapters/24-agent-security.html#sec-ch24-policy">Chapter 24</a> owns protocol-neutral action security; <a href="../chapters/29-multimodal-vlm-documents-gui.html#sec-ch29-grounding">Chapter 29</a> explains vision-language perception and pixel grounding. Appendix A supplies search and planning algorithms such as MCTS, MPC, PDDL, and behavior trees.</p>
+<p><strong>Not required:</strong> robotics coursework, camera calibration, control-theory derivations, a GPU, a robot, or experience with a robotics simulator. The default build is deterministic and CPU-only. The live adapter is optional and preserves the same policy and grader contracts.</p>
+</blockquote>
+</section>
+<section id="sec-ch31-contents" class="level2" data-number="31.2">
+<h2 data-number="31.2" class="anchored" data-anchor-id="sec-ch31-contents"><span class="header-section-number">31.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch31-loop">Acting is different: the closed physical loop</a></li>
+<li><a href="#sec-ch31-artifact">What you will build</a></li>
+<li><a href="#sec-ch31-spatial">Spatial representations in brief: the demoted bridge</a></li>
+<li><a href="#sec-ch31-vla-actions">VLA I: actions as tokens</a></li>
+<li><a href="#sec-ch31-vla-data">VLA II: data engines and the 2026 frontier</a></li>
+<li><a href="#sec-ch31-world-models">World models and interactive generation</a></li>
+<li><a href="#sec-ch31-decision-grade">The decision-grade criterion</a></li>
+<li><a href="#sec-ch31-simulators">Simulators as infrastructure</a></li>
+<li><a href="#sec-ch31-agents">Embodied agents in simulation</a></li>
+<li><a href="#sec-ch31-safety">Embodied and physical-world safety</a></li>
+<li><a href="#sec-ch31-open">Open problems</a></li>
+<li><a href="#sec-ch31-build">Build</a></li>
+<li><a href="#sec-ch31-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch31-exercises">Exercises</a></li>
+<li><a href="#sec-ch31-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch31-loop" class="level2" data-number="31.3">
+<h2 data-number="31.3" class="anchored" data-anchor-id="sec-ch31-loop"><span class="header-section-number">31.3</span> Acting is different: the closed physical loop</h2>
+<p>A warehouse agent sees a box near the edge of a table and receives “place the box on pallet three.” It predicts a grasp, the controller moves the arm, and the box shifts under first contact. The next camera frame is no longer an independent query: it is evidence about a world the agent just changed. If the gripper closes two centimeters early, every later observation begins from the wrong state. A fluent recovery message cannot put a crushed package back together.</p>
+<p>An <strong>embodied agent</strong> closes a computational policy around a physical or simulated environment. Its actions have geometry, timing, dynamics, and consequences. A GUI agent also observes after acting, but software state usually offers stronger schemas, transactional boundaries, and rollback. Physical state is only partially observed, contact can be discontinuous, sensor readings arrive late, and many effects are not reversible. Embodiment is therefore not “computer use with a robot tool.” It is agency inside a feedback system.</p>
+<p>Let <span class="math inline">x_t</span> be the unobserved physical state at time <span class="math inline">t</span>, <span class="math inline">o_t</span> the sensor observation, <span class="math inline">a_t</span> the commanded action, and <span class="math inline">w_t</span> process noise. A compact closed-loop model is</p>
+<p><span class="math display">
+x_{t+1}=f(x_t,a_t,w_t),
+\qquad
+o_t=h(x_t)+v_t,
+\qquad
+a_t=\pi(o_{\le t},g),
+</span></p>
+<p>where <span class="math inline">f</span> is the environment dynamics, <span class="math inline">h</span> is the observation process, <span class="math inline">v_t</span> is sensor noise, <span class="math inline">pi</span> is the policy, and <span class="math inline">g</span> is the goal expressed in language or a structured task. The policy sees observations, not <span class="math inline">x_t</span>. Its action changes the distribution of the next observation. That coupling is the central fact of the chapter.</p>
+<p>Control frequency turns model latency into part of behavior. If a controller must produce an action every <span class="math inline">T_c</span> seconds, then a useful latency budget is</p>
+<p><span class="math display">
+T_{\text{sense}}+T_{\text{policy}}+T_{\text{gate}}+T_{\text{transport}}
+\le T_c-T_{\text{control}},
+</span></p>
+<p>where the terms cover observation acquisition, policy inference, deterministic authorization, communication, and low-level control. A two-second forward pass cannot directly sustain a five-hertz loop, even when its predictions are accurate. Practical systems respond with action chunks, asynchronous inference, a fast local policy beneath a slow semantic planner, or a narrower model. Each choice changes how long the system runs without fresh semantic feedback.</p>
+<p><a href="#fig-ch31-loop" class="quarto-xref">Figure&nbsp;<span>31.1</span></a> separates probabilistic proposals from authority and actuation.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    GOAL["Language goal"] --&gt;|task| POLICY(["VLA / policy&lt;br/&gt;probabilistic proposal"])</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    SENSOR["Sensors&lt;br/&gt;image · depth · proprioception"] --&gt;|observation| POLICY</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    POLICY --&gt;|proposed action| GATE{"Deterministic&lt;br/&gt;safety governor"}</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    GATE --&gt;|authorized target| CTRL["Low-level controller&lt;br/&gt;limits · tracking · reflexes"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    GATE --&gt;|deny / request approval| STOP["Hold safe state"]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    CTRL --&gt;|torque / velocity / position| WORLD["Physical world&lt;br/&gt;irreversible effects"]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    WORLD --&gt;|changed state| SENSOR</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    WORLD -.-&gt;|state predicate| GRADE["Independent grader"]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch31-loop" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch31-loop-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch31-loop">flowchart LR
+    GOAL["Language goal"] --&gt;|task| POLICY(["VLA / policy&lt;br/&gt;probabilistic proposal"])
+    SENSOR["Sensors&lt;br/&gt;image · depth · proprioception"] --&gt;|observation| POLICY
+    POLICY --&gt;|proposed action| GATE{"Deterministic&lt;br/&gt;safety governor"}
+    GATE --&gt;|authorized target| CTRL["Low-level controller&lt;br/&gt;limits · tracking · reflexes"]
+    GATE --&gt;|deny / request approval| STOP["Hold safe state"]
+    CTRL --&gt;|torque / velocity / position| WORLD["Physical world&lt;br/&gt;irreversible effects"]
+    WORLD --&gt;|changed state| SENSOR
+    WORLD -.-&gt;|state predicate| GRADE["Independent grader"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch31-loop-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;31.1: What changes when an agent action moves mass? The policy proposes; deterministic software and the low-level controller retain authority across the actuation boundary.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The invariant is that model output never acquires actuator authority merely by being well formed. A typed proposal passes through limits, freshness checks, a safety governor, and a controller that can reject or override it. The grader observes the resulting state independently of the policy’s explanation.</p>
+<p>The new engineering burden is not only prediction quality. It includes reference frames, action normalization, stale observations, contact limits, watchdogs, control rate, and a safe state when any component disappears. A useful embodied architecture makes those boundaries explicit before choosing a larger model.</p>
+</section>
+<section id="sec-ch31-artifact" class="level2" data-number="31.4">
+<h2 data-number="31.4" class="anchored" data-anchor-id="sec-ch31-artifact"><span class="header-section-number">31.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>The chapter artifact
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will build <a href="../code/ch31/embodied_eval.py"><code>embodied_eval.py</code></a>, one progressive evaluation harness. It first quantizes a seven-dimensional robot action and verifies its round trip. It then injects a controlled dynamics error, compares an open-loop plan with observe-and-replan control, and generates the chapter’s quantitative figure. A reversibility gate intercepts large displacement or predicted-contact-force proposals. Finally, one runner drives ten language-conditioned episodes and trusts only the environment’s final-state predicate.</p>
+<p>The default <code>MiniTabletopEnv</code> and <code>ScriptedPolicy</code> are an offline <strong>harness test</strong>, not evidence about VLA capability. An optional <code>SimplerEnvAdapter</code> and OpenVLA-compatible policy exercise the same protocol with rendered observations and a real checkpoint. The separation lets CPU-only readers test grading, latency, termination, and gates without presenting a scripted solution as learned intelligence.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch31-spatial" class="level2" data-number="31.5">
+<h2 data-number="31.5" class="anchored" data-anchor-id="sec-ch31-spatial"><span class="header-section-number">31.5</span> Spatial representations in brief: the demoted bridge</h2>
+<p>An image supplies appearance from one viewpoint. Manipulation also needs spatial questions: where is the object relative to the gripper, which surfaces are free, what blocks a path, and what changed after contact? A <strong>spatial representation</strong> stores enough geometry or relational structure to answer some of those questions. No single representation is best for rendering, collision checking, semantics, editing, and learning at once.</p>
+<p>A <strong>point cloud</strong> is a set of sampled 3D positions, often carrying color or learned features. Depth cameras and lidar produce point-like measurements directly. A policy can query local neighborhoods, segment objects, estimate poses, and find candidate surfaces, but raw point sets do not define watertight surfaces or free space. Point-based encoders such as PointNet made unordered sets usable by neural networks; production stacks still have to manage frames, density, occlusion, and calibration.</p>
+<p>A <strong>mesh</strong> joins vertices with faces to approximate surfaces. Meshes support rendering, collision checking, signed-distance fields, and conventional motion-planning geometry. They are explicit and editable, but reconstructing clean topology from noisy observations can be expensive. A <strong>voxel grid</strong> discretizes space into cells and makes occupancy queries direct; its memory grows cubically with resolution unless sparse structures are used.</p>
+<p>A <strong>neural radiance field</strong> (NeRF) learns a continuous function that maps 3D position and viewing direction to density and color. It is optimized for novel-view synthesis, not for declaring collision-free space. <strong>3D Gaussian splatting</strong> represents a scene with anisotropic Gaussian primitives whose projected contributions render efficiently. Splats can preserve appearance and support fast view synthesis, but a visually convincing primitive cloud is not automatically a contact surface. “Renders well” and “safe to plan through” are different contracts.</p>
+<p>Learned <strong>spatial tokens</strong> compress image, depth, pose, or scene features into vectors that a transformer can attend to. A <strong>scene graph</strong> instead exposes entities and relations such as <code>mug ON table</code>, <code>drawer PART_OF cabinet</code>, or <code>gripper NEAR handle</code>. Tokens preserve flexible learned information; graphs provide queryable symbolic handles. Both depend on the evidence used to create them and can retain stale or incorrect relations after the world changes.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Representation</th>
+<th>Stores</th>
+<th>Natural query</th>
+<th>Strength for an agent</th>
+<th>Residual limitation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>point cloud</td>
+<td>sampled 3D positions and features</td>
+<td>neighbors, clusters, pose</td>
+<td>direct sensor geometry; flexible learned encoders</td>
+<td>incomplete surfaces, variable density, frame errors</td>
+</tr>
+<tr class="even">
+<td>mesh or signed-distance field</td>
+<td>explicit surface or distance-to-surface</td>
+<td>collision, clearance, contact</td>
+<td>geometric planning and physics interfaces</td>
+<td>reconstruction and topology maintenance</td>
+</tr>
+<tr class="odd">
+<td>sparse voxels</td>
+<td>occupancy or features in cells</td>
+<td>occupied/free region</td>
+<td>simple spatial lookup and fusion</td>
+<td>resolution–memory tradeoff</td>
+</tr>
+<tr class="even">
+<td>NeRF / radiance field</td>
+<td>view-conditioned density and color</td>
+<td>render a novel camera view</td>
+<td>view synthesis and appearance completion</td>
+<td>geometry is indirect; dynamics absent</td>
+</tr>
+<tr class="odd">
+<td>3D Gaussian splats</td>
+<td>position, covariance, opacity, appearance</td>
+<td>fast differentiable rendering</td>
+<td>rapid scene reconstruction and view synthesis</td>
+<td>no inherent collision or rigid-body semantics</td>
+</tr>
+<tr class="even">
+<td>spatial tokens</td>
+<td>learned compressed scene features</td>
+<td>attention or similarity</td>
+<td>end-to-end policy input</td>
+<td>hard to audit; metric geometry may be implicit</td>
+</tr>
+<tr class="odd">
+<td>scene graph</td>
+<td>entities, attributes, relations</td>
+<td>symbolic relation and task query</td>
+<td>planning handles and persistent identity</td>
+<td>depends on perception updates; weak for contact geometry</td>
+</tr>
+</tbody>
+</table>
+<p>Multi-view geometry triangulates structure from camera motion or multiple calibrated cameras. Depth estimation predicts distance from one or more images. Both are observation mechanisms, not guarantees of object permanence or dynamics. A robot usually combines visual features with proprioception—its own joint positions and velocities—and may add force, tactile, audio, or language signals.</p>
+<p>This bridge is intentionally short. Building NeRFs, deriving camera models, and optimizing meshes are separate subjects. The decision needed here is narrower: identify what a representation makes queryable, what transformations bind it to the action frame, and which safety-critical facts remain outside it. Splats do not replace meshes any more than a photograph replaces a collision model.</p>
+</section>
+<section id="sec-ch31-vla-actions" class="level2" data-number="31.6">
+<h2 data-number="31.6" class="anchored" data-anchor-id="sec-ch31-vla-actions"><span class="header-section-number">31.6</span> VLA I: actions as tokens</h2>
+<p>A <strong>vision-language-action model</strong> (VLA) maps visual observations and a language instruction to robot actions. The simplest transformer-compatible interface converts each action dimension into discrete symbols. Instead of ending its sequence with words, the model emits values that a caller decodes into translation, rotation, and gripper commands.</p>
+<p>Suppose action coordinate <span class="math inline">a_j</span> is normalized to <span class="math inline">[-1,1]</span> and divided into <span class="math inline">K</span> bins. One tokenizer is</p>
+<p><span class="math display">
+q_j=\operatorname{round}\!\left(\frac{a_j+1}{2}(K-1)\right),
+\qquad
+\hat a_j=2\frac{q_j}{K-1}-1.
+</span></p>
+<p>Here <span class="math inline">q_j\in\{0,\ldots,K-1\}</span> is the token and <span class="math inline">\hat a_j</span> is its decoded value. Rounding gives a worst-case scalar error of at most <span class="math inline">(K-1)^{-1}</span>, provided the input was normalized correctly. With 256 bins, that bound is about 0.00392. It is only a codec bound. A mismatched action convention—meters versus normalized deltas, quaternion versus Euler rotation, open-positive versus close-positive gripper—can be orders of magnitude worse while still producing valid tokens.</p>
+<p>The artifact starts with the codec:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># artifact: embodied_eval.py — §31.3 adds: seven-dimensional action codec</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>ACTION_DIM <span class="op">=</span> <span class="dv">7</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tokenize_action(action: np.ndarray, bins: <span class="bu">int</span> <span class="op">=</span> <span class="dv">256</span>) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    action <span class="op">=</span> np.asarray(action, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> action.shape <span class="op">!=</span> (ACTION_DIM,) <span class="kw">or</span> bins <span class="op">&lt;</span> <span class="dv">2</span> <span class="kw">or</span> np.<span class="bu">any</span>(np.<span class="bu">abs</span>(action) <span class="op">&gt;</span> <span class="dv">1</span>):</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"expected seven values in [-1, 1] and at least two bins"</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.rint((action <span class="op">+</span> <span class="fl">1.0</span>) <span class="op">*</span> (bins <span class="op">-</span> <span class="dv">1</span>) <span class="op">/</span> <span class="fl">2.0</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> detokenize_action(tokens: np.ndarray, bins: <span class="bu">int</span> <span class="op">=</span> <span class="dv">256</span>) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    tokens <span class="op">=</span> np.asarray(tokens, dtype<span class="op">=</span><span class="bu">int</span>)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> tokens.shape <span class="op">!=</span> (ACTION_DIM,) <span class="kw">or</span> bins <span class="op">&lt;</span> <span class="dv">2</span> <span class="kw">or</span> np.<span class="bu">any</span>(</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        (tokens <span class="op">&lt;</span> <span class="dv">0</span>) <span class="op">|</span> (tokens <span class="op">&gt;=</span> bins)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    ):</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"tokens must be seven integers inside the vocabulary"</span>)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="fl">2.0</span> <span class="op">*</span> tokens <span class="op">/</span> (bins <span class="op">-</span> <span class="dv">1</span>) <span class="op">-</span> <span class="fl">1.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Run the supplied tests and the sample vector <code>[-0.9, ..., 0.9]</code> produces tokens <code>[13, 51, 89, 127, 166, 204, 242]</code> with maximum round-trip error <code>0.0039215686</code>. That assertion detects a broken codec. It does not test whether a learned policy selected the right action.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>embodied_eval.py</code> after the action codec</td>
+<td style="text-align: right;">22 lines</td>
+<td>seven normalized coordinates round-trip within half a bin</td>
+</tr>
+</tbody>
+</table>
+<p>Action representations create a systems tradeoff. Per-dimension discrete tokens reuse language-model machinery and yield an ordinary next-token loss. They also lengthen the output and can impose sequential decoding latency. An <strong>action chunk</strong> predicts several future control targets at once, amortizing the slow model call, but runs longer without observation feedback. A continuous action expert can generate a whole chunk jointly. Frequency-domain tokenization compresses smooth trajectories by transforming a chunk, retaining important coefficients, and tokenizing those coefficients rather than every raw timestep.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Action interface</th>
+<th>Model output</th>
+<th>Main benefit</th>
+<th>Main engineering risk</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>per-dimension discrete tokens</td>
+<td>one token per coordinate or timestep</td>
+<td>simple shared vocabulary and likelihood training</td>
+<td>quantization and autoregressive latency</td>
+</tr>
+<tr class="even">
+<td>chunked action tokens</td>
+<td>several future actions</td>
+<td>amortized inference</td>
+<td>stale open-loop execution inside the chunk</td>
+</tr>
+<tr class="odd">
+<td>continuous action head or expert</td>
+<td>joint real-valued trajectory</td>
+<td>smooth high-rate chunks</td>
+<td>separate objective, sampler, and normalization contract</td>
+</tr>
+<tr class="even">
+<td>hierarchical skills</td>
+<td>named skill plus parameters</td>
+<td>long-horizon abstraction and inspectability</td>
+<td>skill coverage and handoff failures</td>
+</tr>
+</tbody>
+</table>
+<p>RT-1 demonstrated tokenized robot actions at scale, and RT-2 placed action symbols in a vision-language model’s output vocabulary so web-scale semantic learning could transfer into control. FAST later showed why tokenizing raw high-frequency trajectories is inefficient and compressed action sequences in a frequency basis. These papers establish interface families, not a universal choice. A mobile base, a dexterous hand, and a bimanual arm have different bandwidth and error tolerance.</p>
+<p>The durable rule is to version the action contract with the checkpoint. Log coordinate order, frame, units, bounds, normalization statistics, chunk length, execution rate, and gripper convention. A VLA whose model card is detached from its action normalizer is not deployable, even if its weights load.</p>
+</section>
+<section id="sec-ch31-vla-data" class="level2" data-number="31.7">
+<h2 data-number="31.7" class="anchored" data-anchor-id="sec-ch31-vla-data"><span class="header-section-number">31.7</span> VLA II: data engines and the 2026 frontier</h2>
+<p>Robot data is expensive because a useful example couples perception, instruction, embodiment state, action, and outcome over time. A web image can be copied; a manipulation trajectory requires hardware or simulation, calibration, an operator or policy, and recovery after failure. The central scaling problem is therefore a <strong>data engine</strong>: a repeatable process for collecting, filtering, labeling, replaying, and improving trajectories.</p>
+<p>Teleoperation records human actions through joysticks, motion capture, bilateral devices, or other interfaces. It supplies competent behavior but imports operator delay, embodiment-specific conventions, and coverage bias. Autonomous collection can target uncertainty or failures, yet unsafe exploration is unacceptable on real hardware. Simulation supplies parallelism and exact state but introduces a reality gap. Production programs mix demonstrations, scripted or planned data, simulation, autonomous rollouts, intervention corrections, and post-deployment hard cases.</p>
+<p>Cross-embodiment data attempts to learn shared structure from robots with different cameras, arms, action spaces, and datasets. Open X-Embodiment assembled many such datasets and paired them with a transformer model to study transfer. The hard part is not concatenation. Each record needs a common semantic layer while preserving embodiment-specific action adapters and calibration. Language can name the task; it does not automatically align coordinate frames or gripper dynamics.</p>
+<p>Let dataset <span class="math inline">D_e</span> come from embodiment <span class="math inline">e</span> with native action <span class="math inline">u_t^{(e)}</span>. A shared policy can emit a latent or canonical action <span class="math inline">z_t</span>, then use adapter <span class="math inline">A_e</span>:</p>
+<p><span class="math display">
+z_t\sim\pi_\theta(o_{\le t},g,e),
+\qquad
+u_t^{(e)}=A_e(z_t;\phi_e).
+</span></p>
+<p>The parameters <span class="math inline">\phi_e</span> encode embodiment calibration or learned translation. Transfer succeeds only if <span class="math inline">z_t</span> preserves task-relevant behavior and <span class="math inline">A_e</span> is valid on the new platform. Dataset scale does not erase this interface.</p>
+<p>OpenVLA provided an open-weight reference that couples a visual encoder, language backbone, and tokenized action output. Its value to an engineering curriculum is inspectability: processor, prompt, action prediction call, and normalization key are visible. The chapter’s optional adapter uses that shape. It does not promise that the default checkpoint matches every simulator task; checkpoint, task, camera transform, and action statistics must be compatible.</p>
+<p>Large programs increasingly separate a slow semantic model from a fast action expert. The slower path interprets language and scene context; the faster path emits a temporally dense control chunk. This resembles a hierarchical controller, with learned components at both levels. It reduces the rate demanded of the largest model but creates a handoff contract: the fast path must know when its condition is stale, and the slow path must not assume a chunk completed as imagined.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 (dated)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Verify live: 2026-07-19. Appendix C owns the version roster and deployment profiles.</strong> The current Physical Intelligence research index lists <strong>π0.7</strong>, announced 2026-04-16, superseding earlier roster entries; its <a href="https://www.pi.website/">official research site</a> is the source to recheck. NVIDIA’s official <a href="https://developer.nvidia.com/isaac/gr00t">GR00T page</a> currently describes GR00T N1.7 as early access. DeepMind’s current robotics line includes <a href="https://deepmind.google/blog/gemini-robotics-15-brings-ai-agents-into-the-physical-world/">Gemini Robotics 1.5</a>, while Figure describes <a href="https://www.figure.ai/news/helix">Helix</a> as a vision-language-action system.</p>
+<p>The world-model roster is moving just as quickly. Official or primary pages describe <a href="https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/">Genie 3</a>, <a href="https://arxiv.org/abs/2509.24527">Dreamer 4</a>, <a href="https://ai.meta.com/research/publications/v-jepa-2-self-supervised-video-models-enable-understanding-prediction-and-planning/">V-JEPA 2</a>, and NVIDIA’s <a href="https://developer.nvidia.com/blog/?p=94577">Cosmos world foundation models</a>. These names do not define the mechanism and may age out.</p>
+<p>A <a href="https://arxiv.org/abs/2606.04233">2026 audit of robot-policy benchmarks</a> reports that fixed scores can fail diagnostics for shortcuts, statistical significance, overfitting, and dependence on the chosen dataset. Treat that as a current warning, not a timeless ranking: recheck the paper and active benchmark repositories before making a deployment claim. Videos, benchmark leaders, checkpoint availability, licenses, action rates, and hardware requirements are volatile.</p>
+</div>
+</div>
+<p>The stable lesson survives deletion of that box. A VLA program needs a data flywheel tied to failures, a versioned observation/action contract, cross-embodiment adapters, and evaluation outside the collection distribution. A frontier name is not a substitute for any of them.</p>
+</section>
+<section id="sec-ch31-world-models" class="level2" data-number="31.8">
+<h2 data-number="31.8" class="anchored" data-anchor-id="sec-ch31-world-models"><span class="header-section-number">31.8</span> World models and interactive generation</h2>
+<p>A VLA can map observation directly to action. A <strong>world model</strong> instead learns how the environment changes, optionally including how actions influence that change. The distinction matters because prediction and control impose different tests. A model may generate plausible futures without preserving the small state differences that reverse the best action.</p>
+<p>A useful learned model has at least a state representation, transition, and observation relation. With encoder <span class="math inline">E</span>, latent state <span class="math inline">z_t=E(o_{\le t})</span>, learned transition <span class="math inline">p_\theta</span>, and decoder or predictor <span class="math inline">p_\theta(o_{t+1}\mid z_{t+1})</span>,</p>
+<p><span class="math display">
+z_{t+1}\sim p_\theta(z_{t+1}\mid z_t,a_t),
+\qquad
+\hat o_{t+1}\sim p_\theta(o_{t+1}\mid z_{t+1}).
+</span></p>
+<p>For control, the first relation is load-bearing: it must be action-conditioned. A video predictor trained only to extrapolate likely footage can learn that a hand usually moves toward a cup, yet fail to answer what happens if the gripper approaches from an unusual direction. A world model used for planning needs counterfactual action coverage, not merely temporal continuity.</p>
+<p>Predicting pixels forces the model to spend capacity on texture, lighting, and camera details. Predicting in a learned representation can ignore nuisance variation and preserve objects, motion, and task state. That is the motivation behind joint-embedding predictive approaches. The tradeoff is observability: a photorealistic error is visible to a human, while a latent error requires probes tied to decisions. Latent prediction is not automatically more causal because its images are absent.</p>
+<p>World models serve several roles:</p>
+<ul>
+<li><strong>representation learning:</strong> predicting future structure can train features useful to a policy;</li>
+<li><strong>imagination:</strong> a policy or planner can evaluate candidate action sequences without executing each one in the real environment;</li>
+<li><strong>data generation:</strong> interactive generation can create trajectories, initial states, and rare variations for training or testing;</li>
+<li><strong>state estimation:</strong> temporal prediction can combine incomplete observations into a belief about hidden state;</li>
+<li><strong>failure rehearsal:</strong> a simulator or learned model can expose a controller to unsafe or expensive scenarios before hardware trials.</li>
+</ul>
+<p>The Dreamer line learns a compact dynamics model and improves a policy using imagined latent trajectories. Genie-class work treats videos as data for action-controllable interactive environments. Physics-oriented foundation-model programs train large generative models on videos and simulations. These lines can converge technically, but their evidence should stay separate: an environment that is fun to interact with, a latent model that improves a policy, and a dynamics model suitable for safety decisions are three claims.</p>
+<p>Long futures are not single answers. If a block can slide left or right after contact, averaging the alternatives can predict a physically impossible blur. A probabilistic model should represent several plausible outcomes and expose uncertainty. Planning then needs a risk rule: expected reward, worst credible outcome, a chance constraint, or escalation. Sampling many sharp videos does not help when their probabilities are uncalibrated or when every sample misses the real failure mode.</p>
+<p>A learned world model also differs from a conventional simulator. A simulator encodes explicit integration, collision, material, and sensor assumptions; a learned model estimates regularities from data. Both are models and both can be wrong. The simulator often offers exact hidden state and deterministic replay, while the learned model may cover messy appearance more easily. Hybrid systems can render learned variations around explicit physics, fit residual dynamics, or learn observation models while keeping contact and limits deterministic.</p>
+<p>Photorealism is therefore a weak proxy. Ask which state variables survive, which interventions were present in training, how uncertainty changes off distribution, and whether plans selected through the model succeed in an independent environment. Those questions lead to the chapter’s main criterion.</p>
+</section>
+<section id="sec-ch31-decision-grade" class="level2" data-number="31.9">
+<h2 data-number="31.9" class="anchored" data-anchor-id="sec-ch31-decision-grade"><span class="header-section-number">31.9</span> The decision-grade criterion</h2>
+<p>A learned model is <strong>decision-grade for a task distribution</strong> when using it to choose actions produces acceptably reliable decisions under the deployment horizon, feedback rate, cost asymmetry, and shift—not when its predictions look convincing. Decision-grade is a property of model, planner, task, operating envelope, and fallback together. It is never a permanent badge on a checkpoint.</p>
+<p>One-step accuracy can compound. Suppose the true deterministic transition is <span class="math inline">x_{t+1}=f(x_t,a_t)</span> and the learned transition is <span class="math inline">\hat x_{t+1}=\hat f(\hat x_t,a_t)</span>. Assume the model’s one-step error is bounded by <span class="math inline">\epsilon</span> on relevant state-action pairs,</p>
+<p><span class="math display">
+\|f(x,a)-\hat f(x,a)\|\le\epsilon,
+</span></p>
+<p>and <span class="math inline">f</span> is <span class="math inline">L</span>-Lipschitz in state, meaning changing the state by <span class="math inline">e</span> changes the next state by at most <span class="math inline">Le</span>. For the same open-loop action sequence, the state error satisfies</p>
+<p><span class="math display">
+e_{t+1}\le Le_t+\epsilon.
+</span></p>
+<p>Starting at <span class="math inline">e_0=0</span>, the horizon-<span class="math inline">H</span> bound is</p>
+<p><span class="math display">
+e_H\le\epsilon\sum_{i=0}^{H-1}L^i
+=
+\begin{cases}
+H\epsilon, &amp; L=1,\\
+\epsilon\dfrac{L^H-1}{L-1}, &amp; L\ne1.
+\end{cases}
+</span></p>
+<p>When <span class="math inline">L&gt;1</span>, small errors can grow geometrically. Contact transitions can be even less forgiving because a millimeter changes whether contact occurred at all. The bound is conservative, but it explains why a low average next-frame error says little about a long open-loop plan.</p>
+<p>The decision itself supplies a sharper test. Let a planner compare candidate actions with true returns <span class="math inline">Q(a)</span> and model-estimated returns <span class="math inline">\hat Q(a)</span>. Let <span class="math inline">a^*</span> be the best true action and <span class="math inline">a^{(2)}</span> the runner-up, with decision margin</p>
+<p><span class="math display">
+m=Q(a^*)-Q(a^{(2)}).
+</span></p>
+<p>If <span class="math inline">|\hat Q(a)-Q(a)|&lt;m/2</span> for every candidate, the model preserves the winner. If the margin is tiny, a visually minor error can flip the action. If the margin is large, a rough model may be sufficient. Evaluation should therefore include action-ranking regret and downstream success, not only reconstruction loss.</p>
+<p><strong>Receding-horizon control</strong> limits how long prediction error runs unchecked. At each observation, optimize a length-<span class="math inline">H</span> action sequence under the model, execute only the first action or short prefix, observe again, and repeat. In model-predictive-control notation,</p>
+<p><span class="math display">
+a_{t:t+H-1}^{*}
+=\arg\max_{a_{t:t+H-1}}
+\mathbb{E}_{\hat f}\!\left[
+\sum_{k=0}^{H-1}\gamma^k r(\hat x_{t+k},a_{t+k})
++\gamma^H V(\hat x_{t+H})
+\right],
+</span></p>
+<p>where <span class="math inline">r</span> is reward, <span class="math inline">V</span> is a terminal value estimate, and <span class="math inline">\gamma</span> discounts distant outcomes. Appendix A owns MPC and search algorithms; this chapter uses only the feedback principle. Replanning replaces accumulated prediction with a real observation, but it cannot fix an observation that hides the relevant state, a model wrong on every local transition, or latency longer than the correction window.</p>
+<p>The artifact deliberately breaks an open-loop controller with an episode-constant dynamics bias. Its smallest experiment is:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># artifact: embodied_eval.py — §31.6 adds: biased-dynamics horizon experiment</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> endpoint_success(horizon: <span class="bu">int</span>, model_error: <span class="bu">float</span>, replan: <span class="bu">bool</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                     <span class="op">*</span>, trials: <span class="bu">int</span> <span class="op">=</span> <span class="dv">512</span>, tolerance: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.10</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                     seed: <span class="bu">int</span> <span class="op">=</span> <span class="dv">7</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    biases <span class="op">=</span> np.random.default_rng(seed).normal(</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        <span class="fl">0.0</span>, model_error, size<span class="op">=</span>(trials, <span class="dv">2</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    goal <span class="op">=</span> np.array([<span class="fl">1.0</span>, <span class="fl">0.5</span>])</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    successes <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> bias <span class="kw">in</span> biases:</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        state <span class="op">=</span> np.zeros(<span class="dv">2</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        fixed_action <span class="op">=</span> goal <span class="op">/</span> horizon</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> step <span class="kw">in</span> <span class="bu">range</span>(horizon):</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>            remaining <span class="op">=</span> horizon <span class="op">-</span> step</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>            action <span class="op">=</span> ((goal <span class="op">-</span> state) <span class="op">/</span> remaining</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>                      <span class="cf">if</span> replan <span class="cf">else</span> fixed_action)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>            state <span class="op">=</span> state <span class="op">+</span> action <span class="op">+</span> bias</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        successes <span class="op">+=</span> np.linalg.norm(state <span class="op">-</span> goal) <span class="op">&lt;=</span> tolerance</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">round</span>(successes <span class="op">/</span> trials, <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Each of 512 trials samples a two-dimensional bias with standard deviation <code>0.012</code>; success means ending within <code>0.10</code> of the goal. The open-loop policy divides the planned displacement evenly, so the same unmodeled bias accumulates at every step. The replanning policy observes state and recomputes the remaining displacement. The plotted values are generated by the same file used in the tests.</p>
+<div id="fig-ch31-horizon" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-cap="What does fresh feedback buy against a small repeated model error? Synthetic 2D dynamics, 512 seeded trials per point, error standard deviation 0.012 and goal tolerance 0.10.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch31-horizon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../assets/figures/ch31-horizon.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;31.2: Open-loop final-state success falls from 100 percent at two steps to 9 percent at twenty-four steps, while observe-and-replan remains at 100 percent for this small constant-bias experiment."><img src="../assets/figures/ch31-horizon.svg" class="img-fluid figure-img" data-fig-cap="What does fresh feedback buy against a small repeated model error? Synthetic 2D dynamics, 512 seeded trials per point, error standard deviation 0.012 and goal tolerance 0.10."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch31-horizon-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;31.2: Open-loop final-state success falls from 100 percent at two steps to 9 percent at twenty-four steps, while observe-and-replan remains at 100 percent for this small constant-bias experiment.
+</figcaption>
+</figure>
+</div>
+<p>At 24 steps the trace is concrete: plan-once success is <code>0.0898</code>; observe-and-replan success is <code>1.0000</code>. The deliberate negative test raises model error to <code>0.20</code>; even replanning then succeeds in fewer than 20 percent of trials. Replanning removed accumulation in this constructed error model. It did not make an inadequate local model adequate.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>embodied_eval.py</code> after dynamics experiment</td>
+<td style="text-align: right;">38 lines</td>
+<td>the plotted horizon curve is seeded, final-state graded, and reproducible</td>
+</tr>
+</tbody>
+</table>
+<p>The toy has no inertia, obstacles, partial observation, action delay, or contact. Its purpose is to isolate horizon. In production, construct tests across policy-induced state distributions and measure calibration of rollout uncertainty, action-ranking regret, constraint violation, and task success. Hold out object layouts, visual textures, dynamics parameters, camera poses, instructions, and perturbations rather than splitting nearby frames from the same trajectory.</p>
+<p>Two failures deserve names. <strong>Causal confusion</strong> occurs when a policy or predictor relies on a correlated cue rather than the cause needed under intervention—for example, braking because brake lights appear in demonstrations instead of because the obstacle demands it. <strong>Sim-to-real shift</strong> occurs when observations or dynamics differ between simulation and hardware. Domain randomization varies textures, lighting, masses, friction, delays, and other parameters during training, forcing robustness across a broader distribution. It is a blunt instrument: randomizing the wrong factors can waste capacity, while omitting one consequential factor leaves a brittle policy.</p>
+<p>A decision-grade review asks five questions:</p>
+<ol type="1">
+<li>What action decision and operating envelope does the model support?</li>
+<li>Over what open-loop horizon and control latency is its error acceptable?</li>
+<li>Does uncertainty rise on held-out interventions and shifted scenes?</li>
+<li>Does an independent environment confirm action ranking, constraints, and final-state success?</li>
+<li>What deterministic limit or safe fallback catches states outside the evidence?</li>
+</ol>
+<p>“Beautiful rollouts” answers none of them. The criterion is earned by intervention and downstream decision evidence.</p>
+</section>
+<section id="sec-ch31-simulators" class="level2" data-number="31.10">
+<h2 data-number="31.10" class="anchored" data-anchor-id="sec-ch31-simulators"><span class="header-section-number">31.10</span> Simulators as infrastructure</h2>
+<p>A robotics simulator is not merely a visualization. It is a controlled environment with reset, step, observation, action, and state-query interfaces. Used well, it is simultaneously a data generator, an evaluation instrument, and a rare-event factory. Those jobs demand different configuration and governance.</p>
+<p>For training, simulation offers parallel trajectories, procedural layouts, privileged labels, and failures without hardware damage. For evaluation, deterministic seeds and resettable initial states make policy comparisons repeatable. For rare events, an experiment can deliberately over-sample slippery surfaces, occlusions, dropped frames, collisions, or near-limit states. The resulting training distribution need not match production prevalence; the evaluator must restore deployment weights when reporting an expected product metric.</p>
+<p><a href="#fig-ch31-simulator" class="quarto-xref">Figure&nbsp;<span>31.3</span></a> shows where truth and policy beliefs diverge.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>flowchart TB</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    SPEC["Versioned task spec&lt;br/&gt;goal · initial-state distribution"] --&gt;|configure| SIM[("Simulator state&lt;br/&gt;physics · objects · contacts")]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    RARE["Rare-event sampler&lt;br/&gt;shift parameters"] --&gt;|scenario seed| SIM</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    SIM --&gt;|rendered observation only| POLICY(["Policy under test"])</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    POLICY --&gt;|normalized action| ADAPTER["Action adapter&lt;br/&gt;frame · units · limits"]</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    ADAPTER --&gt;|simulator command| SIM</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    SIM --&gt;|privileged trajectory| DATA["Training data generator"]</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    SIM --&gt;|final state| GRADER["Deterministic task predicate"]</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    GRADER --&gt;|success · violations| REPORT[("Evaluation report&lt;br/&gt;versions · seeds · latency")]</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    RARE --&gt;|scenario identity| REPORT</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch31-simulator" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch31-simulator-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch31-simulator">flowchart TB
+    SPEC["Versioned task spec&lt;br/&gt;goal · initial-state distribution"] --&gt;|configure| SIM[("Simulator state&lt;br/&gt;physics · objects · contacts")]
+    RARE["Rare-event sampler&lt;br/&gt;shift parameters"] --&gt;|scenario seed| SIM
+    SIM --&gt;|rendered observation only| POLICY(["Policy under test"])
+    POLICY --&gt;|normalized action| ADAPTER["Action adapter&lt;br/&gt;frame · units · limits"]
+    ADAPTER --&gt;|simulator command| SIM
+    SIM --&gt;|privileged trajectory| DATA["Training data generator"]
+    SIM --&gt;|final state| GRADER["Deterministic task predicate"]
+    GRADER --&gt;|success · violations| REPORT[("Evaluation report&lt;br/&gt;versions · seeds · latency")]
+    RARE --&gt;|scenario identity| REPORT
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch31-simulator-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;31.3: Where does ground truth live in a simulator-backed data and evaluation system? The policy sees observations; generators and graders read privileged state through separate interfaces.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The grader, not the policy, owns success. A policy can say “done,” emit a plausible explanation, or receive a shaped reward while the object remains outside the target. Simulator state can test the actual predicate. For task <span class="math inline">i</span> with terminal state <span class="math inline">s_T</span>, a simple suite score is</p>
+<p><span class="math display">
+\widehat S=\frac{1}{N}\sum_{i=1}^{N}\mathbf{1}[G_i(s_T)=\text{true}],
+</span></p>
+<p>where <span class="math inline">G_i</span> is a versioned final-state predicate and <span class="math inline">N</span> is the number of episodes. A robust report also records timeouts, safety violations, steps, latency, and scenario slices. Chapter 22 owns confidence intervals, sample sizing, judge calibration, and trajectory-aware grading; this chapter owns the environment seam.</p>
+<p>Final-state grading is often stronger than watching a video. It can measure containment, pose tolerance, drawer state, spill amount, contacts, and forbidden-region entry exactly. It can also be gamed: a policy may knock an object into a tray and satisfy the terminal predicate while violating the intended method. Add trajectory constraints only when they express a real requirement, and report them separately from task completion.</p>
+<p>Fidelity is a budget, not a monotonic virtue. High-resolution rendering helps visual transfer but reduces throughput. Detailed contact can matter for insertion while adding little to room navigation. A digital twin may mirror a particular facility but drift as equipment, camera calibration, or material changes. For every simulator feature, connect cost to a failure it is intended to predict.</p>
+<p>A useful environment contract includes observation schema and transforms, action schema and control rate, reset semantics, termination versus truncation, success predicate, privileged-state boundary, deterministic seed behavior, scenario/version identifiers, and resource cleanup. Tests should reset twice with the same seed, replay a known action sequence, perturb one named parameter, and confirm that policy outputs cannot mutate grader state except through <code>step</code>.</p>
+<p>Simulation does not certify hardware behavior. Before transfer, replay recorded sensor streams, use shadow mode where proposals are logged but not executed, validate low-level limits, stage speed and workspace, and compare simulator residuals with hardware telemetry. The simulator earns trust by predicting specific failures within an envelope, not by looking like the lab.</p>
+</section>
+<section id="sec-ch31-agents" class="level2" data-number="31.11">
+<h2 data-number="31.11" class="anchored" data-anchor-id="sec-ch31-agents"><span class="header-section-number">31.11</span> Embodied agents in simulation</h2>
+<p>An embodied agent rarely asks one monolithic policy to solve an hour-long task. It composes semantic planning with grounded skills. A <strong>skill</strong> is a closed-loop behavior such as navigate, grasp, open, or place, with typed preconditions and outcomes. The language model can propose a sequence; an affordance or value model estimates whether each skill is feasible in the observed state.</p>
+<p>SayCan made this split explicit. In a simplified form, choose skill <span class="math inline">k</span> by combining a language relevance score with a grounded success score:</p>
+<p><span class="math display">
+k^*=\arg\max_k
+p_{\text{language}}(k\mid g,h_t)
+\;p_{\text{affordance}}(\text{success}\mid o_t,k),
+</span></p>
+<p>where <span class="math inline">g</span> is the instruction and <span class="math inline">h_t</span> is execution history. The first factor asks whether a skill advances the request; the second asks whether the robot can perform it now. The affordance model is trained grounding, not decorative prompting. After execution, the system observes again and updates the available skills.</p>
+<p>Code as Policies exposed robot capabilities as a programming interface and asked a language model to compose policy code. This can express geometry, loops, and reusable subroutines more compactly than selecting one tool call at a time. It also crosses a code-execution boundary: generated code needs an allowlisted API, resource limits, static checks, sandboxing, and the same effect policy as any other agent-written program. Chapter 17 owns that execution and approval machinery.</p>
+<p>Habitat-class simulators emphasize embodied navigation and rearrangement. Manipulation suites emphasize tabletop objects, contact, and continual-learning task families. Their task vocabularies differ, but the agent loop should not: obtain the language instruction and typed observation, propose through a policy interface, apply a deterministic gate, step the environment, and grade state independently.</p>
+<p>Multiple embodied agents add assignment, communication, collision avoidance, and shared-world consistency. Chapter 20’s coordination economics still apply. A second robot is useful only if parallel progress exceeds communication and interference costs; “multi-agent” is not a remedy for one policy that cannot ground a grasp.</p>
+<p>The production implication is to keep semantic planning, skill feasibility, action generation, and low-level control separately observable. A successful episode should reveal which layer selected each action and which layer stopped it. Without that trace, an aggregate score cannot distinguish perception failure from an infeasible plan or a controller limit.</p>
+</section>
+<section id="sec-ch31-safety" class="level2" data-number="31.12">
+<h2 data-number="31.12" class="anchored" data-anchor-id="sec-ch31-safety"><span class="header-section-number">31.12</span> Embodied and physical-world safety</h2>
+<p>Physical safety starts below the model. Certified controllers, workspace limits, collision monitors, speed and force limits, watchdogs, and emergency stops must continue to function when inference stalls or emits nonsense. The model supplies intent or targets inside that envelope. It does not replace the envelope.</p>
+<p>The chapter artifact adds one narrow <strong>reversibility gate</strong>. It computes proposed Cartesian displacement and a synthetic predicted contact force. If either exceeds its configured envelope, execution requires a callback. With no callback or a denial, the episode stops before calling <code>env.step</code>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># artifact: embodied_eval.py — §31.9 adds: reversible-action authorization seam</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ReversibilityGate:</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, max_displacement: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.18</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                 max_force_n: <span class="bu">float</span> <span class="op">=</span> <span class="fl">8.0</span>):</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.max_displacement <span class="op">=</span> max_displacement</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.max_force_n <span class="op">=</span> max_force_n</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.hits <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> authorize(<span class="va">self</span>, action, approve<span class="op">=</span><span class="va">None</span>) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        displacement <span class="op">=</span> <span class="bu">float</span>(np.linalg.norm(action[:<span class="dv">3</span>]))</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        predicted_force <span class="op">=</span> <span class="bu">float</span>(<span class="bu">max</span>(<span class="fl">0.0</span>, <span class="op">-</span>action[<span class="dv">6</span>]) <span class="op">*</span> <span class="fl">12.0</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        reasons <span class="op">=</span> <span class="bu">tuple</span>(name <span class="cf">for</span> name, failed <span class="kw">in</span> (</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"displacement"</span>, displacement <span class="op">&gt;</span> <span class="va">self</span>.max_displacement),</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"predicted contact force"</span>, predicted_force <span class="op">&gt;</span> <span class="va">self</span>.max_force_n),</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        ) <span class="cf">if</span> failed)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> reasons:</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">True</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.hits <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        proposal <span class="op">=</span> {<span class="st">"action"</span>: <span class="bu">tuple</span>(<span class="bu">map</span>(<span class="bu">float</span>, action)),</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"displacement"</span>: displacement,</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"predicted_force_n"</span>: predicted_force,</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"reasons"</span>: reasons}</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">bool</span>(approve <span class="kw">and</span> approve(proposal))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>embodied_eval.py</code> after the reversibility gate</td>
+<td style="text-align: right;">25 lines</td>
+<td>a gated action cannot reach the environment without an explicit approval result</td>
+</tr>
+</tbody>
+</table>
+<p>The state machine matters more than the threshold values.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>stateDiagram-v2</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    [*] --&gt; Observed</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    Observed --&gt; Proposed: policy output + observation ID</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    Proposed --&gt; Executing: fresh and inside envelope</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    Proposed --&gt; AwaitingApproval: gated action class</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    Proposed --&gt; SafeHold: stale / invalid / watchdog</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    AwaitingApproval --&gt; Executing: approval binds exact proposal</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    AwaitingApproval --&gt; SafeHold: deny / timeout / changed state</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    Executing --&gt; Observed: new sensor frame</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    Executing --&gt; SafeHold: controller fault / e-stop</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    SafeHold --&gt; Observed: authorized reset</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch31-safety" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch31-safety-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch31-safety">stateDiagram-v2
+    [*] --&gt; Observed
+    Observed --&gt; Proposed: policy output + observation ID
+    Proposed --&gt; Executing: fresh and inside envelope
+    Proposed --&gt; AwaitingApproval: gated action class
+    Proposed --&gt; SafeHold: stale / invalid / watchdog
+    AwaitingApproval --&gt; Executing: approval binds exact proposal
+    AwaitingApproval --&gt; SafeHold: deny / timeout / changed state
+    Executing --&gt; Observed: new sensor frame
+    Executing --&gt; SafeHold: controller fault / e-stop
+    SafeHold --&gt; Observed: authorized reset
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch31-safety-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;31.4: Which transitions may give a model proposal physical authority? Only fresh, in-envelope actions execute directly; gated actions require approval, and any denial, timeout, stale observation, or watchdog event leads to a safe hold.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Approval binds the exact action, observation identity, and expiry. A fresh camera frame invalidates an old approval because the world may have changed between review and execution; Chapter 17 owns this time-of-check/time-of-use mechanic. Chapter 24 owns hostile perception and policy enforcement. Textures, signs, projected patterns, or compromised sensors can influence a vision policy, so the gate must consume independently checked state where possible. Chapter 27 owns alerts, incident response, and human queues; a physical emergency stop is the last local interruption path, not an observability feature.</p>
+<p>The gate in this artifact is not a certified force predictor. Its gripper-coordinate heuristic demonstrates placement of the seam and produces a deliberate negative test. Real limits come from robot-specific dynamics, tool geometry, payload, safety-rated sensing, and validated controllers. Human approval also does not make an unsafe trajectory safe: reviewers may lack depth, timing, or contact information. Approval is one control for consequential intent, nested inside hard physical constraints.</p>
+</section>
+<section id="sec-ch31-open" class="level2" data-number="31.13">
+<h2 data-number="31.13" class="anchored" data-anchor-id="sec-ch31-open"><span class="header-section-number">31.13</span> Open problems</h2>
+<p>Embodied learning remains constrained by data diversity, hardware time, and expensive failure recovery. Cross-embodiment datasets help, but action semantics and camera geometry still differ. Dexterous and contact-rich tasks amplify small state errors. Tactile sensing, deformable objects, liquids, tool use, and long-horizon recovery expose variables poorly represented in image-heavy datasets.</p>
+<p>Evaluation has no single universal task set. Fixed suites invite overfitting, and a final-state average can hide catastrophic slices. Better evaluation needs procedural tasks, held-out interventions, hardware correlation, trajectory constraints, uncertainty checks, and versioned distributions. The statistical tools belong to Chapter 22; the frontier problem is obtaining environments whose grades predict deployment.</p>
+<p>World models and direct VLA policies may converge: a policy can contain implicit predictive state, while a world model can share its representation and action expert with a policy. The architectural label matters less than the evidence. Does the system represent counterfactual consequences, detect when it is outside its envelope, correct with feedback, and reduce real decision regret?</p>
+</section>
+<section id="sec-ch31-build" class="level2" data-number="31.14">
+<h2 data-number="31.14" class="anchored" data-anchor-id="sec-ch31-build"><span class="header-section-number">31.14</span> Build</h2>
+<p>The integrated build drives a language-conditioned tabletop task, records every policy call, and grades the terminal environment state. Start with the deterministic lane from the <code>newbook</code> directory:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch31/embodied_eval.py <span class="at">--episodes</span> 10 <span class="at">--gate</span> <span class="at">--approve-gated</span> <span class="dt">\</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--plot</span> assets/figures/ch31-horizon.svg</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> unittest discover code/ch31/tests <span class="at">-v</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The episode core stays below forty lines and is shared by both backends:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># artifact: embodied_eval.py — build adds: closed-loop episode and state grader</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_episode(env, policy, seed, <span class="op">*</span>, gate<span class="op">=</span><span class="va">None</span>, approve<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                max_steps<span class="op">=</span><span class="dv">50</span>):</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    obs <span class="op">=</span> env.reset(seed)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    latencies, success, termination <span class="op">=</span> [], <span class="va">False</span>, <span class="st">"step_limit"</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> step <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, max_steps <span class="op">+</span> <span class="dv">1</span>):</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        started <span class="op">=</span> time.perf_counter()</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>        action <span class="op">=</span> np.asarray(policy.act(obs, env.instruction), dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>        latencies.append(time.perf_counter() <span class="op">-</span> started)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> gate <span class="kw">and</span> <span class="kw">not</span> gate.authorize(action, approve):</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>            termination <span class="op">=</span> <span class="st">"gate_denied"</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>        obs, done, success <span class="op">=</span> env.step(action)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> done:</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>            termination <span class="op">=</span> (<span class="st">"environment_success"</span> <span class="cf">if</span> success</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>                           <span class="cf">else</span> <span class="st">"environment_terminal"</span>)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"success"</span>: success, <span class="st">"steps"</span>: step, <span class="st">"termination"</span>: termination,</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>            <span class="st">"action_latency_ms"</span>: [<span class="bu">round</span>(x <span class="op">*</span> <span class="dv">1000</span>, <span class="dv">4</span>) <span class="cf">for</span> x <span class="kw">in</span> latencies]}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>On the shipped seeded harness, the ten scripted episodes all satisfy the environment predicate in a mean 11.4 steps. The contact gate is hit ten times and approved ten times. The codec error is <code>0.0039215686</code>; at horizon 24 the synthetic open-loop and replanned rates are <code>0.0898</code> and <code>1.0</code>. These results verify plumbing and deliberate failure behavior. They are not a learned-policy baseline.</p>
+<p>For the live lane, pin a compatible simulator checkout, policy checkpoint, processor, and action-normalization key, then provide them explicitly:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch31/embodied_eval.py <span class="at">--backend</span> simpler <span class="at">--episodes</span> 10 <span class="dt">\</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--task</span> <span class="st">"</span><span class="va">$TASK</span><span class="st">"</span> <span class="at">--checkpoint</span> <span class="st">"</span><span class="va">$CHECKPOINT</span><span class="st">"</span> <span class="at">--unnorm-key</span> <span class="st">"</span><span class="va">$UNNORM_KEY</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gate</span> <span class="at">--approve-gated</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The adapter obtains the environment’s language instruction and rendered agent-view image, sends them through an OpenVLA-compatible <code>predict_action</code> call, and passes the decoded seven-dimensional action to the same runner. Before interpreting results, inspect image orientation, camera selection, coordinate frame, action scale, gripper convention, and reset seed. A model can fail every episode because one adapter convention is wrong.</p>
+<p>Report all ten episode rows, aggregate success, mean steps, p50 and p95 policy latency, termination reasons, and gate hits. Compare with the scripted harness only to diagnose environment and grader wiring; do not present it as a fair capability competitor. Preserve simulator, task, checkpoint, processor, dependency, and hardware versions with the run. If the live checkpoint fails or is too slow for the desired control rate, that result is evidence about the complete deployment configuration.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>complete <code>embodied_eval.py</code></td>
+<td style="text-align: right;">214 nonblank lines</td>
+<td>toy and live adapters share policy, gate, latency, termination, and final-state grading contracts</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="sec-ch31-endures" class="level2" data-number="31.15">
+<h2 data-number="31.15" class="anchored" data-anchor-id="sec-ch31-endures"><span class="header-section-number">31.15</span> What endures, what changes</h2>
+<p>The enduring ideas are the closed physical loop, versioned observation/action contracts, independent environment grading, horizon-dependent model error, receding feedback, decision margins, deterministic safety envelopes, and explicit safe states. A learned model is decision-grade only for a stated task distribution and control configuration.</p>
+<p>Model rosters, checkpoint formats, benchmark leaders, simulator APIs, licenses, claimed action rates, and accelerator requirements will change. Those details belong in the dated Landscape box and Appendix C. Replacing every named model should not alter the chapter’s interfaces or tests.</p>
+</section>
+<section id="sec-ch31-exercises" class="level2" data-number="31.16">
+<h2 data-number="31.16" class="anchored" data-anchor-id="sec-ch31-exercises"><span class="header-section-number">31.16</span> Exercises</h2>
+<ol type="1">
+<li><p>Sweep model error <span class="math inline">\epsilon</span> in the horizon experiment. Find where receding-horizon success drops below 80 percent, then explain why fresh state cannot compensate for the final local error.</p></li>
+<li><p>Extend the action tokenizer to variable bin counts. Plot maximum and mean quantization error against bins, then relate the sequence-length and smooth-trajectory limits to frequency-domain action tokenization.</p></li>
+<li><p>Swap the scripted policy for an OpenVLA-compatible checkpoint on three simulator tasks. Report final-state success, termination reasons, gate hits, and per-action latency with every adapter convention pinned.</p></li>
+<li><p>Construct a policy that passes final-state grading by accident, such as knocking the object into the target. Add one trajectory-aware predicate, measure its cost, and state which product requirement justifies it.</p></li>
+<li><p>Perturb the object-pose distribution in the runner and measure the success cliff. Write a Chapter 22-style evaluation note that distinguishes the sampling distribution from expected deployment prevalence.</p></li>
+<li><p>Apply a controlled texture patch to rendered observations, measure policy degradation, and map each proposed defense to the perception, policy, or controller boundary owned by Chapter 24.</p></li>
+<li><p>In a design review, argue for or against using a video-generation world model to plan warehouse picking. Apply the decision-grade criterion and name the intervention, uncertainty, hardware-correlation, and failure-slice evidence you would require.</p></li>
+</ol>
+</section>
+<section id="sec-ch31-sources" class="level2" data-number="31.17">
+<h2 data-number="31.17" class="anchored" data-anchor-id="sec-ch31-sources"><span class="header-section-number">31.17</span> Notes and sources</h2>
+<p>Actions-as-tokens and cross-domain transfer follow <a href="https://arxiv.org/abs/2212.06817">RT-1</a> and <a href="https://arxiv.org/abs/2307.15818">RT-2</a>. Cross-embodiment data follows <a href="https://robotics-transformer-x.github.io/">Open X-Embodiment</a>; the open adapter shape follows the <a href="https://openvla.github.io/">OpenVLA project</a> and <a href="https://github.com/openvla/openvla">repository</a>. Frequency-domain action tokenization follows <a href="https://arxiv.org/abs/2501.09747">FAST</a>.</p>
+<p>The spatial bridge points to <a href="https://arxiv.org/abs/1612.00593">PointNet</a>, <a href="https://arxiv.org/abs/2003.08934">NeRF</a>, <a href="https://arxiv.org/abs/2308.04079">3D Gaussian Splatting</a>, and <a href="https://arxiv.org/abs/1910.02527">3D scene graphs</a>. Simulator and embodied-agent sources include <a href="https://arxiv.org/abs/2306.03310">LIBERO</a>, <a href="https://github.com/simpler-env/SimplerEnv">SimplerEnv</a>, <a href="https://arxiv.org/abs/2106.14405">Habitat 2.0</a>, <a href="https://say-can.github.io/">SayCan</a>, and <a href="https://arxiv.org/abs/2209.07753">Code as Policies</a>. Sim-to-real vocabulary follows <a href="https://arxiv.org/abs/1703.06907">domain randomization</a> and <a href="https://arxiv.org/abs/1905.11979">Causal Confusion in Imitation Learning</a>. Current frontier links remain confined to the dated Landscape box.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/30-multimodal-voice-video-media.html" class="pagination-link" aria-label="Multimodal Agents II: Voice, Video, and Generative Media [S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/32-capstone.html" class="pagination-link" aria-label="Capstone: From One Model Call to a Defended Deployment [F]">
+        <span class="nav-page-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

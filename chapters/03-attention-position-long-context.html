@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Compute the price of long context, derive the mechanisms that reduce it, and measure whether a model can use the context it accepts.">
+
+<title>3&nbsp; Attention, Position, and Long Context [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/04-moe-efficient-architectures.html" rel="next">
+<link href="../chapters/02-transformer-first-principles.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-operational-on-ramp.html">Part I — The On-Ramp and Model Foundations</a></li><li class="breadcrumb-item"><a href="../chapters/03-attention-position-long-context.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch03-prerequisites" id="toc-sec-ch03-prerequisites" class="nav-link active" data-scroll-target="#sec-ch03-prerequisites"><span class="header-section-number">3.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch03-contents" id="toc-sec-ch03-contents" class="nav-link" data-scroll-target="#sec-ch03-contents"><span class="header-section-number">3.2</span> Contents</a></li>
+  <li><a href="#sec-ch03-bill" id="toc-sec-ch03-bill" class="nav-link" data-scroll-target="#sec-ch03-bill"><span class="header-section-number">3.3</span> The Bill Arrives Before the Answer</a></li>
+  <li><a href="#sec-ch03-will-build" id="toc-sec-ch03-will-build" class="nav-link" data-scroll-target="#sec-ch03-will-build"><span class="header-section-number">3.4</span> What you will build</a></li>
+  <li><a href="#sec-ch03-kv-equation" id="toc-sec-ch03-kv-equation" class="nav-link" data-scroll-target="#sec-ch03-kv-equation"><span class="header-section-number">3.5</span> The Canonical KV-Cache Equation</a></li>
+  <li><a href="#sec-ch03-gqa" id="toc-sec-ch03-gqa" class="nav-link" data-scroll-target="#sec-ch03-gqa"><span class="header-section-number">3.6</span> Share Keys and Values: MQA and GQA</a></li>
+  <li><a href="#sec-ch03-mla" id="toc-sec-ch03-mla" class="nav-link" data-scroll-target="#sec-ch03-mla"><span class="header-section-number">3.7</span> Compress the Cache: MLA</a></li>
+  <li><a href="#sec-ch03-patterns" id="toc-sec-ch03-patterns" class="nav-link" data-scroll-target="#sec-ch03-patterns"><span class="header-section-number">3.8</span> Restrict Visibility: Windows, Interleaving, and Sinks</a></li>
+  <li><a href="#sec-ch03-rope" id="toc-sec-ch03-rope" class="nav-link" data-scroll-target="#sec-ch03-rope"><span class="header-section-number">3.9</span> RoPE Encodes Relative Position by Rotation</a></li>
+  <li><a href="#sec-ch03-scaling" id="toc-sec-ch03-scaling" class="nav-link" data-scroll-target="#sec-ch03-scaling"><span class="header-section-number">3.10</span> Stretching RoPE Changes the Coordinate System</a></li>
+  <li><a href="#sec-ch03-alternatives" id="toc-sec-ch03-alternatives" class="nav-link" data-scroll-target="#sec-ch03-alternatives"><span class="header-section-number">3.11</span> No Position, Dropped Position, and Distributed Context</a></li>
+  <li><a href="#sec-ch03-effective" id="toc-sec-ch03-effective" class="nav-link" data-scroll-target="#sec-ch03-effective"><span class="header-section-number">3.12</span> Advertised Context Is Not Effective Context</a></li>
+  <li><a href="#sec-ch03-benchmarks" id="toc-sec-ch03-benchmarks" class="nav-link" data-scroll-target="#sec-ch03-benchmarks"><span class="header-section-number">3.13</span> Benchmark the Failure You Actually Care About</a></li>
+  <li><a href="#sec-ch03-build" id="toc-sec-ch03-build" class="nav-link" data-scroll-target="#sec-ch03-build"><span class="header-section-number">3.14</span> Build</a></li>
+  <li><a href="#sec-ch03-endures" id="toc-sec-ch03-endures" class="nav-link" data-scroll-target="#sec-ch03-endures"><span class="header-section-number">3.15</span> What Endures, What Changes</a></li>
+  <li><a href="#sec-ch03-exercises" id="toc-sec-ch03-exercises" class="nav-link" data-scroll-target="#sec-ch03-exercises"><span class="header-section-number">3.16</span> Exercises</a></li>
+  <li><a href="#sec-ch03-notes" id="toc-sec-ch03-notes" class="nav-link" data-scroll-target="#sec-ch03-notes"><span class="header-section-number">3.17</span> Notes and Sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-operational-on-ramp.html">Part I — The On-Ramp and Model Foundations</a></li><li class="breadcrumb-item"><a href="../chapters/03-attention-position-long-context.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch03" class="quarto-section-identifier"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch03-prerequisites" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="sec-ch03-prerequisites"><span class="header-section-number">3.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, matrix multiplication, basic Python, and beginner PyTorch.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/02-transformer-first-principles.html#sec-ch02-kv-cache">Chapter 2, Cache Past Keys and Values Exactly</a> — cached decoding reuses projected keys and values without changing the next-token function; <a href="../chapters/02-transformer-first-principles.html#sec-ch02-multihead">Chapter 2, Multi-Head Attention and the Causal Mask</a> — each query head performs a causal weighted lookup.</p>
+<p><strong>Not required:</strong> distributed training, GPU-kernel programming, serving schedulers, or prior knowledge of rotary position embeddings.</p>
+</blockquote>
+</section>
+<section id="sec-ch03-contents" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="sec-ch03-contents"><span class="header-section-number">3.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch03-bill">The bill arrives before the answer</a></li>
+<li><a href="#sec-ch03-will-build">What you will build</a></li>
+<li><a href="#sec-ch03-kv-equation">The canonical KV-cache equation</a></li>
+<li><a href="#sec-ch03-gqa">Share keys and values: MQA and GQA</a></li>
+<li><a href="#sec-ch03-mla">Compress the cache: MLA</a></li>
+<li><a href="#sec-ch03-patterns">Restrict visibility: windows, interleaving, and sinks</a></li>
+<li><a href="#sec-ch03-rope">RoPE encodes relative position by rotation</a></li>
+<li><a href="#sec-ch03-scaling">Stretching RoPE changes the coordinate system</a></li>
+<li><a href="#sec-ch03-alternatives">No position, dropped position, and distributed context</a></li>
+<li><a href="#sec-ch03-effective">Advertised context is not effective context</a></li>
+<li><a href="#sec-ch03-benchmarks">Benchmark the failure you actually care about</a></li>
+<li><a href="#sec-ch03-build">Build</a></li>
+<li><a href="#sec-ch03-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch03-exercises">Exercises</a></li>
+<li><a href="#sec-ch03-notes">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch03-bill" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="sec-ch03-bill"><span class="header-section-number">3.3</span> The Bill Arrives Before the Answer</h2>
+<p>An agent has spent an hour reading a repository, opening issue threads, running tests, and refining a patch. Its transcript has reached 128K tokens. The next request adds only a few words: “now fix the race.” The serving system must preserve enough state for every attention layer to make that small continuation depend on the entire retained history.</p>
+<p>For a conventional 32-layer, 32-head attention model with 128-dimensional heads and two-byte cached scalars, that one conversation’s keys and values occupy 64 GiB at 128K tokens. This is payload alone: no model weights, activations, allocator metadata, temporary attention workspace, or safety margin. At 4K tokens the same state occupies 2 GiB. Context length changed by a factor of 32; persistent attention state changed by the same factor.</p>
+<p>That is the long-context economic story. Token limits are product-interface facts, but cache bytes determine how many live sessions fit in memory. Attention work determines how long the next token takes. Retrieval quality determines whether preserving all that state bought anything useful. A senior engineer has to keep the three ledgers separate:</p>
+<ol type="1">
+<li><strong>Capacity:</strong> how many bytes remain live for the request?</li>
+<li><strong>Computation:</strong> how much work does prefill or the next decode step perform?</li>
+<li><strong>Capability:</strong> does the model use the relevant evidence at this length and position?</li>
+</ol>
+<p>A KV cache removes repeated projection of old tokens. It does not make dense decoding constant-time. At decode step <span class="math inline">T</span>, the new query still scores the retained keys and mixes their values, so attention work for that step remains linear in <span class="math inline">T</span>. Dense prefill still contains a quadratic attention term. And a large accepted window does not establish accurate retrieval, synthesis, or reasoning throughout that window.</p>
+<p>The mechanisms in this chapter bend one of those curves. Multi-query and grouped-query attention share cached heads. Multi-head latent attention stores a compressed representation. Sliding windows stop most tokens from remaining visible to most queries. RoPE supplies a relative positional coordinate system, while extension methods alter its frequencies. Long-context benchmarks test whether the model’s useful window grew with its declared one. None is a free “long context” switch.</p>
+</section>
+<section id="sec-ch03-will-build" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="sec-ch03-will-build"><span class="header-section-number">3.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>The chapter artifact.</strong> <a href="../code/ch03/kv_math.py"><code>kv_math.py</code></a> contains the book’s single canonical KV-byte function, one grouped-query layer whose KV-head dial spans MHA, GQA, and MQA, and an inspectable MLA-style layer. <a href="../code/ch03/rope.py"><code>rope.py</code></a> implements RoPE, NTK-aware base scaling, and YaRN’s frequency-by-parts and magnitude scaling. <a href="../code/ch03/run_build.py"><code>run_build.py</code></a> loads three dated configuration excerpts, writes exact footprint tables, exercises both attention layers, and runs a seeded synthetic needle probe over 21 positions. The default is offline and deterministic. Success means the analytic bytes match known cases, cached chunks preserve grouped-attention outputs, RoPE preserves its relative-offset invariant, and every plotted point comes from a saved CSV.</p>
+</div>
+</div>
+<p>This is one progressive artifact, not a serving runtime. It owns architecture arithmetic and a mechanism probe. Chapter 9 will use the equation when analyzing inference behavior; Chapter 10 will use it for capacity planning and add paging, allocation, eviction, cache precision, and kernels. Those later chapters should cite this declaration rather than creating a competing formula.</p>
+</section>
+<section id="sec-ch03-kv-equation" class="level2" data-number="3.5">
+<h2 data-number="3.5" class="anchored" data-anchor-id="sec-ch03-kv-equation"><span class="header-section-number">3.5</span> The Canonical KV-Cache Equation</h2>
+<p>Start from one layer. For every retained token and request in a batch, standard attention caches one key and one value for each KV head. Define:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Symbol</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">B</span></td>
+<td>sequences represented in the cache</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">T</span></td>
+<td>retained tokens per sequence</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">L</span></td>
+<td>attention layers</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">H_{kv}</span></td>
+<td>key-value heads per layer</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">d_h</span></td>
+<td>scalar dimensions in each cached head</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">s</span></td>
+<td>bytes per cached scalar</td>
+</tr>
+</tbody>
+</table>
+<p>The payload is</p>
+<p><span class="math display">
+\operatorname{KVBytes}=B\,T\,L\,(2H_{kv}d_h)\,s.
+</span></p>
+<p>The factor of two is not an informal safety factor: it is one tensor for keys and one for values. <span class="math inline">H_{kv}d_h</span> is the width of each tensor’s per-token slice. Multiplying by layers, tokens, batch, and scalar width accounts for every stored element. This equation assumes a uniform architecture, equal key and value widths, and an append-only unquantized cache. Hybrid layers require summing layer-specific terms. Padding, sharding, alignment, replication, and runtime metadata belong in a deployment capacity model, not silently inside this payload equation.</p>
+<p>The opening example follows directly:</p>
+<p><span class="math display">
+2\cdot32\cdot32\cdot128\cdot2
+=524{,}288\text{ bytes/token}=512\text{ KiB/token}.
+</span></p>
+<p>Multiplying by 4,096 tokens gives exactly 2 GiB. Multiplying by 131,072 gives exactly 64 GiB. Both use binary units: one KiB is <span class="math inline">{2^{10}}</span> bytes and one GiB is <span class="math inline">{2^{30}}</span> bytes. Decimal “K tokens” is often used loosely in model interfaces, so a capacity review must record the exact token count.</p>
+<p>The implementation declares the equation once:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> kv_bytes(config: KVConfig, tokens: <span class="bu">int</span>, batch: <span class="bu">int</span> <span class="op">=</span> <span class="dv">1</span>) <span class="op">-&gt;</span> <span class="bu">int</span>:</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>        batch</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">*</span> tokens</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">*</span> config.layers</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">*</span> config.cached_scalars_per_layer_token()</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">*</span> config.bytes_per_scalar</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>cached_scalars_per_layer_token()</code> returns <span class="math inline">{2H_{kv}d_h}</span> for standard attention. The separate method lets an MLA-style configuration state its different stored width without declaring a second byte formula.</p>
+<p>The equation also prevents a common complexity error. Caching avoids recomputing old <span class="math inline">K</span> and <span class="math inline">V</span> projections. It does not eliminate reading those tensors or computing the new query’s scores against them. Memory is <span class="math inline">O(T)</span> for fixed architecture and batch. Dense attention work for a single new token is <span class="math inline">O(T)</span>; producing a length-<span class="math inline">T</span> continuation from a growing cache sums those steps. Prefill’s dense attention score work is <span class="math inline">O(T^2)</span>. “The KV cache makes generation <span class="math inline">O(1)</span>” confuses avoided projection work with total decode work.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — Configuration-derived footprints
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The local fixtures record only fields needed for cache accounting, with provenance beside each excerpt. At batch one and two bytes per cached scalar, the generated payloads are:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 22%">
+<col style="width: 22%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Published configuration</th>
+<th>Cache design</th>
+<th style="text-align: right;">4,096 tokens</th>
+<th style="text-align: right;">32,768 tokens</th>
+<th style="text-align: right;">131,072 tokens</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Llama 2 7B</td>
+<td>32-head MHA</td>
+<td style="text-align: right;">2.00 GiB</td>
+<td style="text-align: right;">16.00 GiB</td>
+<td style="text-align: right;">64.00 GiB</td>
+</tr>
+<tr class="even">
+<td>Llama 3.1 8B</td>
+<td>8 KV-head GQA</td>
+<td style="text-align: right;">0.50 GiB</td>
+<td style="text-align: right;">4.00 GiB</td>
+<td style="text-align: right;">16.00 GiB</td>
+</tr>
+<tr class="odd">
+<td>DeepSeek-V2-Lite</td>
+<td>512-wide latent plus 64-wide rotary key</td>
+<td style="text-align: right;">0.119 GiB</td>
+<td style="text-align: right;">0.949 GiB</td>
+<td style="text-align: right;">3.797 GiB</td>
+</tr>
+</tbody>
+</table>
+<div id="fig-ch03-kv-footprints" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Directly labeled line plot of KV-cache GiB versus context length for an MHA, GQA, and MLA-style published configuration. Square-dashed MHA has the steepest line, triangle-dotted GQA is four times smaller, and circle-solid MLA-style is smaller again.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch03-kv-footprints-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch03/generated/kv-footprints.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;3.1: KV payload grows linearly with represented context, while the architectural cache width changes the slope. Values are computed locally from dated public configuration excerpts."><img src="../code/ch03/generated/kv-footprints.svg" class="img-fluid figure-img" alt="Directly labeled line plot of KV-cache GiB versus context length for an MHA, GQA, and MLA-style published configuration. Square-dashed MHA has the steepest line, triangle-dotted GQA is four times smaller, and circle-solid MLA-style is smaller again."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch03-kv-footprints-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3.1: KV payload grows linearly with represented context, while the architectural cache width changes the slope. Values are computed locally from dated public configuration excerpts.
+</figcaption>
+</figure>
+</div>
+<p>These are architecture comparisons, not model rankings. Layer counts and widths differ, and the MLA row uses the compressed state described by its implementation. Real allocated memory can be higher or differently sharded.</p>
+<p><strong>Verify live:</strong> re-download the official model configuration or report recorded in the <a href="../code/ch03/fixtures/llama2-7b/config.json">Llama 2</a>, <a href="../code/ch03/fixtures/llama31-8b/config.json">Llama 3.1</a>, and <a href="../code/ch03/fixtures/deepseek-v2-lite/config.json">DeepSeek-V2-Lite</a> excerpts, compare the relevant fields, and regenerate the CSV and figure before using these rows in a capacity decision. <strong>Verified:</strong> 2026-07-19.</p>
+</div>
+</div>
+<p><a href="#fig-ch03-kv-footprints" class="quarto-xref">Figure&nbsp;<span>3.1</span></a> answers one narrow question: how does architecture change the bytes-per-token slope? It does not answer which model is more capable, which kernel is faster, or how many requests a server admits. A useful admission estimate subtracts weights, workspaces, and reserve from available device memory, then divides the remainder by per-request KV payload. Chapter 10 makes that estimate operational.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>kv_math.py</code>: configuration plus <code>kv_bytes()</code></td>
+<td style="text-align: right;">45 lines</td>
+<td>The 32-layer MHA example is 512 KiB per token and exactly 2 GiB at 4,096 tokens.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch03-gqa" class="level2" data-number="3.6">
+<h2 data-number="3.6" class="anchored" data-anchor-id="sec-ch03-gqa"><span class="header-section-number">3.6</span> Share Keys and Values: MQA and GQA</h2>
+<p>Multi-head attention ordinarily gives every query head its own key head and value head. If <span class="math inline">H_q=H_{kv}</span>, it is <strong>multi-head attention</strong> (MHA). Query projections are transient during autoregressive decoding; the historical keys and values persist. Reducing <span class="math inline">H_{kv}</span> therefore removes a factor from the state that grows with both users and context.</p>
+<p><strong>Multi-query attention</strong> (MQA) takes the reduction to its endpoint: all <span class="math inline">H_q</span> query heads share one key head and one value head, so <span class="math inline">H_{kv}=1</span>. <strong>Grouped-query attention</strong> (GQA) uses an intermediate number. If <span class="math inline">H_q=32</span> and <span class="math inline">H_{kv}=8</span>, each KV head serves four query heads. Query heads retain separate query projections and can ask different questions; heads in a group compare against the same keys and receive the same value representation before the output projection mixes results.</p>
+<p>For fixed <span class="math inline">B,T,L,d_h,</span> and <span class="math inline">s</span>, the cache ratio against MHA is simply</p>
+<p><span class="math display">
+\frac{\operatorname{KVBytes}_{\mathrm{grouped}}}
+{\operatorname{KVBytes}_{\mathrm{MHA}}}
+=\frac{H_{kv}}{H_q}.
+</span></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 26%">
+<col style="width: 26%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Mode with 32 query heads</th>
+<th style="text-align: right;">KV heads</th>
+<th style="text-align: right;">Query heads per KV head</th>
+<th style="text-align: right;">Cache ratio versus MHA</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>MHA</td>
+<td style="text-align: right;">32</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;"><span class="math inline">{1}</span></td>
+</tr>
+<tr class="even">
+<td>GQA-8</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;"><span class="math inline">{1/4}</span></td>
+</tr>
+<tr class="odd">
+<td>GQA-4</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;"><span class="math inline">{1/8}</span></td>
+</tr>
+<tr class="even">
+<td>MQA</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">32</td>
+<td style="text-align: right;"><span class="math inline">{1/32}</span></td>
+</tr>
+</tbody>
+</table>
+<p>The ratio does not say that quality falls in the same proportion. It counts stored elements, not representational value. The GQA work showed that an MHA checkpoint can be converted by grouping KV heads and then uptrained on a fraction of the original pretraining compute, recovering much of the quality while approaching MQA speed. The right head count is empirical and workload-dependent.</p>
+<p>The reference layer projects compact keys and values, caches them in shape <span class="math inline">[B,H_{kv},T,d_h]</span>, and only then repeats groups for the teaching implementation’s attention computation:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>present <span class="op">=</span> (k, v)                 <span class="co"># compact state owns H_kv heads</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>repeats <span class="op">=</span> query_heads <span class="op">//</span> kv_heads</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>k_compute <span class="op">=</span> k.repeat_interleave(repeats, dim<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>v_compute <span class="op">=</span> v.repeat_interleave(repeats, dim<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> q <span class="op">@</span> k_compute.transpose(<span class="op">-</span><span class="dv">2</span>, <span class="op">-</span><span class="dv">1</span>) <span class="op">/</span> head_dim<span class="op">**</span><span class="fl">0.5</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This logical expansion explains the semantics, but a production kernel should avoid physically materializing repeated tensors. That requirement matters: an architectural byte reduction that falls onto an unsupported or inefficient kernel can lose its latency advantage. Kernel and hardware support gate adoption even when the algebra is favorable; Chapter 10 owns the kernel-level comparison.</p>
+<p>The dial also makes three tests possible without three implementations. Output shape stays <span class="math inline">[B,T,d]</span>. Stored tensor shape follows <span class="math inline">H_{kv}</span>, not <span class="math inline">H_q</span>. Token-by-token cached output agrees with the full causal pass. Only after all three pass is the smaller cache a valid optimization.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>GroupedQueryAttention</code>: one KV-head dial</td>
+<td style="text-align: right;">61 new lines</td>
+<td>MHA, GQA, and MQA preserve output shape; stored scalar counts follow the exact 4:2:1 KV-head ratio; cached chunks match a full pass.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch03-mla" class="level2" data-number="3.7">
+<h2 data-number="3.7" class="anchored" data-anchor-id="sec-ch03-mla"><span class="header-section-number">3.7</span> Compress the Cache: MLA</h2>
+<p>Head sharing chooses fewer full-width KV representations. <strong>Multi-head latent attention</strong> (MLA) attacks a different boundary: store one low-rank latent representation from which content keys and values can be reconstructed.</p>
+<p>For residual state <span class="math inline">x_t\in\mathbb{R}^{d}</span> at token <span class="math inline">t</span>, an MLA-style layer forms</p>
+<p><span class="math display">
+c_t^{KV}=W^{DKV}x_t,
+\qquad c_t^{KV}\in\mathbb{R}^{r},quad r\ll H_qd_h.
+</span></p>
+<p>Head-specific up-projections derive content keys and values from <span class="math inline">c_t^{KV}</span>. A direct implementation would reconstruct every historical key and value at every step, exchanging memory traffic for substantial extra matrix work. MLA’s useful implementation property is that linear projection matrices can be absorbed into query and output-side operations, so attention can operate with the compressed latent more directly.</p>
+<p>RoPE complicates that absorption. A position-dependent rotation lies between the up-projection and dot product, so the matrices do not commute in the needed way. DeepSeek-V2’s solution is <strong>decoupled RoPE</strong>: split each query and key into a content part and a smaller rotary part. The content key comes from the latent. A shared rotary key is projected separately, rotated, and cached alongside the latent. The score for query head <span class="math inline">i</span> is conceptually</p>
+<p><span class="math display">
+(q^{C}_{t,i})^\top k^{C}_{j,i}
++(q^{R}_{t,i})^\top k^{R}_{j}.
+</span></p>
+<p>The persistent width per layer and token becomes <span class="math inline">r+d_R</span>, not <span class="math inline">{2H_{kv}d_h}</span>. Its payload therefore uses the canonical outer accounting structure:</p>
+<p><span class="math display">
+\operatorname{MLABytes}=B\,T\,L\,(r+d_R)\,s.
+</span></p>
+<p>This is not “free compression.” Rank <span class="math inline">r</span> constrains the information shared through the latent; up- and down-projections add parameters and compute; the absorbed execution path changes kernel requirements. Compression helps most when moving KV bytes is the bottleneck and the stack has an efficient MLA path. Later work such as TransMLA formalizes conversions from GQA to an MLA representation and then compresses the stored latent, but the capacity reduction and quality recovery still require a deliberate conversion and adaptation procedure. Renaming projections does not compress an existing checkpoint.</p>
+<p><code>ToyLatentKVAttention</code> exposes the boundary instead of implementing the absorbed production algebra. It caches tensors with shapes <span class="math inline">[B,T,r]</span> and <span class="math inline">[B,T,d_R]</span>, rotates the latter at absolute positions, and explicitly reconstructs content keys and values. For <span class="math inline">B=1,T=8,r=8,d_R=4</span>, the measured cache contains 96 scalars. A same-width four-head MHA cache would contain 768. The toy demonstrates what is retained; it is not a latency claim about MLA.</p>
+</section>
+<section id="sec-ch03-patterns" class="level2" data-number="3.8">
+<h2 data-number="3.8" class="anchored" data-anchor-id="sec-ch03-patterns"><span class="header-section-number">3.8</span> Restrict Visibility: Windows, Interleaving, and Sinks</h2>
+<p>Sharing and compression preserve full causal visibility. Another strategy changes which keys a query may see.</p>
+<p>A <strong>sliding-window</strong> layer lets position <span class="math inline">t</span> attend only to the most recent <span class="math inline">W</span> positions. Once the sequence exceeds <span class="math inline">W</span>, its retained KV payload can be bounded by substituting <span class="math inline">\min(T,W)</span> for <span class="math inline">T</span> in that layer’s term. Its attention-score work is also bounded by <span class="math inline">W</span> per query. The cost is architectural: information older than the window cannot be reached directly through that layer.</p>
+<p>Stacking local layers expands the receptive field because an older token can influence newer summaries across layers, but indirect reachability is not equivalent to one-hop access. Exact copying, cross-file dependency tracing, and evidence attribution can be sensitive to that distinction. A common compromise interleaves local and full layers. Local layers handle nearby syntax and state; periodic global layers restore direct long-range paths. The total cache is then a sum: windowed terms for local layers plus length-<span class="math inline">T</span> terms for global layers.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    subgraph F["Full layer"]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>      direction LR</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>      F1["all history"] --&gt; FQ["final query"]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    subgraph W["Windowed layer"]</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>      direction LR</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>      WO["older tokens"] -. "not visible" .-&gt; WQ["final query"]</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      WR["recent W tokens"] --&gt; WQ</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    subgraph I["Interleaved stack"]</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>      direction LR</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>      IL["local layer"] --&gt; IG["periodic global layer"] --&gt; IQ["final query"]</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    subgraph S["Window plus sinks"]</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>      direction LR</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>      SS["first sink tokens"] --&gt; SQ["final query"]</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>      SR["recent W tokens"] --&gt; SQ</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    end</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch03-attention-patterns" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch03-attention-patterns-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch03-attention-patterns">flowchart LR
+    subgraph F["Full layer"]
+      direction LR
+      F1["all history"] --&gt; FQ["final query"]
+    end
+    subgraph W["Windowed layer"]
+      direction LR
+      WO["older tokens"] -. "not visible" .-&gt; WQ["final query"]
+      WR["recent W tokens"] --&gt; WQ
+    end
+    subgraph I["Interleaved stack"]
+      direction LR
+      IL["local layer"] --&gt; IG["periodic global layer"] --&gt; IQ["final query"]
+    end
+    subgraph S["Window plus sinks"]
+      direction LR
+      SS["first sink tokens"] --&gt; SQ["final query"]
+      SR["recent W tokens"] --&gt; SQ
+    end
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch03-attention-patterns-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3.2: Which historical tokens can the final query read under full, windowed, interleaved, and sink-preserving attention?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-ch03-attention-patterns" class="quarto-xref">Figure&nbsp;<span>3.2</span></a> separates four masks that are too often called merely “efficient attention.” The decision question is not whether a token is somewhere in the request. It is whether a causal path of the required length and precision connects it to the query.</p>
+<p>StreamingLLM identified a surprising failure in naive rolling windows: keeping only recent tokens can destabilize language models even when the evicted initial tokens are not semantically important. Attention tends to assign substantial probability to early positions, which act as <strong>attention sinks</strong> for excess probability. Retaining a small prefix of sink tokens alongside the rolling window restored stable streaming behavior in its experiments. Sink retention is therefore a mask and training-compatibility mechanism, not long-term semantic memory. A sink token being visible does not make an evicted tool result recoverable.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — Efficient patterns remain empirical choices
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The official MiniMax M2 architecture note reports choosing full attention after its hybrid alternatives degraded on long-context agent tasks. That result is a useful counterexample to treating local, linear, or hybrid attention as a universal upgrade; another workload or training recipe can reach a different conclusion.</p>
+<p><strong>Verify live:</strong> review the current official <a href="https://platform.minimax.io/docs/guides/text-m2-full-attention">MiniMax M2 design note</a> and the released configuration before carrying this example into an architecture decision. <strong>Verified:</strong> 2026-07-19.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch03-rope" class="level2" data-number="3.9">
+<h2 data-number="3.9" class="anchored" data-anchor-id="sec-ch03-rope"><span class="header-section-number">3.9</span> RoPE Encodes Relative Position by Rotation</h2>
+<p>Attention without positional information is permutation-equivariant before the causal mask: the same token representations in a different order do not carry an explicit coordinate. Rotary position embeddings (RoPE) inject position into queries and keys while making their dot product depend on relative displacement.</p>
+<p>Take two coordinates <span class="math inline">(x_{2j},x_{2j+1})</span> in an even-dimensional rotary subspace. At position <span class="math inline">m</span>, rotate the pair by angle <span class="math inline">m\omega_j</span>:</p>
+<p><span class="math display">
+R_j(m)=
+\begin{bmatrix}
+\cos(m\omega_j)&amp;-\sin(m\omega_j)\\
+\sin(m\omega_j)&amp; \cos(m\omega_j)
+\end{bmatrix},
+\qquad
+\omega_j=b^{-2j/d_R}.
+</span></p>
+<p><span class="math inline">d_R</span> is the rotary dimension and <span class="math inline">b</span> is the frequency base. Small <span class="math inline">j</span> gives a high-frequency band that rotates quickly; large <span class="math inline">j</span> gives a low-frequency band that changes slowly. RoPE applies the block-diagonal collection of these rotations to <span class="math inline">q_m</span> and <span class="math inline">k_n</span>, but not to the value.</p>
+<p>Rotation matrices are orthogonal, so they preserve vector norm. More importantly,</p>
+<p><span class="math display">
+(R(m)q)^\top(R(n)k)
+=q^\top R(m)^\top R(n)k
+=q^\top R(n-m)k.
+</span></p>
+<p>Shift both positions by the same offset <span class="math inline">c</span> and the score is unchanged, because <span class="math inline">(n+c)-(m+c)=n-m</span>. The tests verify this numerically across a 100-position shift. This is the central RoPE invariant: the attention score exposes relative offset through multiple frequency bands without adding a learned absolute position vector to the residual stream.</p>
+<p>The implementation rotates interleaved pairs:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>angles <span class="op">=</span> positions[:, <span class="va">None</span>] <span class="op">*</span> frequencies[<span class="va">None</span>, :]</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>even, odd <span class="op">=</span> vectors[..., <span class="dv">0</span>::<span class="dv">2</span>], vectors[..., <span class="dv">1</span>::<span class="dv">2</span>]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>rotated_even <span class="op">=</span> even <span class="op">*</span> angles.cos() <span class="op">-</span> odd <span class="op">*</span> angles.sin()</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>rotated_odd <span class="op">=</span> even <span class="op">*</span> angles.sin() <span class="op">+</span> odd <span class="op">*</span> angles.cos()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Relative dependence does not guarantee unlimited length generalization. During training, the network sees only a bounded distribution of distances and phases. Some low-frequency dimensions may not complete one rotation inside that range, allowing the model to use them like near-absolute coordinates. At inference, a much longer sequence presents phase combinations and relative distances the learned projections did not experience.</p>
+<p>Absolute offsets also matter in implementation. During chunked prefill or cached decoding, a new chunk beginning after 20,000 cached tokens must use positions starting at 20,000. Restarting its local position counter at zero rotates new queries in a coordinate system inconsistent with cached keys. Tensor shapes still pass; retrieval and cached/full equivalence fail. Position IDs are cache state even though they consume far fewer bytes than keys and values.</p>
+<p>ALiBi is a useful contrast, not this chapter’s second derivation. It adds a head-specific linear penalty proportional to query-key distance directly to attention logits. It avoids a rotation table and has different extrapolation behavior, but still imposes a positional inductive bias and does not turn training at one length into a guarantee at every length.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>rope.py</code>: frequency bands plus pairwise rotation</td>
+<td style="text-align: right;">42 lines</td>
+<td>Norm is preserved and equal relative offsets produce equal query-key dot products after a shared shift.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch03-scaling" class="level2" data-number="3.10">
+<h2 data-number="3.10" class="anchored" data-anchor-id="sec-ch03-scaling"><span class="header-section-number">3.10</span> Stretching RoPE Changes the Coordinate System</h2>
+<p>Suppose a model trained through context <span class="math inline">T_0</span> must be evaluated at <span class="math inline">T_1=aT_0</span>. A RoPE extension changes how positions map into phases. It does not add evidence to training data or teach the model a long-document task.</p>
+<p><strong>Position interpolation</strong> (PI) maps position <span class="math inline">m</span> to <span class="math inline">m/a</span>. Equivalently, it divides every frequency by <span class="math inline">a</span>. Positions through <span class="math inline">T_1</span> then occupy the original phase range. The cost is compressed local resolution: high-frequency bands that formerly distinguished nearby offsets now move <span class="math inline">a</span> times more slowly.</p>
+<p><strong>NTK-aware scaling</strong> changes the base rather than dividing all bands equally. The common base rule implemented here is</p>
+<p><span class="math display">
+b'=b\,a^{d_R/(d_R-2)}.
+</span></p>
+<p>Because the first frequency remains one while later frequencies shrink increasingly, high-frequency local information is preserved more than under PI and low-frequency bands absorb more extension. The “NTK-aware” name describes the motivation, not a theorem that a particular checkpoint will preserve quality.</p>
+<p><strong>YaRN</strong> combines two mechanisms. Its NTK-by-parts rule leaves short-wavelength dimensions unscaled, interpolates long-wavelength dimensions, and ramps between them according to how many rotations each band completed within <span class="math inline">T_0</span>. It also changes attention temperature. The reference implementation multiplies both rotated queries and keys by</p>
+<p><span class="math display">
+m(a)=0.1\ln(a)+1\quad\text{for }a&gt;1,
+</span></p>
+<p>which scales their dot product by <span class="math inline">m(a)^2</span> before softmax. These parts address different failures: frequency interpolation manages phase extrapolation, while magnitude scaling adjusts attention entropy. Treating YaRN as only a <code>rope_scaling</code> label omits half the method.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>What changes</th>
+<th>Main tradeoff</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Position interpolation</td>
+<td>all positions or frequencies uniformly</td>
+<td>stays in the old phase range but compresses local resolution</td>
+</tr>
+<tr class="even">
+<td>NTK-aware</td>
+<td>frequency base, nonuniformly across bands</td>
+<td>preserves the highest band but depends on an empirical base rule</td>
+</tr>
+<tr class="odd">
+<td>YaRN</td>
+<td>wavelength-dependent interpolation plus attention magnitude</td>
+<td>adds tunable boundaries and is strongest as a training recipe, not a magic inference flag</td>
+</tr>
+<tr class="even">
+<td>Adjusted base frequency (ABF)</td>
+<td>manually chosen larger base</td>
+<td>simple, but the base and training length remain model-specific</td>
+</tr>
+<tr class="odd">
+<td>LongRoPE</td>
+<td>searched nonuniform rescaling factors, often with progressive extension</td>
+<td>more flexible, with search and adaptation cost</td>
+</tr>
+</tbody>
+</table>
+<p>Three engineering rules follow. First, extension factor is part of the model configuration and must match training or adaptation. Second, short-context regression matters: a method can improve far positions while blurring local order or changing attention entropy. Third, cache semantics matter. Dynamic schemes whose scale changes with current sequence length may require keys before rotation or a consistent rerotation strategy; otherwise earlier and later cache entries use different maps.</p>
+<p>The build implements fixed-scale NTK-aware and YaRN maps because their distinctions are educational and testable. It surveys PI, ABF, and LongRoPE without presenting five drop-in implementations. A production adoption still depends on fine-tuning data, target lengths, precision, attention kernel support, and evaluations at both original and extended lengths.</p>
+</section>
+<section id="sec-ch03-alternatives" class="level2" data-number="3.11">
+<h2 data-number="3.11" class="anchored" data-anchor-id="sec-ch03-alternatives"><span class="header-section-number">3.11</span> No Position, Dropped Position, and Distributed Context</h2>
+<p>RoPE extension is not the only possible response to length generalization.</p>
+<p><strong>NoPE</strong> removes explicit positional embeddings. A causal mask still gives computation an order: position <span class="math inline">t</span> has access to <span class="math inline">t+1</span> prefix states while an earlier position has fewer. Experiments on length generalization have found that causal Transformers without explicit position encodings can infer useful relative and absolute signals and can extrapolate surprisingly well on some tasks. The absence of an explicit encoding is not the absence of order, nor is it a universal quality win. Position-sensitive tasks, optimization, and architecture details decide the result.</p>
+<p><strong>DroPE</strong> treats explicit position as a training scaffold. The published method starts from a model trained with positional embeddings, removes them, and performs a short recalibration at the original context length. Its reported experiments motivate a useful distinction: an inductive bias can make training easier yet become an extrapolation constraint later. It is an emerging conversion method, not permission to delete RoPE from an arbitrary production checkpoint without recovery evaluation.</p>
+<p>Long context can also be a systems property rather than a new positional formula. <strong>Ring Attention</strong> partitions a long sequence across devices. Each device holds a query block while KV blocks circulate around a ring; blockwise attention overlaps communication with computation and uses online softmax accumulation. The global semantic pattern remains dense. The total logical KV state and dense arithmetic have not vanished; they are partitioned so a sequence longer than one device’s memory can be trained or evaluated. Chapter 6 owns distributed training details, and Chapter 10 owns distributed serving.</p>
+<p><strong>Dual Chunk Attention</strong> partitions positions into chunks and defines different rotary relations for tokens within the same chunk, in earlier chunks, and in adjacent chunks. It is a context-extension transformation aimed at keeping local relations familiar while representing much larger global offsets. Like RoPE scaling, it changes the coordinate map and needs evaluation against the model and task. It is not the same as a sliding visibility window: tokens in distant chunks can remain attendable.</p>
+<p>This survey sets a decision boundary. If the problem is <strong>state bytes</strong>, change head sharing, compression, or visibility. If it is <strong>position extrapolation</strong>, change or remove the coordinate mechanism with adaptation. If it is <strong>single-device capacity</strong>, partition sequence state and compute. A method can address more than one boundary, but its paper headline should not substitute for tracing which term actually changed.</p>
+</section>
+<section id="sec-ch03-effective" class="level2" data-number="3.12">
+<h2 data-number="3.12" class="anchored" data-anchor-id="sec-ch03-effective"><span class="header-section-number">3.12</span> Advertised Context Is Not Effective Context</h2>
+<p>“Context window” hides at least three quantities:</p>
+<ul>
+<li><strong>Accepted context:</strong> the largest request the interface and runtime admit.</li>
+<li><strong>trained or adapted context:</strong> the length distribution represented during optimization.</li>
+<li><strong>effective context:</strong> the positions and lengths over which a specified task remains above a specified quality threshold.</li>
+</ul>
+<p>Only the third is a capability statement, and it is task-specific. A model can accept a large tensor, maintain finite perplexity, recover a literal passkey, and still fail to combine two indirect facts in the middle of a repository. Effective context is a measured surface over length, position, distractor structure, and task—not one scalar copied from a model card.</p>
+<p>The “Lost in the Middle” experiments demonstrated position sensitivity in long-context language models: on their multi-document question answering and key-value retrieval settings, relevant information was often used better near the beginning or end than in the middle. That U-shaped result is evidence about tested models and tasks, not a law derived from RoPE. Primacy can arise from attention and instruction patterns; recency from causal proximity and training distribution; distractors and task format alter both.</p>
+<p>The broader term <strong>context rot</strong> describes quality degrading as more nominally relevant or distracting context is added. Chroma’s controlled study reports degradation across multiple task families and models, including cases where every added token belongs to the task. This warns against a fixed folklore threshold such as “the useful window is 30–40 percent of advertised.” There is no universal fraction. Measure the deployed model, prompt format, evidence distribution, and success criterion.</p>
+<p>The local probe isolates one mechanism. Each of 256 seeded trials creates a noisy 32-dimensional query, a matching key, and 127 random distractor keys. The query is at the last position; the needle moves from the start to near the end. The probe applies unscaled RoPE, NTK-aware scaling, or YaRN for a fourfold extension, then asks whether the matching key receives the highest dot product. It is an attention diagnostic, not a language model or a reproduction of Lost in the Middle.</p>
+<div id="fig-ch03-rope-retrieval" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Directly labeled retrieval-rate plot over needle depth. Circle-solid unscaled RoPE is oscillatory and weakest for many distant positions, square-dashed NTK-aware scaling improves its mean, and triangle-dotted YaRN has the highest mean but remains imperfect. Shading shows 95 percent binomial intervals.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch03-rope-retrieval-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch03/generated/rope-retrieval.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;3.3: In a seeded synthetic fourfold-extension probe, RoPE phase changes make retrieval position-sensitive; NTK-aware and YaRN scaling improve mean top-1 retrieval but do not make it uniform. Shaded bands are 95 percent binomial intervals over 256 trials per position."><img src="../code/ch03/generated/rope-retrieval.svg" class="img-fluid figure-img" alt="Directly labeled retrieval-rate plot over needle depth. Circle-solid unscaled RoPE is oscillatory and weakest for many distant positions, square-dashed NTK-aware scaling improves its mean, and triangle-dotted YaRN has the highest mean but remains imperfect. Shading shows 95 percent binomial intervals."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch03-rope-retrieval-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3.3: In a seeded synthetic fourfold-extension probe, RoPE phase changes make retrieval position-sensitive; NTK-aware and YaRN scaling improve mean top-1 retrieval but do not make it uniform. Shaded bands are 95 percent binomial intervals over 256 trials per position.
+</figcaption>
+</figure>
+</div>
+<p>Across the 21 depths, mean top-1 retrieval is 0.600 for unscaled RoPE, 0.696 for NTK-aware scaling, and 0.832 for YaRN. Near the query, all methods benefit from small relative displacement. Farther away, frequency phase and aliasing create an oscillatory rather than smooth decay. YaRN flattens much of the failure but leaves position-dependent errors. Because the fixture has no language training, instruction hierarchy, or attention sinks, its curve must not be used as evidence that a production model has the same shape. Its value is causal: changing only the coordinate map changes retrieval.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — A maximum-window claim is a hypothesis
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Meta’s official Llama 4 announcement and Scout model card advertise support for a 10-million-token context window. That is a valid interface and architecture claim to test, not evidence that every task remains accurate at every depth through 10 million tokens. Record the exact checkpoint, runtime, prompt, and evaluation surface before translating the number into a product requirement.</p>
+<p><strong>Verify live:</strong> inspect the current official <a href="https://ai.meta.com/blog/llama-4-multimodal-intelligence/">Llama 4 announcement</a> and <a href="https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct">Scout model card</a>, then run the target task at stratified lengths and positions. <strong>Verified:</strong> 2026-07-19.</p>
+</div>
+</div>
+<p>For agents, context quality is also state quality. A transcript mixes policy, user requests, tool schemas, observations, failed plans, code, and summaries. Even perfect literal retrieval may select a superseded instruction or confuse observation with authority. Chapter 13 owns the context-engineering response—selection, ordering, compression, and provenance. This chapter establishes why “send everything” is neither a capacity plan nor an evaluation plan.</p>
+</section>
+<section id="sec-ch03-benchmarks" class="level2" data-number="3.13">
+<h2 data-number="3.13" class="anchored" data-anchor-id="sec-ch03-benchmarks"><span class="header-section-number">3.13</span> Benchmark the Failure You Actually Care About</h2>
+<p>A benchmark is useful when its failure mode matches the application. Long-context evaluation evolved because easy retrieval tests saturated before realistic understanding did.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Benchmark family</th>
+<th>What it adds</th>
+<th>What a pass does not prove</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Needle-in-a-Haystack (NIAH)</td>
+<td>place a literal key or passkey at controlled depths and lengths</td>
+<td>indirect association, distractor resistance, synthesis, or reasoning</td>
+</tr>
+<tr class="even">
+<td>RULER</td>
+<td>combines retrieval with multi-hop tracing, aggregation, and question answering across controlled lengths</td>
+<td>performance on natural repositories, conversations, or domain evidence</td>
+</tr>
+<tr class="odd">
+<td>NoLiMa</td>
+<td>removes literal lexical overlap and requires one- or two-hop association using model knowledge</td>
+<td>general long-document reasoning or agent-state correctness</td>
+</tr>
+<tr class="even">
+<td>LongBench v2</td>
+<td>realistic long single- and multi-document QA, dialogue, code, structured data, and in-context learning tasks</td>
+<td>the deployed prompt, tool protocol, latency target, or private data distribution</td>
+</tr>
+</tbody>
+</table>
+<p>NIAH remains a good smoke test. It is cheap, position-controlled, and catches truncation, position-ID, and gross retrieval failures. It saturates first because exact lexical cues let attention match the query and needle directly. Passing it should trigger harder tests, not a “long context solved” declaration.</p>
+<p>RULER varies sequence length and includes several synthetic task structures, making effective length easier to compare than with one passkey. NoLiMa deliberately removes surface-form overlap: the query and needle connect through latent knowledge, so simple keyword matching no longer solves the task. LongBench v2 moves toward realistic, reasoning-heavy tasks, including repository and structured-data understanding. As realism rises, attribution becomes harder; preserve synthetic diagnostics alongside end-to-end tasks so a regression can be localized.</p>
+<p>A serious evaluation grid records at least:</p>
+<ol type="1">
+<li>exact tokenizer length, not character count;</li>
+<li>relevant-evidence depth and span width;</li>
+<li>total length and number of distractors;</li>
+<li>literal, associative, aggregation, and reasoning task types;</li>
+<li>original-window baselines and short-context regression;</li>
+<li>accuracy or task utility with confidence intervals;</li>
+<li>prefill latency, decode latency, peak memory, and failure category.</li>
+</ol>
+<p>Do not average the grid immediately. A single score can hide a dead middle, a sharp cliff after the trained length, or success only when the needle is adjacent to the query. Plot length by depth, stratify by task, and inspect incorrect outputs. For agent workloads, add temporal validity: whether the selected fact is current or superseded, whether tool output is confused with instruction, and whether two separated observations are joined correctly. Chapter 22 turns these cases into a broader evaluation system.</p>
+<p>The benchmark should also test the chosen mechanism. GQA and MLA require quality comparisons at the same context and decoding policy. Windowed attention requires evidence beyond the window and across the interleaving schedule. RoPE extension requires original-length and extended-length tests. Distributed attention requires numerical agreement with an undistributed reference. Capacity, computation, and capability return as three separate acceptance gates.</p>
+</section>
+<section id="sec-ch03-build" class="level2" data-number="3.14">
+<h2 data-number="3.14" class="anchored" data-anchor-id="sec-ch03-build"><span class="header-section-number">3.14</span> Build</h2>
+<p>Run the deterministic artifact from the <code>newbook</code> directory:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch03<span class="op">/</span>run_build<span class="op">.</span><span class="fu">py</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>python <span class="op">-</span>m pytest tests<span class="op">/</span>test_ch03_long_context<span class="op">.</span><span class="fu">py</span> <span class="op">-</span>q</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The build writes five generated files under <code>code/ch03/generated/</code>:</p>
+<ul>
+<li><code>kv-footprints.csv</code> contains exact bytes and GiB for every configuration and context;</li>
+<li><code>rope-retrieval.csv</code> contains successes, trials, accuracy, and standard error at every depth;</li>
+<li><code>metrics.json</code> records both tables, attention shape checks, mean retrieval rates, seed, dimensions, and the diagnostic’s claim boundary;</li>
+<li><code>kv-footprints.svg</code> renders the cache slopes used in <a href="#fig-ch03-kv-footprints" class="quarto-xref">Figure&nbsp;<span>3.1</span></a>;</li>
+<li><code>rope-retrieval.svg</code> renders the position sweep and binomial intervals used in <a href="#fig-ch03-rope-retrieval" class="quarto-xref">Figure&nbsp;<span>3.3</span></a>.</li>
+</ul>
+<p>Read the artifact in dependency order. First inspect the three <code>config.json</code> excerpts for <a href="../code/ch03/fixtures/llama2-7b/config.json">Llama 2</a>, <a href="../code/ch03/fixtures/llama31-8b/config.json">Llama 3.1</a>, and <a href="../code/ch03/fixtures/deepseek-v2-lite/config.json">DeepSeek-V2-Lite</a>. Recompute their cached scalar width from the architecture: <span class="math inline">{2H_{kv}d_h}</span> for MHA or GQA, and <span class="math inline">r+d_R</span> for the MLA-style case. Multiply by layers and scalar bytes. <code>kv-footprints.csv</code> should then be predictable before opening it.</p>
+<p>Second, change only <code>kv_heads</code> in <code>GroupedQueryAttention</code>. The tests use four query heads and KV-head settings four, two, and one. Their cached scalar counts are 640, 320, and 160 for the two-sequence, five-token fixture. Output shape remains unchanged. The incremental-cache test then compares all token outputs against a full causal pass.</p>
+<p>Third, inspect the latent layer. Its explicit up-projections make it slower than an absorbed implementation may be, but the cache contains only the latent and shared rotary key. Confirm the 96-scalar build measurement from <span class="math inline">{1\cdot8\cdot(8+4)}</span>.</p>
+<p>Fourth, run the RoPE invariant tests before reading retrieval accuracy. Pair rotation must preserve norm. Shifting both query and key positions by 100 must preserve their dot product when relative offset is unchanged. PI must divide all frequencies uniformly; NTK-aware scaling must retain the highest frequency and reduce lower bands; YaRN bands must lie between unscaled and fully interpolated frequencies for this fixture.</p>
+<p>Finally, inspect the retrieval CSV rather than only the plot. Predict which positions are hardest under an end-position query, rerun with another registered seed family, and report uncertainty. If a scaling change improves the mean but damages near positions, that is a tradeoff to investigate rather than a plotting nuisance.</p>
+<p><strong>Honesty note.</strong> The calculator reports tensor payload, not allocated serving memory. The model configurations are dated excerpts, not downloaded live. The grouped layer uses logical head repetition rather than a fused production kernel. The MLA layer demonstrates stored state but omits projection absorption. The retrieval probe has no trained language model and cannot exhibit semantic lost-in-the-middle behavior; it isolates rotary phase effects. No result here proves a provider’s maximum window, production latency, or model quality. Those claims require model- and hardware-specific adapters and the benchmark grid above.</p>
+</section>
+<section id="sec-ch03-endures" class="level2" data-number="3.15">
+<h2 data-number="3.15" class="anchored" data-anchor-id="sec-ch03-endures"><span class="header-section-number">3.15</span> What Endures, What Changes</h2>
+<p><strong>What endures.</strong> Persistent attention state is the product of represented sequences, tokens, layers, cached width, and scalar bytes. MHA, GQA, MQA, and MLA differ chiefly in what width must persist. Caching avoids old projections but leaves dense decode attention linear in retained length. Visibility masks determine causal paths, not merely storage. RoPE rotates query-key coordinate pairs so scores expose relative displacement; length extension changes that coordinate map. Accepted, trained, and effective context are different quantities. Every long-context claim needs capacity, computation, and capability measurements.</p>
+<p><strong>What changes.</strong> Head ratios, latent ranks, rotary dimensions, frequency bases, scaling recipes, training lengths, cache formats, attention patterns, kernels, benchmark saturation, model-card limits, and hardware balance change. NoPE and post-training position removal may mature; distributed and sparse attention implementations will move; today’s difficult retrieval suite may become tomorrow’s smoke test. Keep dated configuration facts in the landscape blocks and rerun them. Preserve the equations, tensor-shape checks, relative-position invariant, and evaluation grid.</p>
+</section>
+<section id="sec-ch03-exercises" class="level2" data-number="3.16">
+<h2 data-number="3.16" class="anchored" data-anchor-id="sec-ch03-exercises"><span class="header-section-number">3.16</span> Exercises</h2>
+<ol type="1">
+<li><strong>Audit a new configuration.</strong> Choose a published gpt-oss-class configuration and record <span class="math inline">L,H_q,H_{kv},d_h,</span> and cache dtype from its primary config. Compute batch-one payload at 32K and 128K tokens by hand, then add a dated fixture without changing <code>kv_bytes()</code>. Which factor dominates, and which facts require live verification?</li>
+<li><strong>Reach MQA by configuration.</strong> Set <code>kv_heads=1</code> in <code>GroupedQueryAttention</code> while holding width and query heads fixed. Predict cache shape and scalar ratio before running. Add a cached/full equivalence test and explain why the output shape alone cannot prove correctness.</li>
+<li><strong>Break the rotary offset.</strong> Modify the toy latent layer so every appended chunk restarts positions at zero. Construct a two-chunk comparison against a full pass, plot error by position, and identify why tensor shapes and cache bytes remain valid while attention changes.</li>
+<li><strong>Make retrieval associative.</strong> Replace the direct matching needle with two separated records: entity-to-alias and alias-to-value. Require the query to recover the value without shared surface tokens. Report length-by-depth results and explain which part moves the probe toward NoLiMa and which language-model abilities it still lacks.</li>
+<li><strong>Defend a 40 GiB capacity estimate.</strong> Given a model-weight allocation, workspace reserve, and one configuration from the build, derive the maximum batch at 32K and 128K tokens. Round down, state binary versus decimal units, and list runtime overheads that make the result an upper bound.</li>
+<li><strong>Review a “1M context” roadmap.</strong> Write a one-page design defense that separates accepted, trained, and effective context. Specify a length-by-depth benchmark grid, short-context regression gate, KV budget, latency gate, and residual risk. Use the build’s plot only for its synthetic mechanism claim.</li>
+</ol>
+</section>
+<section id="sec-ch03-notes" class="level2" data-number="3.17">
+<h2 data-number="3.17" class="anchored" data-anchor-id="sec-ch03-notes"><span class="header-section-number">3.17</span> Notes and Sources</h2>
+<ul>
+<li>Shazeer, <a href="https://arxiv.org/abs/1911.02150">“Fast Transformer Decoding: One Write-Head Is All You Need”</a>, introduces multi-query attention. Ainslie et al., <a href="https://arxiv.org/abs/2305.13245">“GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints”</a>, develops grouped-query attention and MHA-checkpoint uptraining.</li>
+<li>DeepSeek-AI, <a href="https://arxiv.org/abs/2405.04434">“DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model”</a>, is the primary source for MLA, the compressed KV latent, decoupled RoPE, and matrix absorption. Meng, Yao, and Zhang, <a href="https://arxiv.org/abs/2502.07864">“TransMLA: Multi-Head Latent Attention Is All You Need”</a>, studies conversion from GQA models.</li>
+<li>Xiao et al., <a href="https://arxiv.org/abs/2309.17453">“Efficient Streaming Language Models with Attention Sinks”</a>, identifies sink behavior and the prefix-plus-window streaming pattern.</li>
+<li>Su et al., <a href="https://arxiv.org/abs/2104.09864">“RoFormer: Enhanced Transformer with Rotary Position Embedding”</a>, introduces RoPE and derives its relative-position property.</li>
+<li>Chen et al., <a href="https://arxiv.org/abs/2306.15595">“Extending Context Window of Large Language Models via Positional Interpolation”</a>, introduces position interpolation. Peng et al., <a href="https://arxiv.org/abs/2309.00071">“YaRN: Efficient Context Window Extension of Large Language Models”</a>, specifies NTK-by-parts interpolation and attention-temperature scaling; the authors’ <a href="https://github.com/jquesnelle/yarn">reference repository</a> is the implementation source used here.</li>
+<li>Ding et al., <a href="https://arxiv.org/abs/2402.13753">“LongRoPE: Extending LLM Context Window Beyond 2 Million Tokens”</a>, studies searched nonuniform interpolation and progressive extension.</li>
+<li>Kazemnejad et al., <a href="https://arxiv.org/abs/2305.19466">“The Impact of Positional Encoding on Length Generalization in Transformers”</a>, compares positional mechanisms and analyzes NoPE. Gelberg et al., <a href="https://arxiv.org/abs/2512.12167">“Extending the Context of Pretrained LLMs by Dropping Their Positional Embeddings”</a>, introduces DroPE.</li>
+<li>Liu et al., <a href="https://arxiv.org/abs/2310.01889">“Ring Attention with Blockwise Transformers for Near-Infinite Context”</a>, distributes blockwise attention over a device ring. An et al., <a href="https://arxiv.org/abs/2402.17463">“Training-Free Long-Context Scaling of Large Language Models”</a>, introduces Dual Chunk Attention.</li>
+<li>Liu et al., <a href="https://arxiv.org/abs/2307.03172">“Lost in the Middle: How Language Models Use Long Contexts”</a>, measures position-dependent long-context use. Chroma’s <a href="https://www.trychroma.com/research/context-rot">Context Rot report</a> broadens the empirical study across models and task structures; it is a direct research report rather than a peer-reviewed primary paper.</li>
+<li>Hsieh et al., <a href="https://arxiv.org/abs/2404.06654">“RULER: What’s the Real Context Size of Your Long-Context Language Models?”</a>, builds a controlled multi-task synthetic suite. Modarressi et al., <a href="https://arxiv.org/abs/2502.05167">“NoLiMa: Long-Context Evaluation Beyond Literal Matching”</a>, removes literal query-needle overlap. Bai et al., <a href="https://arxiv.org/abs/2412.15204">“LongBench v2”</a>, evaluates realistic long-context understanding and reasoning tasks.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/02-transformer-first-principles.html" class="pagination-link" aria-label="The Transformer from First Principles [F]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/04-moe-efficient-architectures.html" class="pagination-link" aria-label="Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

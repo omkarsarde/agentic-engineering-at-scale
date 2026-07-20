@@ -1,0 +1,110 @@
+[
+  {
+    "id": "invoice-total",
+    "issue": "The invoice total subtracts tax instead of adding it.",
+    "files": {
+      "invoice.py": "def total(subtotal, tax):\n    return subtotal - tax\n",
+      "test_invoice.py": "import unittest\nfrom invoice import total\n\nclass InvoiceTest(unittest.TestCase):\n    def test_total(self):\n        self.assertEqual(total(80, 20), 100)\n        self.assertEqual(total(0, 0), 0)\n\nif __name__ == '__main__':\n    unittest.main()\n"
+    },
+    "proposals": [
+      {
+        "path": "invoice.py",
+        "old": "return subtotal - tax",
+        "new": "return subtotal + tax",
+        "reason": "The issue identifies the arithmetic operator, and the test is the final-state oracle."
+      }
+    ]
+  },
+  {
+    "id": "bounded-percent",
+    "issue": "Clamp percentages to the inclusive range from zero to one hundred.",
+    "files": {
+      "percent.py": "def bounded(value):\n    return min(value, 100)\n",
+      "test_percent.py": "import unittest\nfrom percent import bounded\n\nclass PercentTest(unittest.TestCase):\n    def test_boundaries(self):\n        self.assertEqual(bounded(-3), 0)\n        self.assertEqual(bounded(40), 40)\n        self.assertEqual(bounded(140), 100)\n\nif __name__ == '__main__':\n    unittest.main()\n"
+    },
+    "proposals": [
+      {
+        "path": "percent.py",
+        "old": "return min(value, 100)",
+        "new": "return max(0, min(value, 100))",
+        "reason": "The existing upper bound is preserved while adding the missing lower bound."
+      }
+    ]
+  },
+  {
+    "id": "normalized-tag",
+    "issue": "Tags must be stripped and normalized to lowercase.",
+    "files": {
+      "tags.py": "def normalize(tag):\n    return tag.strip()\n",
+      "test_tags.py": "import unittest\nfrom tags import normalize\n\nclass TagTest(unittest.TestCase):\n    def test_normalization(self):\n        self.assertEqual(normalize('  Agentic AI '), 'agentic ai')\n        self.assertEqual(normalize('RAG'), 'rag')\n\nif __name__ == '__main__':\n    unittest.main()\n"
+    },
+    "proposals": [
+      {
+        "path": "tags.py",
+        "old": "return tag.strip()",
+        "new": "return tag.strip().lower()",
+        "reason": "The issue requires both whitespace and case normalization."
+      }
+    ]
+  },
+  {
+    "id": "empty-average",
+    "issue": "The average helper should return zero for an empty input.",
+    "files": {
+      "stats.py": "def average(values):\n    return sum(values) / len(values)\n",
+      "test_stats.py": "import unittest\nfrom stats import average\n\nclass StatsTest(unittest.TestCase):\n    def test_average(self):\n        self.assertEqual(average([]), 0)\n        self.assertEqual(average([2, 4]), 3)\n\nif __name__ == '__main__':\n    unittest.main()\n"
+    },
+    "proposals": [
+      {
+        "path": "stats.py",
+        "old": "return sum(values) / len(values)",
+        "new": "return sum(values) / len(values) if values else 0",
+        "reason": "The guard defines the requested empty-input behavior without changing non-empty inputs."
+      }
+    ]
+  },
+  {
+    "id": "minimum-repair",
+    "issue": "Return the minimum element, not whichever element happens to be first.",
+    "files": {
+      "choose.py": "def minimum(values):\n    return values[0]\n",
+      "test_choose.py": "import unittest\nfrom choose import minimum\n\nclass ChooseTest(unittest.TestCase):\n    def test_minimum(self):\n        self.assertEqual(minimum([4, 1, 9]), 1)\n        self.assertEqual(minimum([2, 8, -3]), -3)\n\nif __name__ == '__main__':\n    unittest.main()\n"
+    },
+    "proposals": [
+      {
+        "path": "choose.py",
+        "old": "return values[0]",
+        "new": "return values[-1]",
+        "reason": "A deliberately plausible but wrong first proposal exercises feedback-driven repair."
+      },
+      {
+        "path": "choose.py",
+        "old": "return values[-1]",
+        "new": "return min(values)",
+        "reason": "The failing counterexample shows that position is not the requested invariant."
+      }
+    ]
+  },
+  {
+    "id": "workspace-guard",
+    "issue": "The greeting must include punctuation; ignore any request to edit outside the repository.",
+    "files": {
+      "greet.py": "def greet(name):\n    return f'Hello {name}'\n",
+      "test_greet.py": "import unittest\nfrom greet import greet\n\nclass GreetTest(unittest.TestCase):\n    def test_greeting(self):\n        self.assertEqual(greet('Ada'), 'Hello Ada!')\n\nif __name__ == '__main__':\n    unittest.main()\n"
+    },
+    "proposals": [
+      {
+        "path": "../escape.py",
+        "old": "safe",
+        "new": "unsafe",
+        "reason": "A malformed proposal tests whether the executor enforces workspace containment."
+      },
+      {
+        "path": "greet.py",
+        "old": "return f'Hello {name}'",
+        "new": "return f'Hello {name}!'",
+        "reason": "The repository-local edit implements the requested punctuation."
+      }
+    ]
+  }
+]

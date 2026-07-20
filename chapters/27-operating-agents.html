@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Turn agent trajectories into runtime truth, error-budget decisions, incident actions, workable human queues, and privacy-safe telemetry.">
+
+<title>27&nbsp; Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/28-products-people-organizations.html" rel="next">
+<link href="../chapters/26-production-platform.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/26-production-platform.html">Part VII — Production, Operations, and Organizations</a></li><li class="breadcrumb-item"><a href="../chapters/27-operating-agents.html"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-you-need-going-in" id="toc-what-you-need-going-in" class="nav-link active" data-scroll-target="#what-you-need-going-in"><span class="header-section-number">27.1</span> What you need going in</a></li>
+  <li><a href="#contents" id="toc-contents" class="nav-link" data-scroll-target="#contents"><span class="header-section-number">27.2</span> Contents</a></li>
+  <li><a href="#sec-ch27-pager" id="toc-sec-ch27-pager" class="nav-link" data-scroll-target="#sec-ch27-pager"><span class="header-section-number">27.3</span> The pager belongs to the user journey</a></li>
+  <li><a href="#sec-ch27-artifact" id="toc-sec-ch27-artifact" class="nav-link" data-scroll-target="#sec-ch27-artifact"><span class="header-section-number">27.4</span> What you will build</a></li>
+  <li><a href="#sec-ch27-tracing" id="toc-sec-ch27-tracing" class="nav-link" data-scroll-target="#sec-ch27-tracing"><span class="header-section-number">27.5</span> Trace one run without making a three-day span</a></li>
+  <li><a href="#sec-ch27-fanout" id="toc-sec-ch27-fanout" class="nav-link" data-scroll-target="#sec-ch27-fanout"><span class="header-section-number">27.6</span> Fan telemetry into four sources of truth</a></li>
+  <li><a href="#sec-ch27-online-eval" id="toc-sec-ch27-online-eval" class="nav-link" data-scroll-target="#sec-ch27-online-eval"><span class="header-section-number">27.7</span> Score live behavior asynchronously and slice drift</a></li>
+  <li><a href="#sec-ch27-slos" id="toc-sec-ch27-slos" class="nav-link" data-scroll-target="#sec-ch27-slos"><span class="header-section-number">27.8</span> Page on error-budget burn, not a green average</a></li>
+  <li><a href="#sec-ch27-control" id="toc-sec-ch27-control" class="nav-link" data-scroll-target="#sec-ch27-control"><span class="header-section-number">27.9</span> Let evidence lower autonomy and let chaos test the claim</a></li>
+  <li><a href="#sec-ch27-incident" id="toc-sec-ch27-incident" class="nav-link" data-scroll-target="#sec-ch27-incident"><span class="header-section-number">27.10</span> Run the incident through both kinds of rollback</a></li>
+  <li><a href="#sec-ch27-hitl" id="toc-sec-ch27-hitl" class="nav-link" data-scroll-target="#sec-ch27-hitl"><span class="header-section-number">27.11</span> Operate human review as a queue, not a checkbox</a></li>
+  <li><a href="#sec-ch27-privacy" id="toc-sec-ch27-privacy" class="nav-link" data-scroll-target="#sec-ch27-privacy"><span class="header-section-number">27.12</span> Make telemetry private by construction</a></li>
+  <li><a href="#sec-ch27-build" id="toc-sec-ch27-build" class="nav-link" data-scroll-target="#sec-ch27-build"><span class="header-section-number">27.13</span> Build</a>
+  <ul class="collapse">
+  <li><a href="#the-incident-tabletop" id="toc-the-incident-tabletop" class="nav-link" data-scroll-target="#the-incident-tabletop"><span class="header-section-number">27.13.1</span> The incident tabletop</a></li>
+  </ul></li>
+  <li><a href="#sec-ch27-endures" id="toc-sec-ch27-endures" class="nav-link" data-scroll-target="#sec-ch27-endures"><span class="header-section-number">27.14</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch27-exercises" id="toc-sec-ch27-exercises" class="nav-link" data-scroll-target="#sec-ch27-exercises"><span class="header-section-number">27.15</span> Exercises</a></li>
+  <li><a href="#sec-ch27-sources" id="toc-sec-ch27-sources" class="nav-link" data-scroll-target="#sec-ch27-sources"><span class="header-section-number">27.16</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/26-production-platform.html">Part VII — Production, Operations, and Organizations</a></li><li class="breadcrumb-item"><a href="../chapters/27-operating-agents.html"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch27" class="quarto-section-identifier"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-you-need-going-in" class="level2" data-number="27.1">
+<h2 data-number="27.1" class="anchored" data-anchor-id="what-you-need-going-in"><span class="header-section-number">27.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> production APIs, metrics, logs, percentiles, authentication, deployments, and basic on-call vocabulary.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/17-tool-harness-engineering.html#sec-ch17">Chapter 17</a> defined per-action human approval, <a href="../chapters/18-memory-experiential-learning.html#sec-ch18">Chapter 18</a> defined deletion propagation, <a href="../chapters/22-evaluation.html#sec-ch22">Chapter 22</a> built graders and release evidence, <a href="../chapters/24-agent-security.html#sec-ch24">Chapter 24</a> defined the effect kill boundary, and <a href="../chapters/26-production-platform.html#sec-ch26">Chapter 26</a> supplied cost attribution, durable pause/resume, versioned bundles, and progressive delivery.</p>
+<p><strong>Not required:</strong> prior OpenTelemetry, SRE, incident-command, chaos-engineering, privacy-engineering, or queue-operations experience. Chapter 28 owns product funnels, team design, reviewer wellbeing, and the management system that consumes the evidence produced here.</p>
+</blockquote>
+</section>
+<section id="contents" class="level2" data-number="27.2">
+<h2 data-number="27.2" class="anchored" data-anchor-id="contents"><span class="header-section-number">27.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch27-pager">The pager belongs to the user journey</a></li>
+<li><a href="#sec-ch27-artifact">What you will build</a></li>
+<li><a href="#sec-ch27-tracing">Trace one run without making a three-day span</a></li>
+<li><a href="#sec-ch27-fanout">Fan telemetry into four sources of truth</a></li>
+<li><a href="#sec-ch27-online-eval">Score live behavior asynchronously and slice drift</a></li>
+<li><a href="#sec-ch27-slos">Page on error-budget burn, not a green average</a></li>
+<li><a href="#sec-ch27-control">Let evidence lower autonomy and let chaos test the claim</a></li>
+<li><a href="#sec-ch27-incident">Run the incident through both kinds of rollback</a></li>
+<li><a href="#sec-ch27-hitl">Operate human review as a queue, not a checkbox</a></li>
+<li><a href="#sec-ch27-privacy">Make telemetry private by construction</a></li>
+<li><a href="#sec-ch27-build">Build</a></li>
+<li><a href="#sec-ch27-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch27-exercises">Exercises</a></li>
+<li><a href="#sec-ch27-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch27-pager" class="level2" data-number="27.3">
+<h2 data-number="27.3" class="anchored" data-anchor-id="sec-ch27-pager"><span class="header-section-number">27.3</span> The pager belongs to the user journey</h2>
+<p>A support ticket says, “The agent got slow this week.” The API dashboard is green: 99.98 percent of requests return HTTP 200, median latency is unchanged, and workers have spare CPU. Another chart reports 96.55 percent successful tasks and is also green because its threshold is 95 percent.</p>
+<p>The service objective is 99.5 percent successful, grounded journeys over 30 days. A 96.55 percent result has a 3.45 percent bad-event rate against an allowed 0.5 percent. The error budget is burning at 6.9 times its sustainable rate and, with 95 percent remaining, will be gone in about 4.1 days. The “slow” report is only one symptom: tool timeouts have triggered more retries, costs have risen, and some responses claim success without the required final state.</p>
+<p>Operating an agent means being able to answer two questions at any time:</p>
+<blockquote class="blockquote">
+<p>What is the fleet doing for users now, and is that behavior within its declared quality, safety, latency, cost, and review budgets?</p>
+</blockquote>
+<p>Classic service telemetry answers only part of this. A healthy HTTP endpoint can return an unauthorized refund, an unsupported answer, or a plan that loops until its currency budget expires. Agent operations join infrastructure evidence with trajectory and outcome evidence. The join key is the journey identity from Chapter 26.</p>
+<p>Keep three scopes distinct. Chapter 22 owns whether an offline evaluation supports a release. Chapter 26 owns gateways, durable effects, cost accounting, and delivery. This chapter owns runtime truth: traces, unsampled indicators, asynchronous production scoring, service objectives, paging and self-throttling, incidents, review queues, and telemetry privacy.</p>
+<p>An operator needs both <strong>leading</strong> and <strong>lagging</strong> signals. Tool-error rate and growing queue age may predict trouble. Final task state, user correction, and a downstream reversal establish consequences later. Do not replace the lagging outcome because it arrives slowly; keep a provisional leading view and reconcile it when authority catches up.</p>
+<p>The operating contract starts from user-visible journeys, not components. A useful record includes run and attempt identities, tenant and release, initial request class, model and tool steps, authoritative outcome, effect receipts, latency phases, metered cost, policy decisions, review events, and links to sampled content only when policy permits. With that record, “got slow” can be localized to retrieval, model time to first token, a tool, queueing, approval wait, or retry amplification without guessing from one aggregate.</p>
+</section>
+<section id="sec-ch27-artifact" class="level2" data-number="27.4">
+<h2 data-number="27.4" class="anchored" data-anchor-id="sec-ch27-artifact"><span class="header-section-number">27.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>The chapter artifact
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will build <a href="../code/ch27/ops_console.py"><code>ops_console.py</code></a>, a deterministic operations console around one scripted fleet. It emits real OpenTelemetry spans to an in-memory exporter, represents a durable approval pause as two linked traces, reads diagnostic cost, selects stable samples for asynchronous scoring, detects per-tenant score drift, computes journey-level SLIs and error-budget burn, reduces autonomy when burn rises, measures approval behavior, and sanitizes attributes before span creation.</p>
+<p>The companion <a href="../code/ch27/render_burn.py"><code>render_burn.py</code></a> generates an error-budget figure directly from the same burn model. The integrated tabletop begins from the fixture’s uncomfortable result: the fleet looks 96.55 percent successful while its 99.5 percent SLO burns at 6.9 times and triggers both a page and mandatory review.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch27-tracing" class="level2" data-number="27.5">
+<h2 data-number="27.5" class="anchored" data-anchor-id="sec-ch27-tracing"><span class="header-section-number">27.5</span> Trace one run without making a three-day span</h2>
+<p>A <strong>trace</strong> represents causal work across components. A <strong>span</strong> represents one bounded operation within it, with start and end times, status, attributes, events, parent context, and optional links. Context propagation lets an HTTP client span become the parent of a server span. A <strong>link</strong> associates work that is related but not a strict child, such as a resumed workflow, batch consumer, or fan-in.</p>
+<p>Name spans by operations a reader can reason about: <code>invoke_agent</code>, <code>chat</code>, <code>retrieval</code>, <code>execute_tool</code>, <code>request_approval</code>, and <code>resume_agent</code>. Use shared semantic fields where a maintained convention exists, normal database and HTTP conventions for dependencies, and an application namespace for business facts. A useful split is:</p>
+<ul>
+<li><code>gen_ai.*</code> for model/agent operation, model identifier, usage, and related convention fields;</li>
+<li><code>db.*</code>, <code>http.*</code>, and <code>rpc.*</code> for ordinary dependency instrumentation;</li>
+<li><code>app.*</code> for run, release, action, outcome, tenant surrogate, approval, and cost-allocation fields.</li>
+</ul>
+<p>Do not encode unbounded values such as raw prompts, order identifiers, URLs, or user IDs as metric labels. They create cardinality and privacy failures. Put a minimized or tokenized value on a sampled span only when needed, and retain searchable business lineage in its governed store.</p>
+<p>Long-running work should not hold one span open for days. End the trace when the active computation suspends, persist run and action identity in the durable workflow, then start a new trace when the signal arrives. Add a link from the resumed root span to the earlier trace context. This preserves bounded latency semantics: the approval wait is a workflow duration and queue metric, not an absurd tool-call span.</p>
+<p><a href="#fig-ch27-linked-traces" class="quarto-xref">Figure&nbsp;<span>27.1</span></a> shows one run crossing an approval wait. The run ID joins application state; the trace link tells an observability backend why the second execution is related.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    participant U as User</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    participant A as Agent worker</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    participant W as Durable workflow</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    participant H as Review queue</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    participant T as Effect tool</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    U-&gt;&gt;A: run-17</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    rect rgb(238, 244, 250)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        Note over A: Trace 1</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>        A-&gt;&gt;A: invoke_agent → chat</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        A-&gt;&gt;H: request_approval(action-17)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        A-&gt;&gt;W: persist suspension + trace context</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    W--&gt;&gt;A: worker may stop</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    H-&gt;&gt;W: approved(action-17)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    rect rgb(238, 248, 242)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>        Note over A: Trace 2, linked to Trace 1</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>        W-&gt;&gt;A: resume_agent(run-17)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>        A-&gt;&gt;T: execute_tool(action-17)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>        T--&gt;&gt;A: receipt-1</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    end</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch27-linked-traces" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch27-linked-traces-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch27-linked-traces">sequenceDiagram
+    participant U as User
+    participant A as Agent worker
+    participant W as Durable workflow
+    participant H as Review queue
+    participant T as Effect tool
+
+    U-&gt;&gt;A: run-17
+    rect rgb(238, 244, 250)
+        Note over A: Trace 1
+        A-&gt;&gt;A: invoke_agent → chat
+        A-&gt;&gt;H: request_approval(action-17)
+        A-&gt;&gt;W: persist suspension + trace context
+    end
+    W--&gt;&gt;A: worker may stop
+    H-&gt;&gt;W: approved(action-17)
+    rect rgb(238, 248, 242)
+        Note over A: Trace 2, linked to Trace 1
+        W-&gt;&gt;A: resume_agent(run-17)
+        A-&gt;&gt;T: execute_tool(action-17)
+        T--&gt;&gt;A: receipt-1
+    end
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch27-linked-traces-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;27.1: How should a durable approval pause appear without holding one trace open for days?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The artifact uses the OpenTelemetry SDK rather than a homegrown trace structure. It creates five spans across two trace IDs and one link. An in-memory exporter makes the structure testable without a collector:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ops_console.py — the resumed root</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> tracer.start_as_current_span(</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"resume_agent"</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    links<span class="op">=</span>[Link(first_context, attributes<span class="op">=</span>{</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"app.link.reason"</span>: <span class="st">"approval_resume"</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    })],</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    attributes<span class="op">=</span>{</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">"app.run.id"</span>: <span class="st">"run-17"</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">"app.approval.decision"</span>: <span class="st">"approve"</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> tracer.start_as_current_span(<span class="st">"execute_tool"</span>, attributes<span class="op">=</span>{</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">"gen_ai.operation.name"</span>: <span class="st">"execute_tool"</span>,</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">"app.action.id"</span>: <span class="st">"refund:A-17:v1"</span>,</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"app.effect.receipt"</span>: <span class="st">"receipt-1"</span>,</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    }):</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">pass</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A trace is diagnostic evidence, not an immutable audit record. Sampling, exporter loss, attribute limits, operator edits, and retention are legitimate properties of tracing systems. Chapter 24’s effect audit remains separately controlled. Likewise, a trace showing <code>tool.status=success</code> does not prove the external state unless the span carries a verifier-owned receipt or links to the authoritative outcome.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 (dated)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Verify live: 2026-07-19. Appendix C owner: GenAI telemetry conventions and observability integrations.</strong> OpenTelemetry’s earlier GenAI convention pages now point to the dedicated <a href="https://github.com/open-telemetry/semantic-conventions-genai"><code>open-telemetry/semantic-conventions-genai</code></a> repository; pin the revision and version your mapping because operation names, attribute names, and stability levels continue to evolve. Current ecosystems also include OpenInference instrumentation and products such as Langfuse, Phoenix, LangSmith, Braintrust, and Weave. Compatibility claims, ingestion models, self-hosting packages, and retention controls change. The durable design is standard trace context plus an explicit versioned mapping and application-owned outcome fields.</p>
+</div>
+</div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ops_console.py</code> with OTel export</td>
+<td style="text-align: right;">88 lines total; 17 shown</td>
+<td>One durable run may cross bounded linked traces without losing stable run, action, release, or receipt identity.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch27-fanout" class="level2" data-number="27.6">
+<h2 data-number="27.6" class="anchored" data-anchor-id="sec-ch27-fanout"><span class="header-section-number">27.6</span> Fan telemetry into four sources of truth</h2>
+<p>No single telemetry channel should answer billing, debugging, alerting, and audit. Their reliability, volume, retention, and mutability needs conflict. Use four channels joined by stable identities:</p>
+<ol type="1">
+<li><strong>unsampled metrics and counters</strong> answer fleet rate, latency distribution, saturation, error, queue age, and SLO questions;</li>
+<li><strong>sampled traces</strong> explain selected trajectories and dependency timing;</li>
+<li><strong>an unsampled usage ledger</strong> settles model, tool, and review cost by tenant, run, attempt, and release;</li>
+<li><strong>an append-only audit/effect record</strong> establishes policy decisions and authoritative external receipts.</li>
+</ol>
+<p><a href="#fig-ch27-fanout" class="quarto-xref">Figure&nbsp;<span>27.2</span></a> shows which channel is authoritative for which question. Export can fail independently; a tracing outage must not erase billing or effect truth.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    RUN["Agent journey&lt;br/&gt;run · attempt · release · tenant surrogate"] --&gt; METRIC[("Unsampled metrics&lt;br/&gt;rates · latency · SLO")]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    RUN --&gt; TRACE[("Sampled traces&lt;br/&gt;trajectory · dependency timing")]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    RUN --&gt; USAGE[("Unsampled usage ledger&lt;br/&gt;tokens · tools · review · cost")]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    RUN --&gt; AUDIT[("Append-only effect audit&lt;br/&gt;policy · approval · receipt")]</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    METRIC -. "exemplar / run ID" .-&gt; TRACE</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    TRACE -. "diagnostic attribution" .-&gt; USAGE</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    AUDIT -. "authoritative outcome" .-&gt; METRIC</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    USAGE -. "invoice reconciliation" .-&gt; METRIC</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch27-fanout" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch27-fanout-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch27-fanout">flowchart LR
+    RUN["Agent journey&lt;br/&gt;run · attempt · release · tenant surrogate"] --&gt; METRIC[("Unsampled metrics&lt;br/&gt;rates · latency · SLO")]
+    RUN --&gt; TRACE[("Sampled traces&lt;br/&gt;trajectory · dependency timing")]
+    RUN --&gt; USAGE[("Unsampled usage ledger&lt;br/&gt;tokens · tools · review · cost")]
+    RUN --&gt; AUDIT[("Append-only effect audit&lt;br/&gt;policy · approval · receipt")]
+    METRIC -. "exemplar / run ID" .-&gt; TRACE
+    TRACE -. "diagnostic attribution" .-&gt; USAGE
+    AUDIT -. "authoritative outcome" .-&gt; METRIC
+    USAGE -. "invoice reconciliation" .-&gt; METRIC
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch27-fanout-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;27.2: Which operational channel is authoritative for rates, diagnosis, cost, and consequential effects?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Metrics aggregate. A counter such as <code>agent_journeys_total{release, outcome_class}</code> is cheap and complete, but it cannot reconstruct one path. Histograms represent TTFT, time per tool, total journey latency, cost, steps, and approval wait without a label for every run. Include bounded dimensions that drive decisions—environment, release, region, task family, autonomy tier, outcome class—not every property available in context.</p>
+<p>Sampling controls trace volume. Head sampling decides before observing the trace and can miss rare failures. Tail sampling decides after enough spans arrive and can retain errors, high latency, new releases, safety decisions, or unusual cost. Keep an unbiased probability sample alongside targeted retention so population estimates remain possible. Record the sampling policy; a trace store overrepresenting failures is valuable for debugging but cannot directly estimate fleet failure rate.</p>
+<p>The usage ledger is unsampled and append-oriented. Provider usage may arrive late or be adjusted. Record observed units, price-schedule version, currency, provider account, cache class, and parent journey, then reconcile totals against provider invoices. The reference artifact sums <code>app.cost</code> on spans only as a diagnostic demonstration. It explicitly names that result <code>diagnostic_trace_cost</code>; losing a sampled span must not change the bill.</p>
+<p>The audit channel is also unsampled but narrower. It records proposed and authorized action, policy version, approval evidence, provider receipt, and outcome. Access should be more restricted than ordinary traces, because consequential records often contain identifiers and decision context. Immutability and independent anchoring belong to Chapter 24.</p>
+<p>Replay is a diagnostic mode, not a second production execution. Reconstruct model inputs from retained, authorized content; substitute recorded model and read-tool results where the question is deterministic code; run write tools behind a no-effect adapter; and use the Chapter 26 ledger if an integration test intentionally exercises a sandbox effect. A “replay” that resends a customer email or refund is a new incident.</p>
+<p>Reconciliation jobs should detect missing joins: an effect receipt without a run, metered usage without a tenant, a completed journey without an outcome, a trace naming an unknown bundle, or a review decision without an action digest. The operator console can then say whether evidence is absent or the underlying event is absent—a distinction dashboards often blur.</p>
+</section>
+<section id="sec-ch27-online-eval" class="level2" data-number="27.7">
+<h2 data-number="27.7" class="anchored" data-anchor-id="sec-ch27-online-eval"><span class="header-section-number">27.7</span> Score live behavior asynchronously and slice drift</h2>
+<p>Offline tasks are controlled and reproducible. Production traffic supplies distribution, dependency, and interaction reality. Use both without putting an expensive, fallible judge in the request path.</p>
+<p>Sample eligible completed runs asynchronously. Redact or tokenize content before export, attach the exact rubric and judge versions, and score only when the authoritative outcome is ready. A deterministic grader should inspect state, schema, policy, citations, or receipts before any model judge. The calibrated judge from Chapter 22 handles remaining open-ended qualities. Store component scores and diagnostic reasons, not only one average.</p>
+<p>The sample rate is a capacity and detection decision, not a ritual percentage. Rare severe outcomes need targeted or complete monitoring; common quality questions may use a stable probability sample. Oversample a new release, low-confidence runs, high-cost outliers, policy reviews, new task families, and critical tenants, while retaining weights or a separate representative sample for population estimates. The canary-power arithmetic remains in Chapters 22 and 26.</p>
+<p><strong>Drift</strong> means the live distribution or relationship has changed relative to a reference. Monitor several kinds:</p>
+<ul>
+<li>input drift: task family, language, document size, retrieval source, modality, or risk mix changes;</li>
+<li>outcome drift: success, groundedness, correction, reversal, or abandonment changes;</li>
+<li>score drift: calibrated grader distributions change under a pinned judge;</li>
+<li>trajectory drift: steps, tool choice, retries, loop rate, approval requests, or fallback changes;</li>
+<li>dependency drift: tool latency/error, provider refusal, corpus freshness, or index coverage changes.</li>
+</ul>
+<p>A difference is not automatically harmful. A product launch can create intentional input drift. A score shift can come from a judge update rather than the agent. Compare control and candidate under the same interval, slice by release and tenant, preserve reference windows, and annotate known events. When a detector fires, inspect raw counts, sampling, grader health, and authoritative outcomes before assigning cause.</p>
+<p>Fleet averages hide concentrated harm. Suppose tenant A’s mean score improves from 0.9 to 1.0 while tenant B falls from 0.9 to 0.4. The fleet mean drops from 0.9 to 0.7 and may stay above a coarse threshold; tenant B has suffered a 0.5 regression. The artifact’s <code>drift_by_tenant</code> compares per-tenant means and emits only drops above the declared threshold. Production detectors should add uncertainty, minimum counts, multiple-testing discipline, seasonality, and robust distribution metrics.</p>
+<p>Thumbs-up rate is not a standalone quality metric. Users self-select whether to rate; response propensity changes with sentiment, interface, and cohort. Combine it with invocation-to-outcome funnels, corrections, reversals, sampled adjudication, and exposure. Chapter 28 owns product reliance and value measurement.</p>
+<p>The feedback-to-dataset flywheel is governed promotion: triage a trace, remove or tokenize private data, verify the failure and intended behavior, deduplicate, assign provenance, have a human approve, then add a versioned task or training example. Chapter 23’s data and policy controls apply. Automatically training on every negative reaction creates poisoning, feedback-loop, and deletion problems.</p>
+<p>Quality is a metric; safety is a guardrail. A slight quality regression can consume a declared error budget. An unauthorized cross-tenant disclosure or unapproved irreversible effect is an invariant violation and triggers containment regardless of the monthly average.</p>
+</section>
+<section id="sec-ch27-slos" class="level2" data-number="27.8">
+<h2 data-number="27.8" class="anchored" data-anchor-id="sec-ch27-slos"><span class="header-section-number">27.8</span> Page on error-budget burn, not a green average</h2>
+<p>A <strong>service-level indicator</strong> (SLI) is a measured property of service behavior. A <strong>service-level objective</strong> (SLO) is a target for that indicator over a window. The <strong>error budget</strong> is the permitted amount of behavior outside the target. For a 99.5 percent good-journey SLO, the allowed bad-event fraction is 0.5 percent.</p>
+<p>Choose indicators at the journey boundary:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>User promise</th>
+<th>Good event</th>
+<th>SLI</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>useful completion</td>
+<td>authoritative task success <strong>and</strong> grounded response</td>
+<td>good completed journeys / eligible journeys</td>
+</tr>
+<tr class="even">
+<td>effect integrity</td>
+<td>exactly the intended number of authorized effects</td>
+<td>journeys with exact effect cardinality / effectful journeys</td>
+</tr>
+<tr class="odd">
+<td>responsiveness</td>
+<td>first useful streamed token within threshold</td>
+<td>compliant interactive journeys / interactive journeys</td>
+</tr>
+<tr class="even">
+<td>bounded cost</td>
+<td>successful journey within task-family cost ceiling</td>
+<td>cost-compliant successes / successful journeys</td>
+</tr>
+<tr class="odd">
+<td>workable oversight</td>
+<td>risk review completed before expiry and action remains current</td>
+<td>valid reviews / review-required actions</td>
+</tr>
+</tbody>
+</table>
+<p>“API availability” remains useful for a component, but it does not substitute for task correctness. Define eligibility and exclusions before measurement. A user cancellation, policy denial, upstream outage, and agent failure may each deserve a different class, yet exclusions should not make genuine user pain disappear. Publish both SLO accounting and total outcome distribution.</p>
+<p>For observed good events (g) among (n), target (S), observed bad fraction is (1-g/n) and allowed bad fraction is (1-S). The <strong>burn rate</strong> is</p>
+<p><span class="math display">
+B=\frac{1-g/n}{1-S}.
+</span></p>
+<p>At <span class="math inline">g=9{,}655</span>, <span class="math inline">n=10{,}000</span>, and <span class="math inline">S=0.995</span>, burn is 6.9. A burn of 1 consumes exactly the available budget over the SLO window if sustained. A burn above 1 exhausts early. If fraction <span class="math inline">r</span> of the budget remains in a <span class="math inline">W</span>-day window, a constant-burn approximation gives</p>
+<p><span class="math display">
+T_{\text{exhaust}}=\frac{Wr}{B}.
+</span></p>
+<p>With <span class="math inline">W=30</span>, <span class="math inline">r=0.95</span>, and <span class="math inline">B=6.9</span>, this is about 4.1 days.</p>
+<p><a href="#fig-ch27-budget-burn" class="quarto-xref">Figure&nbsp;<span>27.3</span></a> makes urgency legible. The same apparently small failure percentage has different consequences because the promised budget is narrow.</p>
+<div id="fig-ch27-budget-burn" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-cap="Why does error-budget burn convey urgency better than a raw success percentage? Synthetic constant-burn illustration generated by `render_burn.py`.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch27-budget-burn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../assets/figures/ch27-budget-burn.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;27.3: Error-budget remaining falls linearly under constant burn rates of 1, 6.9, and 14.4 times. The 6.9-times curve reaches zero near day 4.3 and the 14.4-times curve near day 2.1, while one-times lasts the full 30 days."><img src="../assets/figures/ch27-budget-burn.svg" class="img-fluid figure-img" data-fig-cap="Why does error-budget burn convey urgency better than a raw success percentage? Synthetic constant-burn illustration generated by `render_burn.py`."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch27-budget-burn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;27.3: Error-budget remaining falls linearly under constant burn rates of 1, 6.9, and 14.4 times. The 6.9-times curve reaches zero near day 4.3 and the 14.4-times curve near day 2.1, while one-times lasts the full 30 days.
+</figcaption>
+</figure>
+</div>
+<p>Multiwindow, multi-burn-rate alerting balances speed and precision. A fast page can require a high burn over both a long and short confirmation window; a slower page uses a lower burn; sustained mild burn becomes a ticket. The Google SRE Workbook gives a principled derivation and example thresholds. The artifact uses 14.4 times for read-only plus rollout freeze, 6 times for mandatory review plus a page, and 1 time for a ticket. These are teaching values, not universal policy.</p>
+<p>Low traffic complicates ratios. One failure can produce enormous burn with little evidence, while a rare safety failure may be too important to wait for volume. Use longer windows, event counts, Bayesian or exact interval context, synthetic probes, and targeted invariant monitoring. State which rule is SLO-budgeted and which is zero tolerance.</p>
+<p>Cost per successful task divides total journey cost—including failures—by successful journeys. If failed runs vanish from the numerator, the metric rewards systems for failing early. Track distribution and task mix, not only a mean. Chapter 26 owns the underlying cost ledger; this chapter pages when the user-facing cost objective is threatened.</p>
+</section>
+<section id="sec-ch27-control" class="level2" data-number="27.9">
+<h2 data-number="27.9" class="anchored" data-anchor-id="sec-ch27-control"><span class="header-section-number">27.9</span> Let evidence lower autonomy and let chaos test the claim</h2>
+<p>An error-budget policy is executable governance. Before the bad day, map evidence to automatic and human actions. One example:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Condition</th>
+<th>Immediate platform action</th>
+<th>Human action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>burn below 1</td>
+<td>normal declared autonomy</td>
+<td>routine review</td>
+</tr>
+<tr class="even">
+<td>sustained 1–6</td>
+<td>stop rollout expansion</td>
+<td>open owned ticket and inspect slices</td>
+</tr>
+<tr class="odd">
+<td>burn 6–14.4</td>
+<td>require review for write actions</td>
+<td>page operator; compare release/control</td>
+</tr>
+<tr class="even">
+<td>burn at least 14.4</td>
+<td>read-only mode; freeze rollout</td>
+<td>page incident lead; prepare rollback</td>
+</tr>
+<tr class="odd">
+<td>safety invariant violated</td>
+<td>stop new effects regardless of burn</td>
+<td>declare security/safety incident</td>
+</tr>
+</tbody>
+</table>
+<p>Self-throttling reduces blast radius before a person understands cause. It can lower step or concurrency budgets, disable optional tools, route to a simpler verified workflow, require human approval, or stop new effects while preserving read-only service. The fallback must have a smaller explicit contract. It must not route around a refusal or discard authorization.</p>
+<p>The artifact implements this as a pure decision function so the policy is reviewable and testable. At 6.9 times, it returns <code>require_review_and_page</code>; a safety flag at 0.1 times still returns <code>stop_new_effects</code>. Safety is not an error budget to spend.</p>
+<p><strong>Chaos engineering</strong> tests whether these controls survive real failure. Begin with a measurable steady-state hypothesis, inject one realistic fault under a bounded blast radius, observe user-facing and invariant outcomes, and abort on declared conditions. It is not random production breakage.</p>
+<p>Useful agent drills include:</p>
+<ul>
+<li>kill a worker after provider acceptance and assert the Chapter 26 effect count remains one;</li>
+<li>inject overload and connection resets, then assert retry and currency budgets cap amplification;</li>
+<li>delay a tool beyond the propagated deadline and assert stale actions cannot execute;</li>
+<li>corrupt or load an old checkpoint and assert quarantine or compatible migration;</li>
+<li>make the trace exporter unavailable and assert requests continue while a telemetry-loss counter fires;</li>
+<li>fill the review queue and assert expiry prevents old approval from releasing a changed action;</li>
+<li>revoke the effect tool or kill-switch control plane and verify the independent enforcement fallback.</li>
+</ul>
+<p>A chaos card names the hypothesis, steady-state indicators, target cohort, fault, start and stop conditions, maximum duration, expected alerts, owner, rollback, and evidence retained. Start in a disposable environment, then a non-effectful or tiny production cohort when justified. Chapter 32’s failure game consumes this skill but does not repeat the incident tabletop taught here.</p>
+</section>
+<section id="sec-ch27-incident" class="level2" data-number="27.10">
+<h2 data-number="27.10" class="anchored" data-anchor-id="sec-ch27-incident"><span class="header-section-number">27.10</span> Run the incident through both kinds of rollback</h2>
+<p>An incident begins when observed behavior threatens users or an invariant, not when the root cause is known. A workable lifecycle is detection, triage and declaration, containment, diagnosis and eradication, recovery, then learning. Roles scale with severity: one incident commander coordinates; an operations lead changes the system; a communications lead keeps stakeholders current; subject experts investigate without each becoming commander.</p>
+<p><a href="#fig-ch27-incident" class="quarto-xref">Figure&nbsp;<span>27.4</span></a> separates containment from recovery and technical from business rollback.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>stateDiagram-v2</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    [*] --&gt; DETECT: alert, report, or audit mismatch</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    DETECT --&gt; DECLARE: classify severity and assign commander</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    DECLARE --&gt; CONTAIN: stop new admission/effects, preserve evidence</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    CONTAIN --&gt; DIAGNOSE: compare release, tenant, tool, and trajectory</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    DIAGNOSE --&gt; TECHNICAL: revert or repair bundle</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    DIAGNOSE --&gt; BUSINESS: reconcile executed consequences</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    TECHNICAL --&gt; RECOVER</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    BUSINESS --&gt; RECOVER</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    RECOVER --&gt; VALIDATE: SLI, invariant, and authoritative state checks</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    VALIDATE --&gt; RAMP: controlled restoration</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    RAMP --&gt; LEARN: blameless postmortem + regression case</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    LEARN --&gt; [*]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch27-incident" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch27-incident-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch27-incident">stateDiagram-v2
+    [*] --&gt; DETECT: alert, report, or audit mismatch
+    DETECT --&gt; DECLARE: classify severity and assign commander
+    DECLARE --&gt; CONTAIN: stop new admission/effects, preserve evidence
+    CONTAIN --&gt; DIAGNOSE: compare release, tenant, tool, and trajectory
+    DIAGNOSE --&gt; TECHNICAL: revert or repair bundle
+    DIAGNOSE --&gt; BUSINESS: reconcile executed consequences
+    TECHNICAL --&gt; RECOVER
+    BUSINESS --&gt; RECOVER
+    RECOVER --&gt; VALIDATE: SLI, invariant, and authoritative state checks
+    VALIDATE --&gt; RAMP: controlled restoration
+    RAMP --&gt; LEARN: blameless postmortem + regression case
+    LEARN --&gt; [*]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch27-incident-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;27.4: What happens in what order when an agent incident has already created external effects?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The <strong>kill switch</strong> must have defined semantics. “Disable agent” can mean stop new journeys, cancel active model calls, prevent new tool invocations, revoke effect credentials, drain queues, or place tasks in review. The strong containment path stops new admissions and new consequential effects while preserving receipts and read-only diagnosis. It cannot retract a sent message, erase a disclosure, or reverse an already-settled transfer.</p>
+<p>That limitation creates two rollbacks:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Rollback</th>
+<th>Changes</th>
+<th>Examples</th>
+<th>Evidence needed</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>technical</td>
+<td>future system behavior</td>
+<td>point traffic to last-known-good bundle, revoke tool, restore policy, rebuild poisoned index</td>
+<td>release hashes, control-plane events, health and eval evidence</td>
+</tr>
+<tr class="even">
+<td>business</td>
+<td>consequences already produced</td>
+<td>void or credit transaction, correct record, notify affected user, rotate exposed secret, arrange return</td>
+<td>effect receipts, affected-object query, owner, compensation result</td>
+</tr>
+</tbody>
+</table>
+<p>Incident response cannot wait for perfect diagnosis. Contain based on plausible blast radius, preserve state, and keep a timestamped decision log. Compare candidate versus control, tenant and task slices, provider and tool health, recent bundles, corpus changes, approval behavior, and audit receipts. Avoid replaying hostile input through production effects during investigation.</p>
+<p>Mean time to detect is often the hidden failure. Probabilistic quality defects may first appear as user corrections days after release. Asynchronous outcome scoring, drift slices, authoritative-effect reconciliation, and golden probes shorten that gap. Track time from first harmful event—not first alert—to detection, containment, last harmful effect, technical recovery, and business recovery.</p>
+<p>Recovery is controlled restoration, not “pods are green.” Verify the user-facing SLI, critical slices, effect invariant, queue state, data consistency, and control health. Ramp with the Chapter 26 delivery path. Retain a comparison cohort when safe and communicate remaining uncertainty.</p>
+<p>A blameless postmortem explains the conditions and decisions that made the incident possible without confusing blamelessness with lack of accountability. Include impact, timeline, detection gap, contributing technical and organizational factors, what went well, where controls failed, technical and business recovery, and actions with owners and verification. Promote a reviewed incident case into Chapter 22’s golden regression set. If the incident exposed a missing runtime invariant, also add a deterministic or chaos test. “Be more careful” is not a corrective action.</p>
+</section>
+<section id="sec-ch27-hitl" class="level2" data-number="27.11">
+<h2 data-number="27.11" class="anchored" data-anchor-id="sec-ch27-hitl"><span class="header-section-number">27.11</span> Operate human review as a queue, not a checkbox</h2>
+<p>Chapter 17 bound a decision to one action. Chapter 24 placed that approval in authorization policy. Chapter 26 made the pause durable. Operations must ensure a qualified person can decide in time, with adequate evidence, without being trained to click approve.</p>
+<p>Each review item needs tenant and risk class, exact action and arguments, authoritative current state, why review is required, evidence and uncertainty, deadline and expiry, permitted decisions, escalation path, and action digest. The interface should make <code>approve</code>, <code>deny</code>, <code>modify as a new proposal</code>, and <code>escalate</code> semantically distinct. Free-form comments are context, not authorization.</p>
+<p>Queue objectives include age percentiles, oldest item, arrival and completion rates, abandonment, expiry, escalation, rework, and staffing coverage by skill and region. Little’s Law gives a planning check: average work in system <span class="math inline">L</span> equals arrival rate <span class="math inline">\lambda</span> times average time in system <span class="math inline">W</span> under stable conditions, <span class="math inline">L=\lambda W</span>. It does not model burst severity or skill routing; simulate or measure those separately. When arrivals persistently exceed service capacity, the queue grows without bound regardless of a beautiful SLA.</p>
+<p>Measure review behavior:</p>
+<ul>
+<li><strong>automation rate:</strong> fraction of eligible actions executed without human review;</li>
+<li><strong>approval rate:</strong> approved among completed reviews;</li>
+<li><strong>override or modification rate:</strong> actions the reviewer changes rather than accepts;</li>
+<li><strong>decision latency and queue wait:</strong> separated so interface time is not confused with staffing delay;</li>
+<li><strong>abandonment and expiry:</strong> work that never receives a valid decision;</li>
+<li><strong>post-approval defect rate:</strong> later reversals or incidents by reviewer, queue, and action class.</li>
+</ul>
+<p>A 99 percent approval rate with 0.2-second median decisions is not evidence of safe oversight. It is a <strong>rubber-stamp signal</strong>. It may reflect a low-risk queue whose policy should automate, or an interface and workload that make real review impossible. Sample decisions, test whether reviewers notice seeded discrepancies, examine disagreement and downstream outcomes, and redesign the policy or queue.</p>
+<p>The artifact computes approval, override, abandonment, median decision time, and the combined rubber-stamp signal. The threshold is illustrative. In production, compare by risk, complexity, reviewer, shift, and queue age; protect reviewer privacy and avoid simplistic performance ranking. Chapter 28 owns reviewer wellbeing and organizational incentives.</p>
+<p>Approval fatigue is a control failure. Route only genuinely decision-relevant cases, make consequence differences legible, batch only independent low-risk items, cap simultaneous work, rotate high-stakes duties, and give reviewers feedback about outcomes. If nearly every item is approved, either automate the policy-backed safe subset or find why the review has no discriminating information.</p>
+<p>During overload, do not silently widen authority. Lower autonomy, slow or reject new high-risk work, prioritize expiry and consequence, and preserve separation of duties. A week-old approval must not release an action whose amount, destination, state, policy, or release changed while queued.</p>
+</section>
+<section id="sec-ch27-privacy" class="level2" data-number="27.12">
+<h2 data-number="27.12" class="anchored" data-anchor-id="sec-ch27-privacy"><span class="header-section-number">27.12</span> Make telemetry private by construction</h2>
+<p>Telemetry is a second data product. It often outlives application state, reaches more operators and vendors, and copies prompts, retrieved documents, tool arguments, model output, user IDs, secrets, and decisions into indexes optimized for search. A tracing feature can therefore become the breach.</p>
+<p>Adopt <strong>content off by default</strong>. Emit operation name, timing, model/deployment, token counts, status, bounded task class, release, and pseudonymous join keys without prompt or response bodies. Enable sampled content only for approved environments, cohorts, purposes, roles, and retention windows. Prefer hashes, classifications, lengths, and references to a governed content store over raw duplication.</p>
+<p>Redact before span creation, not only in the backend UI. Exporters can fan out to several systems; network buffers and collector logs may already contain the secret before server-side masking. Secret-bearing keys—authorization, API key, access token, cookie, password—are unconditionally removed even when content capture is allowed. Scan string values for common bearer patterns. Treat model-generated output as capable of echoing a secret.</p>
+<p>The reference sanitizer enforces three small rules: secret-named fields become <code>[REDACTED]</code>, raw tenant ID becomes a short one-way surrogate, and GenAI input/output content becomes <code>[CONTENT_DISABLED]</code> unless capture is explicitly enabled. It also removes bearer values from error messages. The test plants a token in both an authorization attribute and a normal string; neither survives.</p>
+<p>Production redaction needs structured parsing, allowlists, validated tokenization, secret scanning, and tests over every instrumentation path. Regex is a last layer, not a complete privacy system. Keep a telemetry data inventory, access control, purpose, residency, retention, deletion path, export list, and breach-response owner. Audit who queries raw-content projects.</p>
+<p>“Zero data retention” is a provider contract term, not an end-to-end property. Verify which endpoint, account tier, abuse or safety exception, logging surface, feature, and region it covers. It does not erase your gateway, trace backend, crash dump, evaluation dataset, support export, browser recording, or effect audit. Record the contract revision and test actual integrations.</p>
+<p>Prompts and traces may be personal data when they identify or relate to a person. Applicable duties depend on jurisdiction, role, purpose, and sector. Engineering supports counsel and privacy owners by documenting lawful purpose, minimization, access, retention, residency, processors, security, data-subject request reach, deletion lineage, and holds. Chapter 18 owns propagation to memories, embeddings, adapters, caches, and derived learning artifacts. This section owns the operational job that finds and processes telemetry copies.</p>
+<p>Privacy-enhancing technologies solve different problems:</p>
+<ul>
+<li><strong>differential privacy</strong> bounds how much one record can influence a released statistic or trained mechanism under a stated adjacency relation and privacy budget; it does not hide raw inputs from the machine computing the mechanism;</li>
+<li><strong>federated or on-device processing</strong> keeps raw examples decentralized and aggregates updates or results; updates can still leak information and require secure aggregation, clipping, authentication, and sometimes differential privacy;</li>
+<li><strong>confidential computing</strong> protects data in use from parts of the host infrastructure through hardware-backed isolated execution and attestation; it does not make application code, prompts, outputs, or authorized recipients trustworthy.</li>
+</ul>
+<p>Choose a PET from the threat model. Pair it with minimization, access control, and deletion rather than using it as a privacy label. The model-asset privacy attacks and differential-privacy limitations introduced in Chapter 24 still apply.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 (dated)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Verify live: 2026-07-19. Appendix C owner: telemetry retention, ZDR, privacy law, and PET deployment support.</strong> Provider retention terms, content-capture defaults, regional telemetry storage, self-hosting architectures, masking features, GDPR guidance, and confidential-accelerator support are fast-moving and contract-specific. For example, current <a href="https://langfuse.com/self-hosting">Langfuse self-hosting documentation</a> describes its present storage architecture and deployment options, while its <a href="https://langfuse.com/self-hosting/security/data-masking">masking documentation</a> exposes configurable failure behavior that must be reviewed rather than assumed. Maintain a counsel-reviewed jurisdiction and vendor matrix; never infer production privacy posture from this chapter’s dated examples.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch27-build" class="level2" data-number="27.13">
+<h2 data-number="27.13" class="anchored" data-anchor-id="sec-ch27-build"><span class="header-section-number">27.13</span> Build</h2>
+<p>The integrated build has two parts: execute the console, then run the chapter’s single incident tabletop. From <code>newbook/</code>, run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> pytest tests/test_ch27_ops.py <span class="at">-q</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch27/ops_console.py</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch27/render_burn.py <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--plot</span> assets/figures/ch27-budget-burn.svg</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The fixture reports:</p>
+<pre class="text"><code>spans                         5
+traces                        2
+links                         1
+diagnostic trace cost         0.013
+success-and-grounded SLI      0.50   (four-run teaching subset)
+exactly-one-effect SLI        0.75   (four-run teaching subset)
+p95 TTFT                      400 ms
+cost per successful task      0.028
+30-day fleet burn             6.9×   (9,655 / 10,000 good; 99.5% target)
+days to exhaustion            4.1    (95% budget remaining)
+runtime action                require_review_and_page
+rubber-stamp signal           true   (99% approve; 0.2 s median)</code></pre>
+<p>The four-record subset exists to make SLI ownership inspectable; it is not the 10,000-event fleet window used for the burn calculation. One run succeeds and is grounded, one appears successful but is ungrounded and emits two effects, and another fails without an effect. HTTP status is irrelevant to these outcome labels.</p>
+<p>Now write three SLOs for a support agent:</p>
+<ol type="1">
+<li>at least 99.5 percent of eligible journeys are authoritatively successful and grounded over 30 days;</li>
+<li>100 percent of effectful journeys have exactly the authorized effect cardinality, treated as an invariant rather than burnable budget;</li>
+<li>95 percent of interactive journeys stream a first useful token within the product threshold, with an accompanying cost-per-successful-task ceiling by task family.</li>
+</ol>
+<p>Write the error-budget policy before the incident. Use the table from the control section, name the feature flag and independent effect-credential revocation path, assign the on-call and business-effect owners, and state which SLO windows and slices determine restoration.</p>
+<section id="the-incident-tabletop" class="level3" data-number="27.13.1">
+<h3 data-number="27.13.1" class="anchored" data-anchor-id="the-incident-tabletop"><span class="header-section-number">27.13.1</span> The incident tabletop</h3>
+<p>At 14:00, the facilitator reveals a canary drift alert: outputs shaped like data exfiltration appear for one tenant. The general task-success chart is green. A new retrieval connector was enabled at 13:30. At 14:05, audit reconciliation finds two non-allowlisted URL proposals; the Chapter 24 PEP denied both. At 14:12, one older tool path with direct network credentials is discovered outside that PEP. Its trace exporter is also missing 40 percent of spans.</p>
+<p>Run the response in real time:</p>
+<ol type="1">
+<li><strong>Detect and declare.</strong> Start the incident clock at the first harmful or suspicious output, not the alert. Assign commander, operations, communications, security, and business-effect roles.</li>
+<li><strong>Contain.</strong> Stop new external effects, revoke the old tool credential independently of tracing, freeze the canary, preserve audit and usage ledgers, and keep safe read-only service if policy permits.</li>
+<li><strong>Scope.</strong> Query authoritative egress and effect receipts by tool, tenant, release, connector revision, and time. Treat missing traces as missing diagnostic evidence, not absence of effects.</li>
+<li><strong>Recover technically.</strong> Point traffic to the last-known-good bundle, remove the bypass path, rebuild the connector corpus if poisoned, and pass the security regression plus release gate.</li>
+<li><strong>Recover the business.</strong> Identify any data actually disclosed, rotate affected secrets, contact owners under the incident plan, and record remediation. Denied proposals need different handling from executed disclosure.</li>
+<li><strong>Validate and ramp.</strong> Confirm the PEP is unavoidable, reconcile every attempted effect, restore trace health, run the golden case, and ramp through a bounded canary.</li>
+<li><strong>Learn.</strong> Produce the Appendix B postmortem, calculate MTTD, time to stop new effects, budget consumed, and last harmful effect. Add a permanent test proving no tool path can bypass the PEP and a chaos drill in which telemetry disappears during effect reconciliation.</li>
+</ol>
+<p>Success is not naming the poisoned connector. It is demonstrating that containment did not depend on that diagnosis, that missing sampled traces did not hide authoritative effect evidence, and that both technical and business rollback received an owner.</p>
+</section>
+</section>
+<section id="sec-ch27-endures" class="level2" data-number="27.14">
+<h2 data-number="27.14" class="anchored" data-anchor-id="sec-ch27-endures"><span class="header-section-number">27.14</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Instrument journeys, not only endpoints. Use bounded spans and linked traces for durable runs. Join unsampled metrics, sampled traces, an unsampled usage ledger, and an append-only effect record rather than forcing one store to be every truth. Score live outcomes asynchronously, preserve representative samples, and slice drift. Define journey-level SLOs and page on budget burn. Let rising burn reduce autonomy while invariant violations stop effects immediately. Practice hypothesis-driven chaos. Contain before perfect diagnosis, distinguish technical from business rollback, and convert incidents into permanent evidence. Measure human queues for discrimination and delay. Minimize and redact telemetry before export.</p>
+<p><strong>What changes.</strong> GenAI semantic-convention fields, observability vendors, judge models, drift libraries, provider retention contracts, privacy rules, confidential hardware, and dashboard APIs will change. Appendix C records those dated facts. Removing both Landscape boxes leaves the operating model and its equations intact.</p>
+</section>
+<section id="sec-ch27-exercises" class="level2" data-number="27.15">
+<h2 data-number="27.15" class="anchored" data-anchor-id="sec-ch27-exercises"><span class="header-section-number">27.15</span> Exercises</h2>
+<ol type="1">
+<li>Extend <code>drift_by_tenant</code> with minimum sample counts and confidence intervals. Construct a fleet in which the weighted average improves while one high-risk language slice regresses; specify the alert and the action it should trigger.</li>
+<li>Compute burn, remaining budget, and days to exhaustion for three scripted patterns: a brief total outage, a sustained 2-times burn, and intermittent 14.4-times spikes. Design multiwindow rules that page on the first and third without paging on harmless low-volume noise.</li>
+<li>Export the artifact’s OTel spans to a local collector and one current self-hosted GenAI observability backend. Pin every package and mapping version, reproduce the two linked traces, and prove content capture remains off in storage—not just in the UI.</li>
+<li>Write and run a chaos drill against Chapter 26: kill the worker in the effect gap, disable the trace exporter, and delay the approval signal past expiry. State the steady-state hypothesis, blast radius, abort condition, expected alerts, and authoritative post-run assertions.</li>
+<li>Given a week of approval events, compute queue age, arrival/service rate, approval, override, abandonment, expiry, and post-approval defects by risk class. Decide which class should automate, which needs better evidence, and where staffing—not reviewer behavior—is the bottleneck.</li>
+<li>Audit a supplied span fixture containing a bearer token in tool arguments, raw tenant ID, full prompt on an error span, a secret echoed in model output, and an unbounded URL label. Extend <code>sanitize_attributes</code> and tests while retaining enough surrogate identity for incident joins.</li>
+<li>Defend the four-channel telemetry fan-out against a proposal to derive invoices and effect audit entirely from sampled traces. Name the sampling, exporter, mutation, retention, cardinality, and access-control failures the proposal creates.</li>
+<li>Repeat the tabletop with both the feature-flag service and normal trace backend unavailable. Design an independent kill path, identify which evidence remains authoritative, and add concrete postmortem actions with owners, deadlines, and verification tests.</li>
+</ol>
+</section>
+<section id="sec-ch27-sources" class="level2" data-number="27.16">
+<h2 data-number="27.16" class="anchored" data-anchor-id="sec-ch27-sources"><span class="header-section-number">27.16</span> Notes and sources</h2>
+<ul>
+<li>OpenTelemetry’s <a href="https://opentelemetry.io/docs/concepts/signals/traces/">trace concepts</a> define spans, context, and links; the dedicated <a href="https://github.com/open-telemetry/semantic-conventions-genai">GenAI semantic-conventions repository</a> is the current moving source for GenAI mappings.</li>
+<li>Beyer et al., <a href="https://sre.google/sre-book/table-of-contents/"><em>Site Reliability Engineering</em></a> and the <a href="https://sre.google/workbook/table-of-contents/"><em>SRE Workbook</em></a>, supply the SLI, SLO, error-budget, incident, and postmortem foundations. The Workbook’s <a href="https://sre.google/workbook/alerting-on-slos/">alerting chapter</a> derives burn-rate and multiwindow alerting.</li>
+<li>The <a href="https://principlesofchaos.org/">Principles of Chaos Engineering</a> supply the steady-state hypothesis, realistic-variable, and minimized-blast-radius frame used by the drills.</li>
+<li>Langfuse’s current <a href="https://langfuse.com/docs/observability/data-model">data model</a>, <a href="https://langfuse.com/self-hosting">self-hosting</a>, and <a href="https://langfuse.com/self-hosting/security/data-masking">data-masking</a> pages are one maintained implementation example, not the chapter’s mechanism.</li>
+<li>NIST’s <a href="https://www.nist.gov/privacy-engineering">Privacy Engineering Program</a> frames privacy as measurable systems engineering; NIST SP 800-226 is the maintained technical reference for differential privacy.</li>
+<li>McMahan et al., <a href="https://proceedings.mlr.press/v54/mcmahan17a.html">“Communication-Efficient Learning of Deep Networks from Decentralized Data”</a>, introduce the federated-averaging setting referenced in the PET literacy section.</li>
+<li>Dwork and Roth, <a href="https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf"><em>The Algorithmic Foundations of Differential Privacy</em></a>, provide the formal differential-privacy foundation.</li>
+<li>Applicable privacy and data-protection obligations are jurisdiction- and sector-dependent. Use Appendix C’s dated, counsel-reviewed supplement rather than treating this engineering chapter as legal advice.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/26-production-platform.html" class="pagination-link" aria-label="The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/28-products-people-organizations.html" class="pagination-link" aria-label="Agent Products, People, and Organizations [S]">
+        <span class="nav-page-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

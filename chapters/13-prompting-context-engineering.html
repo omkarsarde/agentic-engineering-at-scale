@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Treat prompts as measured programs and construct each model call from the smallest useful, correctly ordered, observable context.">
+
+<title>13&nbsp; Prompting and Context Engineering [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/14-embeddings-rag.html" rel="next">
+<link href="../chapters/12-api-surface.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/12-api-surface.html">Part IV — Programming with Models and Retrieval</a></li><li class="breadcrumb-item"><a href="../chapters/13-prompting-context-engineering.html"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch13-prerequisites" id="toc-sec-ch13-prerequisites" class="nav-link active" data-scroll-target="#sec-ch13-prerequisites"><span class="header-section-number">13.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch13-contents" id="toc-sec-ch13-contents" class="nav-link" data-scroll-target="#sec-ch13-contents"><span class="header-section-number">13.2</span> Contents</a></li>
+  <li><a href="#sec-ch13-measurement" id="toc-sec-ch13-measurement" class="nav-link" data-scroll-target="#sec-ch13-measurement"><span class="header-section-number">13.3</span> Prompting becomes engineering when the change is measured</a></li>
+  <li><a href="#sec-ch13-will-build" id="toc-sec-ch13-will-build" class="nav-link" data-scroll-target="#sec-ch13-will-build"><span class="header-section-number">13.4</span> What you will build</a></li>
+  <li><a href="#sec-ch13-constructed" id="toc-sec-ch13-constructed" class="nav-link" data-scroll-target="#sec-ch13-constructed"><span class="header-section-number">13.5</span> Context is a constructed input, not a transcript</a></li>
+  <li><a href="#sec-ch13-few-shot" id="toc-sec-ch13-few-shot" class="nav-link" data-scroll-target="#sec-ch13-few-shot"><span class="header-section-number">13.6</span> Few-shot examples are data, not decoration</a></li>
+  <li><a href="#sec-ch13-structure" id="toc-sec-ch13-structure" class="nav-link" data-scroll-target="#sec-ch13-structure"><span class="header-section-number">13.7</span> Structure controls parsing, not trust</a></li>
+  <li><a href="#sec-ch13-apo" id="toc-sec-ch13-apo" class="nav-link" data-scroll-target="#sec-ch13-apo"><span class="header-section-number">13.8</span> Prompt optimization is search over a metric</a></li>
+  <li><a href="#sec-ch13-assembly" id="toc-sec-ch13-assembly" class="nav-link" data-scroll-target="#sec-ch13-assembly"><span class="header-section-number">13.9</span> Build the context window deterministically</a></li>
+  <li><a href="#sec-ch13-four-moves" id="toc-sec-ch13-four-moves" class="nav-link" data-scroll-target="#sec-ch13-four-moves"><span class="header-section-number">13.10</span> Write, select, compress, and isolate</a></li>
+  <li><a href="#sec-ch13-prefix" id="toc-sec-ch13-prefix" class="nav-link" data-scroll-target="#sec-ch13-prefix"><span class="header-section-number">13.11</span> Prefix stability is an application invariant</a></li>
+  <li><a href="#sec-ch13-compaction" id="toc-sec-ch13-compaction" class="nav-link" data-scroll-target="#sec-ch13-compaction"><span class="header-section-number">13.12</span> Compact by classifying before summarizing</a></li>
+  <li><a href="#sec-ch13-jit" id="toc-sec-ch13-jit" class="nav-link" data-scroll-target="#sec-ch13-jit"><span class="header-section-number">13.13</span> Load context just in time and keep a ledger</a></li>
+  <li><a href="#sec-ch13-build" id="toc-sec-ch13-build" class="nav-link" data-scroll-target="#sec-ch13-build"><span class="header-section-number">13.14</span> Build</a></li>
+  <li><a href="#sec-ch13-endures" id="toc-sec-ch13-endures" class="nav-link" data-scroll-target="#sec-ch13-endures"><span class="header-section-number">13.15</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch13-exercises" id="toc-sec-ch13-exercises" class="nav-link" data-scroll-target="#sec-ch13-exercises"><span class="header-section-number">13.16</span> Exercises</a></li>
+  <li><a href="#sec-ch13-sources" id="toc-sec-ch13-sources" class="nav-link" data-scroll-target="#sec-ch13-sources"><span class="header-section-number">13.17</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/12-api-surface.html">Part IV — Programming with Models and Retrieval</a></li><li class="breadcrumb-item"><a href="../chapters/13-prompting-context-engineering.html"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch13" class="quarto-section-identifier"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch13-prerequisites" class="level2" data-number="13.1">
+<h2 data-number="13.1" class="anchored" data-anchor-id="sec-ch13-prerequisites"><span class="header-section-number">13.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, basic Python, and the API vocabulary from Chapter 12: messages, tool descriptions, output schemas, and token usage.</p>
+<p><strong>Route A:</strong> Chapters 3, 7, 9, 10, and 12 established long-context behavior, behavior specifications, decoding, serving, and the caller-model boundary. This chapter decides what the caller should put on that boundary.</p>
+<p><strong>Not required:</strong> a provider account, an agent framework, a vector database, or a production tokenizer. The lab is deterministic and offline; its whitespace-token proxy is stated wherever a number depends on it.</p>
+</blockquote>
+<div class="callout callout-style-default callout-note callout-titled" title="Route B backfill — required, about seven pages">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Route B backfill — required, about seven pages
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Route B arrives here from Chapter 12. Before continuing, read <a href="../chapters/10-serving-at-scale.html#sec-ch10-prefix-cache">Chapter 10, “Prefix caching and cache economics”</a>, about four pages, and <a href="../chapters/03-attention-position-long-context.html#sec-ch03-effective">Chapter 3, “Advertised context is not effective context”</a>, about three pages. Chapter 10 supplies exact-prefix reuse and its write/read economics. Chapter 3 supplies the distinction between admitted tokens and tokens a model uses reliably. This chapter applies both facts at the caller side; it does not rederive their serving or attention mechanisms.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch13-contents" class="level2" data-number="13.2">
+<h2 data-number="13.2" class="anchored" data-anchor-id="sec-ch13-contents"><span class="header-section-number">13.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch13-measurement">Prompting becomes engineering when the change is measured</a></li>
+<li><a href="#sec-ch13-constructed">Context is a constructed input, not a transcript</a></li>
+<li><a href="#sec-ch13-few-shot">Few-shot examples are data, not decoration</a></li>
+<li><a href="#sec-ch13-structure">Structure controls parsing, not trust</a></li>
+<li><a href="#sec-ch13-apo">Prompt optimization is search over a metric</a></li>
+<li><a href="#sec-ch13-assembly">Build the context window deterministically</a></li>
+<li><a href="#sec-ch13-four-moves">Write, select, compress, and isolate</a></li>
+<li><a href="#sec-ch13-prefix">Prefix stability is an application invariant</a></li>
+<li><a href="#sec-ch13-compaction">Compact by classifying before summarizing</a></li>
+<li><a href="#sec-ch13-jit">Load context just in time and keep a ledger</a></li>
+<li><a href="#sec-ch13-build">Build</a></li>
+<li><a href="#sec-ch13-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch13-exercises">Exercises</a></li>
+<li><a href="#sec-ch13-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch13-measurement" class="level2" data-number="13.3">
+<h2 data-number="13.3" class="anchored" data-anchor-id="sec-ch13-measurement"><span class="header-section-number">13.3</span> Prompting becomes engineering when the change is measured</h2>
+<p>On Friday afternoon, a ticket extractor begins routing delivery problems to refunds. Its prompt changed that morning: one adjective became another in a paragraph that had been edited dozens of times. The team can show the current prompt and the current failures. It cannot show which edit caused the regression, what cases improved, which model revision ran, or whether the context around the prompt also changed. Reverting the adjective appears to help five hand-picked examples, so the team ships the revert. On Monday, another slice fails.</p>
+<p>That is not a wording problem. It is an experimental-design problem.</p>
+<p>A prompt is executable configuration applied to a particular model and input distribution. A useful prompt record is therefore not a string. It is a tuple such as</p>
+<p><span class="math display">
+P=(m,v,i,d,s,c,g),
+</span></p>
+<p>where <span class="math inline">m</span> is the exact model revision, <span class="math inline">v</span> the prompt version, <span class="math inline">i</span> the instructions, <span class="math inline">d</span> the demonstrations, <span class="math inline">s</span> the output schema, <span class="math inline">c</span> the decoding controls, and <span class="math inline">g</span> the context-assembly policy. Its quality is meaningful only relative to an evaluation distribution <span class="math inline">D</span> and metric <span class="math inline">M</span>:</p>
+<p><span class="math display">
+Q(P)=\mathbb{E}_{x\sim D}[M(P,x)].
+</span></p>
+<p>Changing “precise” to “careful” changes <span class="math inline">P</span>. Adding a tool, moving a timestamp, changing example order, or compacting history also changes <span class="math inline">P</span>. If two variants are not run on the same versioned cases with the same scorer and model, the comparison is anecdote.</p>
+<p>This framing changes the daily workflow:</p>
+<ol type="1">
+<li>Freeze a representative case set, including expensive edge cases.</li>
+<li>Define a scorer before editing the prompt.</li>
+<li>Change one named mechanism or search a declared candidate space.</li>
+<li>Record per-case outputs, not only the aggregate.</li>
+<li>Promote a variant only after held-out and safety checks.</li>
+</ol>
+<p>Exact match works for a finite label. Schema validity works for shape. Unit tests can execute generated code. A rubric grader can assess an explanation, but then the grader model, rubric, calibration cases, and disagreement rate become part of the measurement system. No scorer is “just evaluation.” It encodes what the application values.</p>
+<p>A useful failure table is more actionable than one score. Keep input ID, expected behavior, actual behavior, prompt version, model revision, context hash, and failure category. When a total rises from 82 to 86 percent, the table reveals whether four difficult cases improved or eight cases swapped correctness. Chapter 23 builds the full evaluation program. Here, the smaller lesson is enough: <strong>prompting is measurement before it is wordsmithing.</strong></p>
+</section>
+<section id="sec-ch13-will-build" class="level2" data-number="13.4">
+<h2 data-number="13.4" class="anchored" data-anchor-id="sec-ch13-will-build"><span class="header-section-number">13.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled" title="One context pipeline, grown by mechanism">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>One context pipeline, grown by mechanism
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will build <a href="../code/ch13/context_pipeline.py"><code>context_pipeline.py</code></a>, a deterministic facade over three connected experiments. <a href="../code/ch13/prompt_optimizer.py"><code>prompt_optimizer.py</code></a> owns finite prompt search, <a href="../code/ch13/context_assembly.py"><code>context_assembly.py</code></a> owns typed selection and rendering, and <a href="../code/ch13/context_history.py"><code>context_history.py</code></a> owns compaction and prefix measurement.</p>
+<p>First, a miniature prompt optimizer evaluates four ticket-classification instructions against an exact-match golden set and keeps every losing trial. Second, a context assembler orders trust-labelled segments and a compactor reduces a synthetic 40-message debugging history while asserting that every decision and open question survives literally. Third, a 50-turn simulation crosses compaction on/off with a stable/broken prefix and records utilization, reusable-prefix fraction, and compaction events.</p>
+<p><a href="../code/ch13/render_metrics.py"><code>render_metrics.py</code></a> turns that ledger into one numeric figure. The offline proxy classifier and whitespace-token counter teach control flow; their scores are not evidence about a language model. Success means a measured prompt improvement, zero lost durable-state assertions, deterministic rendering, a bounded compacted context, and four complete 50-turn ledgers.</p>
+</div>
+</div>
+<p>The artifact stays one public pipeline because the concept is one build, while focused modules keep each mechanism readable. There is no <code>prompt_v1.py</code>, <code>prompt_v2.py</code>, and <code>prompt_v3.py</code> progression to reconcile. Each section adds one responsibility to the same facade; tests state the invariants.</p>
+</section>
+<section id="sec-ch13-constructed" class="level2" data-number="13.5">
+<h2 data-number="13.5" class="anchored" data-anchor-id="sec-ch13-constructed"><span class="header-section-number">13.5</span> Context is a constructed input, not a transcript</h2>
+<p>Prompt engineering usually asks, “What instruction should I write?” Context engineering asks the larger question: <strong>what should the model see on this call?</strong> For an agentic application, a conceptual context function is</p>
+<p><span class="math display">
+C_t=f(S,T,M,R,H_t,Q_t;B),
+</span></p>
+<p>where <span class="math inline">S</span> is the system instruction, <span class="math inline">T</span> the available tool descriptions, <span class="math inline">M</span> durable remembered state, <span class="math inline">R</span> retrieved evidence, <span class="math inline">H_t</span> selected interaction history, <span class="math inline">Q_t</span> the current query, and <span class="math inline">B</span> the input budget. The semicolon matters: the budget constrains the function; it is not another source to concatenate.</p>
+<p>The context window resembles RAM only in one limited sense: it is finite working state for the current computation. Unlike ordinary RAM, its addresses are not equally reliable, and an irrelevant resident byte is usually harmless. An irrelevant token can change the model’s answer. Tokens compete for attention, can contradict one another, can imitate instructions, and have position-dependent usefulness. The objective is not to fill the window. It is to choose the smallest high-signal input that makes the target behavior likely.</p>
+<p>Chapter 3 separated accepted context from effective context. A million admitted tokens do not imply uniform use of a million tokens. “Lost in the Middle” found position sensitivity on its tested multi-document QA and key-value tasks; Chroma’s later context-rot experiments found that performance on tested models and tasks often degraded as input grew, even under controlled constructions. Neither result gives a universal safe percentage. Together they invalidate “send everything because it fits” as a design rule.</p>
+<p>Figure <a href="#fig-ch13-context-function" class="quarto-xref">Figure&nbsp;<span>13.1</span></a> shows the application boundary. The model does not fetch this state by intuition; an assembler chooses, labels, orders, and budgets it before the API call.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    S["System contract"] --&gt; A["Deterministic context assembler"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    T["Tool descriptions"] --&gt; A</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    M["Durable state references"] --&gt; A</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    R["Retrieved evidence"] --&gt; A</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    H["Selected history"] --&gt; A</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    Q["Current query"] --&gt; A</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    B["Token budget"] -. "constrains" .-&gt; A</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    A --&gt; O["Ordered, trust-labelled model input"]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    O --&gt; L["Context ledger"]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch13-context-function" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch13-context-function-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch13-context-function">flowchart LR
+    S["System contract"] --&gt; A["Deterministic context assembler"]
+    T["Tool descriptions"] --&gt; A
+    M["Durable state references"] --&gt; A
+    R["Retrieved evidence"] --&gt; A
+    H["Selected history"] --&gt; A
+    Q["Current query"] --&gt; A
+    B["Token budget"] -. "constrains" .-&gt; A
+    A --&gt; O["Ordered, trust-labelled model input"]
+    O --&gt; L["Context ledger"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch13-context-function-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13.1: What turns distributed application state into the one ordered input a model receives?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The diagram also marks an ownership boundary. Chapter 18 owns how memory is represented and updated. Chapters 14 and 15 own retrieval quality. Chapter 17 owns tool discovery and execution. This chapter consumes their outputs as typed segments and decides what enters the next call.</p>
+<p>Think in <strong>segments</strong>, not one growing string. Each segment should carry at least a source type, trust label, content, stability flag, and priority. Production systems often also need tenant, creation time, expiry, sensitivity, provenance, and a pointer to the full source. These fields permit explicit policy: stable developer instructions precede volatile user data; stale observations can expire; a summary can be distinguished from a verbatim tool result.</p>
+</section>
+<section id="sec-ch13-few-shot" class="level2" data-number="13.6">
+<h2 data-number="13.6" class="anchored" data-anchor-id="sec-ch13-few-shot"><span class="header-section-number">13.6</span> Few-shot examples are data, not decoration</h2>
+<p>In-context learning changes behavior by conditioning the forward pass on examples; it does not update the checkpoint’s weights. A demonstration communicates several things at once: the task boundary, label semantics, desired output shape, tone, and sometimes a latent decision rule. That density makes examples powerful and dangerous.</p>
+<p>Suppose a classifier has labels <code>refund</code>, <code>status</code>, and <code>technical</code>. An example pairing “tracking page crashes” with <code>status</code> teaches format and a bad precedence rule. Five redundant refund examples skew the local label distribution. A beautifully formatted example with a hidden customer identifier creates a privacy problem. Examples are a small dataset embedded in the request, so apply dataset discipline:</p>
+<ul>
+<li>choose cases near the ambiguity boundary rather than five easy duplicates;</li>
+<li>cover labels and high-cost failure modes;</li>
+<li>make the demonstrated output identical to the production schema;</li>
+<li>remove accidental features that should not control the answer;</li>
+<li>fix order while measuring, then test order sensitivity;</li>
+<li>keep a held-out set that candidate selection never sees.</li>
+</ul>
+<p>Selection can be static or query-dependent. A static set is easy to version and maximizes prefix reuse. Query-dependent demonstrations may be more relevant but add retrieval errors, latency, and cache variation. Compare both on the same distribution. “Dynamic” is not automatically more capable.</p>
+<p>Example order can matter because a transformer sees an ordered sequence, and later examples sit closer to the query. Test several seeded permutations when the number of examples is small. If one order wins narrowly but fails on another seed, prefer the less brittle configuration or increase the case set. Also compare zero-shot against few-shot. An example can hurt when it conflicts with the model’s existing decision boundary, consumes attention, or over-specifies surface form.</p>
+<p>Personas deserve the same test. “You are a world-class expert” may alter tone, verbosity, or behavior on a specific model and task; it is not a general capability multiplier. A 2024 EMNLP Findings study evaluated 162 personas across four model families and 2,410 factual questions and did not find overall accuracy improvement. That result does not ban roles. It moves the burden of proof to the application’s metric. A role is useful when it establishes audience, responsibility, vocabulary, or interaction contract—not because status adjectives are assumed to create expertise.</p>
+<p>The golden-set grader in the artifact is deliberately small and inspectable:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch13/prompt_optimizer.py — changed region: evaluate</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>predictions <span class="op">=</span> [classify(prompt, item.text) <span class="cf">for</span> item <span class="kw">in</span> examples]</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>failures <span class="op">=</span> [</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    {<span class="st">"text"</span>: item.text, <span class="st">"expected"</span>: item.expected, <span class="st">"actual"</span>: actual}</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> item, actual <span class="kw">in</span> <span class="bu">zip</span>(examples, predictions)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> actual <span class="op">!=</span> item.expected</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>score <span class="op">=</span> (<span class="bu">len</span>(examples) <span class="op">-</span> <span class="bu">len</span>(failures)) <span class="op">/</span> <span class="bu">len</span>(examples)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The per-case failures are the primary artifact. The scalar only ranks candidates. In a live experiment, replace <code>classify()</code> with a pinned model call, repeat stochastic calls when necessary, and separate the optimization split from the final test split.</p>
+</section>
+<section id="sec-ch13-structure" class="level2" data-number="13.7">
+<h2 data-number="13.7" class="anchored" data-anchor-id="sec-ch13-structure"><span class="header-section-number">13.7</span> Structure controls parsing, not trust</h2>
+<p>Long prose makes boundaries implicit. Structural markup makes them visible to people, template code, and often the model. XML-like tags, Markdown headings, JSON objects, and explicit delimiters can distinguish instructions, examples, retrieved documents, and the current query:</p>
+<pre class="text"><code>&lt;retrieved_document trust="external" source="invoice-41"&gt;
+...document text...
+&lt;/retrieved_document&gt;
+&lt;task&gt;
+Answer from the documents and identify unresolved conflicts.
+&lt;/task&gt;</code></pre>
+<p>Use names that express semantics. <code>&lt;data&gt;</code> is weaker than <code>&lt;untrusted_search_result&gt;</code>. Close every delimiter, escape nested content, and render through one tested function. A delimiter mismatch is a serialization bug. Chapter 12’s structured-output guarantees apply to the response; this section structures the input.</p>
+<p>Markup is not an authorization boundary. Text inside <code>&lt;untrusted_search_result&gt;</code> can still contain an instruction-like sentence, and a model can still follow it. Trust labels give the prompt and later audit code information with which to reason; they do not make hostile text inert. Chapter 24 owns prompt-injection defenses, isolation, and least privilege. Here the invariant is narrower: preserve provenance and never imply that fencing equals security.</p>
+<p>The system prompt should operate at the right altitude. It should state purpose, non-negotiable behavior, decision policy, tool-use expectations, and output contract without encoding a giant flowchart in prose. Brittle micro-rules are difficult to reconcile; slogans are too vague to test. Chapter 7 owns behavior-specification design. This chapter renders the selected version and keeps it stable.</p>
+<p>Prompting advice around reasoning is model-scoped. “Think step by step” historically helped some tasks and models, but it is not a durable default for every reasoning-tuned model. Some APIs expose a reasoning effort, thinking level, or budget; some models reason internally and return a summary rather than hidden tokens; some combinations constrain temperature or tool use. Treat reasoning configuration as a versioned request control. Evaluate task success, latency, input/output usage, and failure modes. Do not require a hidden chain of thought as an application contract. Ask for checkable work products—assumptions, calculations, citations, tests, or a concise rationale—when the task needs them.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — reasoning controls are provider and model surfaces
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>As of 2026-07-19, current OpenAI, Anthropic, and Gemini APIs expose different controls and accounting for reasoning or thinking. Names, supported values, preservation across turns, and interactions with other parameters vary by model. The durable design is to keep a model-capability profile next to prompt configuration and gate every migration with the target evaluation suite.</p>
+<p><strong>Verify live:</strong> inspect the official <a href="https://developers.openai.com/api/docs/guides/reasoning">OpenAI reasoning guide</a>, <a href="https://platform.claude.com/docs/en/build-with-claude/extended-thinking">Claude extended-thinking guide</a>, and <a href="https://ai.google.dev/gemini-api/docs/thinking">Gemini thinking guide</a> for the selected model immediately before deployment. <strong>Verified:</strong> 2026-07-19.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch13-apo" class="level2" data-number="13.8">
+<h2 data-number="13.8" class="anchored" data-anchor-id="sec-ch13-apo"><span class="header-section-number">13.8</span> Prompt optimization is search over a metric</h2>
+<p>Once prompts have versions and scores, prompt optimization becomes ordinary black-box search. Let <span class="math inline">\mathcal{P}</span> be a candidate set and <span class="math inline">\hat Q_D(P)</span> the measured score on development cases. The simplest optimizer is</p>
+<p><span class="math display">
+P^*=\arg\max_{P\in\mathcal{P}} \hat Q_D(P).
+</span></p>
+<p>The candidate generator might enumerate hand-written instructions, select demonstrations, propose edits from failure traces, or combine all three. The evaluator can be exact match, executable tests, a calibrated judge, or a weighted vector of quality, latency, and cost. The loop is useful because proposals and evidence are separated.</p>
+<p>The lab searches four instructions. Its proxy model makes two ambiguous <code>technical</code> tickets look like <code>status</code> until the instruction defines labels and says that explicit refund intent outranks malfunction, which outranks delivery status. Three candidates score 10/12; the winner scores 12/12. The result is not that these English words are universally superior. It is that a declared rule fixes two named cases under a declared classifier.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch13/prompt_optimizer.py — changed region: optimize_prompt</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>trials <span class="op">=</span> [{<span class="st">"prompt"</span>: prompt, <span class="op">**</span>evaluate(prompt)} <span class="cf">for</span> prompt <span class="kw">in</span> candidates]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>winner <span class="op">=</span> <span class="bu">max</span>(</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">enumerate</span>(trials),</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    key<span class="op">=</span><span class="kw">lambda</span> pair: (pair[<span class="dv">1</span>][<span class="st">"score"</span>], <span class="op">-</span>pair[<span class="dv">0</span>]),</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>)[<span class="dv">1</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The index term makes ties deterministic and keeps the earlier candidate. The output retains losers and their failure rows. Without the losers, a future engineer cannot tell whether the winner dominated or won on one case.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>prompt_optimizer.py</code> complete</td>
+<td style="text-align: right;">80 lines</td>
+<td>Every candidate is scored by the same exact-match grader; ties are deterministic; failures and losing prompts remain inspectable.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Optimization can overfit prompts just as training can overfit weights. Searching more candidates against the same twelve cases leaks information about those cases into the chosen prompt. Keep a final set untouched, slice results by risk category, and retest after model changes. For judge-based metrics, calibrate the judge against human labels and inspect preference for length, style, self-reference, and shared model-family artifacts. For multi-objective systems, define the promotion rule before search—for example, maximize task success subject to a p95 latency ceiling and zero authorization regressions.</p>
+<p>An optimizer without a trustworthy metric accelerates the wrong behavior. It may learn verbosity that flatters a judge, demonstrations copied from the evaluation set, or loopholes in a unit test. Automatic prompt optimization does not remove specification work; it makes specification quality more consequential.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — optimizers search instructions, demonstrations, and traces
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>MIPRO introduced joint optimization of free-form instructions and demonstrations for multi-stage language-model programs. GEPA later used natural-language reflection over trajectories and a Pareto frontier of candidates. The GEPA paper, revised in 2026 and accepted to ICLR 2026, reports gains over GRPO and MIPROv2 on its evaluated tasks with fewer rollouts; those are paper-specific results, not a universal ranking. Framework APIs and default optimizers change faster than the metric-first loop described above.</p>
+<p><strong>Verify live:</strong> inspect the primary <a href="https://arxiv.org/abs/2406.11695">MIPRO paper</a>, <a href="https://github.com/stanfordnlp/dspy/blob/main/docs/docs/api/optimizers/MIPROv2.md">current DSPy MIPROv2 documentation</a>, and <a href="https://arxiv.org/abs/2507.19457">GEPA paper</a> before selecting an optimizer. Reproduce on the application’s own held-out tasks. <strong>Verified:</strong> 2026-07-19.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch13-assembly" class="level2" data-number="13.9">
+<h2 data-number="13.9" class="anchored" data-anchor-id="sec-ch13-assembly"><span class="header-section-number">13.9</span> Build the context window deterministically</h2>
+<p>Context assembly should behave like a compiler pass, not scattered string concatenation. The inputs are typed segments; the output is one reproducible sequence plus an audit record. If the same state, policy, query, and budget enter twice, the same bytes should leave twice.</p>
+<p>The artifact begins with a small segment type:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch13/context_assembly.py — changed region: Segment</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Segment:</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    kind: <span class="bu">str</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    trust: <span class="bu">str</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    content: <span class="bu">str</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    stable: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    priority: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    tags: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> ()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>kind</code> determines structural position. <code>trust</code> records who controls the content. <code>stable</code> identifies material that can form a reusable prefix. <code>priority</code> and <code>tags</code> support selection. This is an instructional minimum; a regulated system may require source URI, tenant, access decision, data class, effective time, expiry, and content digest.</p>
+<p>A sensible default order is stable to volatile:</p>
+<ol type="1">
+<li>system contract and invariant policy;</li>
+<li>stable tool or output schemas;</li>
+<li>stable demonstrations;</li>
+<li>selected evidence and state;</li>
+<li>recent history;</li>
+<li>the current query.</li>
+</ol>
+<p>Ordering has three effects. It expresses precedence to the model, makes inspection predictable, and maximizes the chance that repeated leading bytes can be reused. There are exceptions: a provider’s wire format may place tools outside the message list, and a model-specific prompting guide may recommend another arrangement. Encode such variation in the renderer for that model profile, not in every caller.</p>
+<p>The renderer sorts by a fixed table, wraps each block with kind and trust, and applies a budget. A required stable segment or query raises an error instead of disappearing. Lower-priority optional segments may be omitted, but selection should occur before rendering so the reason is visible:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch13/context_assembly.py — changed region: render_context</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>ordered <span class="op">=</span> <span class="bu">sorted</span>(</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">enumerate</span>(segments),</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    key<span class="op">=</span><span class="kw">lambda</span> pair: (ORDER[pair[<span class="dv">1</span>].kind], pair[<span class="dv">0</span>]),</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _, segment <span class="kw">in</span> ordered:</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    block <span class="op">=</span> <span class="ss">f'&lt;</span><span class="sc">{</span>segment<span class="sc">.</span>kind<span class="sc">}</span><span class="ss"> trust="</span><span class="sc">{</span>segment<span class="sc">.</span>trust<span class="sc">}</span><span class="ss">"&gt;</span><span class="ch">\n</span><span class="sc">{</span>segment<span class="sc">.</span>content<span class="sc">}</span><span class="ch">\n</span><span class="ss">&lt;/</span><span class="sc">{</span>segment<span class="sc">.</span>kind<span class="sc">}</span><span class="ss">&gt;'</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> used <span class="op">+</span> token_count(block) <span class="op">&gt;</span> budget <span class="kw">and</span> <span class="kw">not</span> segment.stable <span class="kw">and</span> segment.kind <span class="op">!=</span> <span class="st">"query"</span>:</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">continue</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> used <span class="op">+</span> token_count(block) <span class="op">&gt;</span> budget:</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="ss">f"required </span><span class="sc">{</span>segment<span class="sc">.</span>kind<span class="sc">}</span><span class="ss"> segment exceeds the budget"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Silent truncation is particularly damaging. Removing the end may delete the user query. Removing the beginning may delete policy. Cutting a serialized tool schema midway leaves invalid structure. Budget at segment boundaries, reserve output capacity separately, and fail closed when required material cannot fit.</p>
+<p>Production budgeting uses the exact tokenizer and chat template, as Chapter 12 demonstrated. The lab’s <code>token_count()</code> uses whitespace solely so the experiment is portable and its arithmetic inspectable. Never transfer its counts to a hosted endpoint. Reconcile local rendered tokens against provider usage and alert on persistent drift; a hidden template or tool-description change may be consuming the difference.</p>
+<p>System instructions are not access control. A <code>trust="developer"</code> label expresses provenance to the model and logs. Authorization still belongs to executable code around tools and data. Conversely, putting user text in a system-position string does not convert it into trusted developer intent. Preserve origin through transformations.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>context_assembly.py</code> complete</td>
+<td style="text-align: right;">82 lines</td>
+<td>Rendering is deterministic, stable-to-volatile, trust-labelled, and unable to silently drop required system or query material.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch13-four-moves" class="level2" data-number="13.10">
+<h2 data-number="13.10" class="anchored" data-anchor-id="sec-ch13-four-moves"><span class="header-section-number">13.10</span> Write, select, compress, and isolate</h2>
+<p>Four operations cover most caller-side context work. They are easier to reason about when named separately:</p>
+<ul>
+<li><strong>Write</strong> moves a durable fact or artifact outside the active window and leaves an addressable reference.</li>
+<li><strong>Select</strong> chooses the subset relevant to the current decision.</li>
+<li><strong>Compress</strong> replaces detail with a smaller representation that preserves declared invariants.</li>
+<li><strong>Isolate</strong> performs a noisy subtask in a separate context and returns only its result, evidence, and reference.</li>
+</ul>
+<p>These moves can compose. An agent writes a test log to an artifact, selects the failed tests, isolates root-cause analysis in a worker, then compresses the result into three evidence-backed findings. Figure <a href="#fig-ch13-four-moves" class="quarto-xref">Figure&nbsp;<span>13.2</span></a> distinguishes what happens to information in each move.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>flowchart TB</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    X["Candidate information"] --&gt; D{"Needed on this call?"}</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    D -- "No, but durable" --&gt; W["Write externally and keep a reference"]</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    D -- "Yes, only a subset" --&gt; S["Select relevant segments"]</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    D -- "Yes, but too large" --&gt; C["Compress under survival invariants"]</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    D -- "Requires noisy independent work" --&gt; I["Isolate the work and return a digest"]</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    W --&gt; A["Active context"]</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    S --&gt; A</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    C --&gt; A</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    I --&gt; A</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch13-four-moves" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch13-four-moves-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch13-four-moves">flowchart TB
+    X["Candidate information"] --&gt; D{"Needed on this call?"}
+    D -- "No, but durable" --&gt; W["Write externally and keep a reference"]
+    D -- "Yes, only a subset" --&gt; S["Select relevant segments"]
+    D -- "Yes, but too large" --&gt; C["Compress under survival invariants"]
+    D -- "Requires noisy independent work" --&gt; I["Isolate the work and return a digest"]
+    W --&gt; A["Active context"]
+    S --&gt; A
+    C --&gt; A
+    I --&gt; A
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch13-four-moves-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13.2: Which operation should reduce pressure on the active context without erasing recoverability?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Write is not “remember everything.” A durable store needs its own schema, lifecycle, retrieval, and deletion policy, all owned by Chapter 18. At this boundary, write only produces a compact reference such as <code>REF incident-91: replay bundle and trace index</code>. A reference without enough <strong>scent</strong> to know when it matters is dead state; include a descriptive name, type, and short summary.</p>
+<p>Select is a precision decision. Filter by task, provenance, freshness, permissions, and expected information gain—not just lexical overlap. Chapter 14 will build retrieval candidates and Chapter 15 will rank and verify them. The Chapter 13 assembler accepts their selected segments and ensures their labels and ordering survive.</p>
+<p>Compress is lossy unless the representation is reversible. State what may be lost and what must survive. A tool transcript can often lose repeated progress output but not the exit status, error text, affected file, or command identity. A conversation summary can merge paraphrases but must not turn “do not deploy” into “deploy later.” The next compaction section builds this as an assertion.</p>
+<p>Isolate is useful when a subtask emits many exploratory tokens or works with a different evidence set. Isolation can reduce distraction and protect the primary prefix. It also loses tacit context, adds coordination latency, and can hide errors behind a neat summary. Require a return contract: conclusion, evidence, uncertainty, artifacts, and unresolved questions. Chapter 20 handles subagent topology and economics; this section only defines the context boundary.</p>
+<p>The operations respond to four recurring failure modes:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Failure</th>
+<th>What happens</th>
+<th>First diagnostic</th>
+<th>Typical response</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>poisoning</td>
+<td>an early mistaken fact or plan persists and shapes later turns</td>
+<td>trace the first appearance and every derived decision</td>
+<td>replace or quarantine it; preserve the correction and rationale</td>
+</tr>
+<tr class="even">
+<td>distraction</td>
+<td>irrelevant detail consumes attention and changes behavior</td>
+<td>remove one context class at a time</td>
+<td>select fewer high-signal segments</td>
+</tr>
+<tr class="odd">
+<td>confusion</td>
+<td>similar tools, examples, or facts create an ambiguous choice</td>
+<td>inspect competing names, descriptions, and demonstrations</td>
+<td>simplify, rename, or isolate alternatives</td>
+</tr>
+<tr class="even">
+<td>clash</td>
+<td>instructions or facts conflict without an explicit precedence rule</td>
+<td>render the full ordered context with provenance</td>
+<td>resolve in application policy; do not ask the model to guess authority</td>
+</tr>
+</tbody>
+</table>
+<p>These labels organize debugging; they are not mutually exclusive diagnoses. A stale summary can poison the trace, distract from new evidence, and clash with a current instruction. Also separate them from context rot: Chapter 3 used context rot for measured performance degradation as input grows. The four labels describe application-level content failures that can occur even in a short request.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>context_assembly.py</code> with four context moves</td>
+<td style="text-align: right;">Focused module remains 82 lines</td>
+<td>Every reduction returns a typed segment or reference; isolated output is labelled as a tool observation rather than silently promoted to policy.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch13-prefix" class="level2" data-number="13.11">
+<h2 data-number="13.11" class="anchored" data-anchor-id="sec-ch13-prefix"><span class="header-section-number">13.11</span> Prefix stability is an application invariant</h2>
+<p>Chapter 10 explained the serving mechanism: a prefix cache can reuse previously computed KV state only for an exact compatible token prefix. Caller-side layout determines whether such a prefix exists. Semantic similarity is irrelevant. A reordered JSON schema, one whitespace-sensitive token, a changed tool description, or a timestamp near the front can end reuse at the first difference.</p>
+<p>Put slow-changing content first and fast-changing content last. A useful layout is</p>
+<p><span class="math display">
+\underbrace{S\Vert T\Vert E}_{\text{stable prefix}}
+\Vert
+\underbrace{R_t\Vert H_t\Vert Q_t}_{\text{volatile suffix}},
+</span></p>
+<p>where <span class="math inline">S</span> is system policy, <span class="math inline">T</span> stable tool/schema material, <span class="math inline">E</span> fixed examples, and the remaining segments vary by turn. Do not insert current time, request ID, user name, random nonce, or per-request feature flags before the stable prefix unless their position is semantically required. If a policy fragment changes at a different cadence, make that boundary explicit and measure the provider’s cache behavior.</p>
+<p>Figure <a href="#fig-ch13-prefix" class="quarto-xref">Figure&nbsp;<span>13.3</span></a> compares two turns. The content is nearly identical in meaning; its leading bytes are not.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    participant A as "Turn t assembler"</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    participant C as "Prefix cache"</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    participant B as "Turn t+1 assembler"</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    A-&gt;&gt;C: "[stable policy][tools][history t]"</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    Note over C: "Reusable entry ends after the stable leading blocks"</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    B-&gt;&gt;C: "[stable policy][tools][history t+1]"</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    C--&gt;&gt;B: "Leading prefix hit"</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    B-&gt;&gt;C: "[new timestamp][stable policy][tools][history]"</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    C--&gt;&gt;B: "Miss near the first differing byte"</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch13-prefix" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch13-prefix-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch13-prefix">sequenceDiagram
+    participant A as "Turn t assembler"
+    participant C as "Prefix cache"
+    participant B as "Turn t+1 assembler"
+    A-&gt;&gt;C: "[stable policy][tools][history t]"
+    Note over C: "Reusable entry ends after the stable leading blocks"
+    B-&gt;&gt;C: "[stable policy][tools][history t+1]"
+    C--&gt;&gt;B: "Leading prefix hit"
+    B-&gt;&gt;C: "[new timestamp][stable policy][tools][history]"
+    C--&gt;&gt;B: "Miss near the first differing byte"
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch13-prefix-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13.3: Why can one volatile timestamp erase reuse for an otherwise stable request?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Measure cache economics in one unit. Let <span class="math inline">S</span> be stable-prefix tokens, <span class="math inline">V</span> new suffix tokens, <span class="math inline">u</span> uncached input cost per token, and <span class="math inline">r</span> cached-read cost per token. Ignoring the first write for a moment, a later hit costs</p>
+<p><span class="math display">
+C_{hit}=rS+uV,
+</span></p>
+<p>while breaking the prefix costs</p>
+<p><span class="math display">
+C_{miss}=u(S+V).
+</span></p>
+<p>The artifact uses illustrative units <span class="math inline">S=7{,}000</span>, <span class="math inline">V=300</span>, <span class="math inline">u=1</span>, and <span class="math inline">r=0.1</span>. Then <span class="math inline">C_{hit}=1{,}000</span>, <span class="math inline">C_{miss}=7{,}300</span>, and the broken-prefix call costs 7.3 times as much input work in that fixture. These are not provider prices. The example isolates a multiplier; Chapter 10’s full equation includes cache-write cost, reuse count, routing, storage, and eviction.</p>
+<p>Log server-reported cached reads and writes where available. A local common-prefix count is a diagnostic, not proof of a server hit: model revision, tokenizer, template, adapter, tenant isolation, cache lifetime, and routing also matter. A high token hit rate can still fail to improve latency if the remaining suffix dominates preprocessing or if queueing dominates time to first token.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — prompt caches share a principle, not one API
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>As of 2026-07-19, OpenAI documents exact-prefix matching, automatic caching above model-dependent thresholds, usage fields for cache reads and—for newer families—writes, plus explicit cache controls on supported models. Anthropic documents prompt order as <code>tools → system → messages</code>, automatic and explicit cache breakpoints, and invalidation when earlier cached blocks change. Google’s current Interactions API documents implicit caching for Gemini 2.5 and newer models, recommends common content first, and exposes cached-token usage. Thresholds, prices, lifetimes, and control fields differ and can change.</p>
+<p><strong>Verify live:</strong> inspect the official <a href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI prompt-caching guide</a>, <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Claude prompt-caching guide</a>, and <a href="https://ai.google.dev/gemini-api/docs/caching">Gemini context-caching guide</a>, then confirm behavior with usage telemetry on the exact endpoint. <strong>Verified:</strong> 2026-07-19.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch13-compaction" class="level2" data-number="13.12">
+<h2 data-number="13.12" class="anchored" data-anchor-id="sec-ch13-compaction"><span class="header-section-number">13.12</span> Compact by classifying before summarizing</h2>
+<p>A long-running interaction eventually approaches its effective or admitted budget. Dropping the oldest message is simple and unsafe. Summarizing everything into one paragraph is compact and unauditable. Good compaction first classifies state by survival requirement, then transforms only what may be transformed.</p>
+<p>A debugging trace often contains:</p>
+<ul>
+<li>specifications and constraints that must remain verbatim;</li>
+<li>decisions and their rationale;</li>
+<li>open questions and current blockers;</li>
+<li>unresolved errors and recent tool observations;</li>
+<li>completed exploration that can be summarized;</li>
+<li>bulky artifacts that can be replaced by references.</li>
+</ul>
+<p>The order matters. Extract durable items before asking any summarizer to rewrite the middle. Give the compactor a schema with separate fields rather than “summarize the conversation.” Verify that identifiers, negations, numeric limits, ownership, and uncertainty survive. Keep the original transcript addressable under the product’s retention policy; compaction should not erase audit evidence merely because it leaves the active prompt.</p>
+<p>Figure <a href="#fig-ch13-compaction" class="quarto-xref">Figure&nbsp;<span>13.4</span></a> makes the survival check an explicit gate.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>flowchart TD</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    U["Utilization crosses a measured trigger at a clean turn boundary"] --&gt; K["Classify specifications, decisions, open questions, errors, and references"]</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    K --&gt; P["Pin verbatim durable state"]</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    K --&gt; M["Summarize expendable middle history"]</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    K --&gt; R["Keep recent observations"]</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    P --&gt; V{"Survival assertions pass?"}</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    M --&gt; V</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    R --&gt; V</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    V -- "No" --&gt; F["Reject compaction and surface a typed failure"]</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    V -- "Yes" --&gt; N["Start the next context with a labelled compacted state"]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch13-compaction" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch13-compaction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch13-compaction">flowchart TD
+    U["Utilization crosses a measured trigger at a clean turn boundary"] --&gt; K["Classify specifications, decisions, open questions, errors, and references"]
+    K --&gt; P["Pin verbatim durable state"]
+    K --&gt; M["Summarize expendable middle history"]
+    K --&gt; R["Keep recent observations"]
+    P --&gt; V{"Survival assertions pass?"}
+    M --&gt; V
+    R --&gt; V
+    V -- "No" --&gt; F["Reject compaction and surface a typed failure"]
+    V -- "Yes" --&gt; N["Start the next context with a labelled compacted state"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch13-compaction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13.4: How should a context manager compact history without treating every token as equally disposable?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The lab triggers at 65 percent of its synthetic budget. That is an illustrative control point, not a recommendation. A real trigger should leave enough headroom for tool results, the next user turn, and output; it should be validated against effective-context quality and latency. Compact at clean boundaries when possible. Compaction during a partial tool call can separate a proposal from its result or discard an error still needed for recovery.</p>
+<p>The synthetic trace has 40 messages containing three literal <code>DECISION</code> lines, two literal <code>OPEN</code> lines, and one <code>ERROR</code>. The compactor extracts those classes, adds one summary of routine messages, and retains four recent messages:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch13/context_history.py — changed region: compact_history</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>durable <span class="op">=</span> [</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    message <span class="cf">for</span> message <span class="kw">in</span> messages</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> message.startswith((<span class="st">"DECISION "</span>, <span class="st">"OPEN "</span>, <span class="st">"ERROR "</span>))</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>recent <span class="op">=</span> <span class="bu">list</span>(messages[<span class="op">-</span>keep_recent:])</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>compacted <span class="op">=</span> [<span class="op">*</span>durable, summary, <span class="op">*</span>[m <span class="cf">for</span> m <span class="kw">in</span> recent <span class="cf">if</span> m <span class="kw">not</span> <span class="kw">in</span> durable]]</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>assert_survival(messages, compacted)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>assert_survival()</code> searches for every pre-compaction decision and open question as an exact substring. Literal survival is stronger than a model grader for these fields and cheaper to debug. Other applications need typed comparisons: a set of requirements, checksums for pinned excerpts, schema validation, or executable state-machine equivalence.</p>
+<p>Compaction can itself poison future context. A summary that says “timeout fixed” when one occurrence disappeared converts an observation into a conclusion. Record the compactor version, input and output digests, trigger reason, preserved-item counts, and any validation failures. Treat the compacted block as an application-produced summary, not as developer policy or verbatim user speech.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — context editing is becoming an API feature
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>As of 2026-07-19, provider surfaces include server-side or SDK-assisted context-management features. Anthropic’s current beta context-editing documentation describes clearing older tool results and thinking blocks and an SDK compaction path. Such features can reduce client work, but their model coverage, defaults, beta headers, preservation rules, and usage accounting are volatile. An API feature does not remove the application’s obligation to define what must survive.</p>
+<p><strong>Verify live:</strong> inspect the official <a href="https://platform.claude.com/docs/en/build-with-claude/context-editing">Claude context-editing guide</a> and the selected provider’s conversation-state or compaction documentation. Run a survival suite containing decisions, negations, open errors, call IDs, and recent tool results before enabling it. <strong>Verified:</strong> 2026-07-19.</p>
+</div>
+</div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>context_history.py</code> complete</td>
+<td style="text-align: right;">96 lines</td>
+<td>A 40-message trace is classified before reduction, and every literal decision and open question must survive or compaction fails.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch13-jit" class="level2" data-number="13.13">
+<h2 data-number="13.13" class="anchored" data-anchor-id="sec-ch13-jit"><span class="header-section-number">13.13</span> Load context just in time and keep a ledger</h2>
+<p>Preloading every manual, tool description, example, and project file pays input cost whether or not the call needs it. Just-in-time context keeps compact references in the active window and resolves a subset when the task provides enough scent.</p>
+<p>If <span class="math inline">N</span> documents average <span class="math inline">L</span> tokens, preloading costs roughly <span class="math inline">NL</span> input tokens per call. If selection loads <span class="math inline">k\ll N</span> documents plus an index of <span class="math inline">I</span> tokens, the active cost is</p>
+<p><span class="math display">
+C_{JIT}=I+kL.
+</span></p>
+<p>The token saving is <span class="math inline">NL-(I+kL)</span>, but selection is not free. It adds retrieval latency, can miss the needed item, and may require another model-tool round trip. JIT wins when references are searchable, the selector has high recall on important items, and avoided context cost exceeds selection cost and failure risk. A list of opaque IDs has no scent; a compact catalog with names, purposes, and constraints lets the model or application choose.</p>
+<p>Use preloading for a small stable contract needed on nearly every call. Use JIT for a large catalog with sparse per-call use. Hybrid designs preload names and one-line descriptions, then fetch full definitions on demand. Chapter 17 applies this to tools and skills; Chapters 14 and 15 apply it to evidence. Do not implement a second retrieval pipeline inside the prompt template.</p>
+<p>None of these decisions is operable without a <strong>context ledger</strong>. For every model call, record enough metadata to reconstruct why a segment appeared:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Question it answers</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>model, template, prompt, and assembler versions</td>
+<td>which executable configuration ran?</td>
+</tr>
+<tr class="even">
+<td>segment kind, source, trust, digest, and token count</td>
+<td>what entered, from where, and under whose authority?</td>
+</tr>
+<tr class="odd">
+<td>selection reason and score</td>
+<td>why was this item chosen?</td>
+</tr>
+<tr class="even">
+<td>position and truncation outcome</td>
+<td>where did it land, and what was omitted?</td>
+</tr>
+<tr class="odd">
+<td>input budget and utilization</td>
+<td>how close was the call to its operating envelope?</td>
+</tr>
+<tr class="even">
+<td>cached-read and cache-write tokens</td>
+<td>did the expected prefix actually reuse?</td>
+</tr>
+<tr class="odd">
+<td>compaction event and preserved-state counts</td>
+<td>what changed between turns?</td>
+</tr>
+<tr class="even">
+<td>output usage, latency, cost, and evaluation outcome</td>
+<td>what did the context buy?</td>
+</tr>
+</tbody>
+</table>
+<p>Avoid logging sensitive raw content by default. Digests, typed metadata, protected replay bundles, and sampled redacted payloads can provide observability without turning the trace system into an uncontrolled copy of user data. Chapter 28 owns the complete observability design.</p>
+<p>The artifact’s 50-turn experiment emits one row per scenario and turn. The stable system portion contains 7,000 proxy tokens; each turn adds 108. Compaction fires at the 65-percent trigger and retains a compact summary plus three recent turns. The broken-prefix variants put a changing timestamp before the stable policy. Figure <a href="#fig-ch13-context-ops" class="quarto-xref">Figure&nbsp;<span>13.5</span></a> plots the measured ledger rather than a hand-drawn expectation.</p>
+<div id="fig-ch13-context-ops" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two directly labeled line charts. Circle markers mean compaction on and squares mean off; solid lines mean stable prefix and dashed lines mean broken prefix. Uncompacted context grows beyond budget while compacted context stays near the 65 percent trigger. Stable-prefix runs preserve nearly all reusable leading bytes, while broken-prefix runs remain near zero.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch13-context-ops-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch13/generated/context-ops.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;13.5: Across a deterministic 50-turn simulation, compaction keeps context utilization below the 65-percent trigger envelope while an unchanged leading prefix preserves almost all reusable bytes. A timestamp at the front reduces reusable leading bytes to nearly zero whether compaction is enabled or not."><img src="../code/ch13/generated/context-ops.svg" class="img-fluid figure-img" alt="Two directly labeled line charts. Circle markers mean compaction on and squares mean off; solid lines mean stable prefix and dashed lines mean broken prefix. Uncompacted context grows beyond budget while compacted context stays near the 65 percent trigger. Stable-prefix runs preserve nearly all reusable leading bytes, while broken-prefix runs remain near zero."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch13-context-ops-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13.5: Across a deterministic 50-turn simulation, compaction keeps context utilization below the 65-percent trigger envelope while an unchanged leading prefix preserves almost all reusable bytes. A timestamp at the front reduces reusable leading bytes to nearly zero whether compaction is enabled or not.
+</figcaption>
+</figure>
+</div>
+<p>Without compaction, utilization reaches 1.033 of the synthetic budget at turn 50. With compaction, its maximum is 0.6465 and compaction occurs 11 times. Across turns 2–50, the mean reusable leading-byte fraction is 0.992 without compaction and 0.983 with compaction for stable-prefix runs; it is below 0.00015 for both timestamp-first runs. A compaction event changes middle history and can reduce reuse after the stable base, but it does not destroy the base. Conversely, prefix stability does not prevent the history from overflowing. The two controls solve different constraints.</p>
+<p>Version prompts and context policies together. A prompt registry entry that points only to an instruction string cannot reproduce selection, ordering, compaction, or tool visibility. Make model scope explicit: <code>ticket-router/prompt-17</code> on one revision is not assumed equivalent on another. Chapter 26 will add registry promotion and canaries. At this point, a content hash, configuration record, ledger, and evaluation gate are enough.</p>
+</section>
+<section id="sec-ch13-build" class="level2" data-number="13.14">
+<h2 data-number="13.14" class="anchored" data-anchor-id="sec-ch13-build"><span class="header-section-number">13.14</span> Build</h2>
+<p>Run the integrated experiment from the book root:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch13/context_pipeline.py <span class="dt">\</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output</span> code/ch13/generated/context-metrics.json</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch13/render_metrics.py <span class="dt">\</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output</span> code/ch13/generated/context-ops.svg</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ex">pytest</span> <span class="at">-q</span> tests/test_ch13_context.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The first command grows the artifact through the complete path: prompt search, 40-message compaction, cache-cost calculation, and four 50-turn simulations. The second command imports that same build and renders the figure. The third checks mechanism-level invariants without an API key.</p>
+<p>The committed deterministic run reports:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Measurement</th>
+<th style="text-align: right;">Result</th>
+<th>Interpretation boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>baseline exact-match score</td>
+<td style="text-align: right;">10/12 (83.3%)</td>
+<td>proxy classifier on the chapter fixture</td>
+</tr>
+<tr class="even">
+<td>optimized score</td>
+<td style="text-align: right;">12/12 (100%)</td>
+<td>candidate-selection result, not a generalization estimate</td>
+</tr>
+<tr class="odd">
+<td>losing candidate scores</td>
+<td style="text-align: right;">10/12, 10/12, 10/12</td>
+<td>retained with their two failure rows</td>
+</tr>
+<tr class="even">
+<td>compaction size</td>
+<td style="text-align: right;">774 → 155 proxy tokens</td>
+<td>whitespace count on a synthetic trace</td>
+</tr>
+<tr class="odd">
+<td>durable state lost</td>
+<td style="text-align: right;">0 decisions; 0 open questions</td>
+<td>literal assertions, not semantic equivalence</td>
+</tr>
+<tr class="even">
+<td>illustrative broken-prefix multiplier</td>
+<td style="text-align: right;">7.3×</td>
+<td>configured unit costs, not provider pricing</td>
+</tr>
+<tr class="odd">
+<td>simulation rows</td>
+<td style="text-align: right;">200</td>
+<td>50 turns for each of four cells</td>
+</tr>
+</tbody>
+</table>
+<p>Read the output in that order. The prompt score demonstrates why a metric must precede search. The compaction result demonstrates that “shorter” is incomplete unless survival is tested. The grid demonstrates that context pressure and prefix reuse are independent axes.</p>
+<p>Try one controlled mutation at a time:</p>
+<ol type="1">
+<li>Remove <code>PRECEDENCE</code> from the winning prompt and inspect the two failures rather than only the score.</li>
+<li>Delete one <code>OPEN</code> item from the compacted output and observe the typed assertion failure.</li>
+<li>Move the timestamp behind the stable policy and compare reusable leading bytes.</li>
+<li>Change the compaction trigger and plot peak utilization and event count together.</li>
+</ol>
+<p>Do not tune the fixture until it looks impressive. Its value comes from causal isolation. A production successor should replace the proxy classifier with pinned model calls, the whitespace counter with the real template-aware tokenizer, the byte-prefix diagnostic with provider telemetry, and the synthetic cases with versioned development and held-out sets. The control flow and invariants remain.</p>
+</section>
+<section id="sec-ch13-endures" class="level2" data-number="13.15">
+<h2 data-number="13.15" class="anchored" data-anchor-id="sec-ch13-endures"><span class="header-section-number">13.15</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> A prompt is executable, model-scoped configuration. Improvements require a fixed distribution and metric. Demonstrations are data and can help or hurt. Context is deliberately assembled from typed, provenance-preserving segments under a budget; it is not an unlimited transcript. Structure improves parsing but does not create trust. Write, select, compress, and isolate are distinct operations with distinct loss modes. Exact prefix reuse requires stable leading content. Compaction must classify durable state before summarizing and verify survival afterward. JIT loading trades preload cost for selection latency and miss risk. A context ledger connects every choice to quality, latency, and cost.</p>
+<p><strong>What changes.</strong> Model-specific prompting advice, reasoning controls, context limits, cache thresholds and prices, provider compaction features, optimizer algorithms, and framework APIs will move. Keep those facts in dated capability profiles and reverify them. Do not bake a 2026 parameter name or price into the conceptual architecture.</p>
+<p>The next chapter takes selected external evidence as its subject. It builds retrieval and ranking rather than asking the context assembler to improvise them. The handoff is clean: Chapter 14 produces evidence candidates with provenance and scores; Chapter 13’s assembler decides how those selected candidates occupy a model call.</p>
+</section>
+<section id="sec-ch13-exercises" class="level2" data-number="13.16">
+<h2 data-number="13.16" class="anchored" data-anchor-id="sec-ch13-exercises"><span class="header-section-number">13.16</span> Exercises</h2>
+<ol type="1">
+<li><p><strong>Break a few-shot set.</strong> Add three redundant <code>refund</code> demonstrations and one mislabeled ambiguous example to a real or simulated classifier. Measure zero-shot, original few-shot, and corrupted few-shot performance by label. Explain whether the failure came from label balance, boundary definition, order, or format.</p></li>
+<li><p><strong>Specify a context contract.</strong> For a code-review agent, define segment kinds, trust labels, stable fields, priority, expiry, and required provenance. Write three invariants that the assembler can test without calling a model, including behavior when required content exceeds the budget.</p></li>
+<li><p><strong>Compute cache economics.</strong> With a 12,000-token stable prefix, 600-token suffix, cached-read rate 0.2 units, uncached rate 1 unit, and first-write rate 1.25 units, calculate total cost over one through ten calls. Find the first reuse count at which caching wins, then list two reasons server telemetry may differ from this arithmetic.</p></li>
+<li><p><strong>Attack compaction semantically.</strong> Create a 30-turn trace containing negation, a superseded decision, two similar IDs, an unresolved error, and a tool result whose units matter. Design typed survival checks that are stronger than substring matching. Show one summary that passes a generic quality judge but fails your checks.</p></li>
+<li><p><strong>Choose a JIT boundary.</strong> A catalog has 400 tools averaging 180 description tokens. A compact index costs 4,000 tokens, and a call uses five tools on average. Compute preload and JIT input sizes. Then write a decision memo incorporating lookup latency, selection recall, cache reuse, and the cost of omitting the correct tool.</p></li>
+<li><p><strong>Design an optimization study.</strong> Propose a development set, untouched test set, metric vector, candidate generator, stopping rule, and promotion gate for a customer-support prompt. Include how you will detect judge verbosity bias and model-version overfitting. State what evidence would cause you to reject the highest aggregate score.</p></li>
+<li><p><strong>Operate the ledger.</strong> Extend the 50-turn experiment with a third prefix policy that changes one tool description every tenth turn. Plot utilization, reusable bytes, compaction events, and cost units. Write an alert that detects an unexpected prefix-regression without firing on planned prompt releases.</p></li>
+</ol>
+</section>
+<section id="sec-ch13-sources" class="level2" data-number="13.17">
+<h2 data-number="13.17" class="anchored" data-anchor-id="sec-ch13-sources"><span class="header-section-number">13.17</span> Notes and sources</h2>
+<ul>
+<li>Anthropic’s <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">Effective context engineering for AI agents</a> motivates the smallest-high-signal-context principle and discusses system prompts, tools, long-horizon tasks, compaction, and just-in-time retrieval. It is an engineering essay, so this chapter treats its prescriptions as practices to test rather than universal laws.</li>
+<li>LangChain’s <a href="https://www.langchain.com/blog/context-engineering-for-agents">Context Engineering for Agents</a> organizes contemporary techniques into write, select, compress, and isolate. This chapter uses that taxonomy while keeping framework implementation out of the durable spine.</li>
+<li>Liu et al., <a href="https://aclanthology.org/2024.tacl-1.9/">“Lost in the Middle: How Language Models Use Long Contexts”</a>, and Chroma’s <a href="https://www.trychroma.com/research/context-rot">Context Rot</a> support the warning that admitted length is not uniform effective context. Chapter 3 owns the detailed treatment.</li>
+<li>Zheng et al., <a href="https://aclanthology.org/2024.findings-emnlp.888/">“When ‘A Helpful Assistant’ Is Not Really Helpful”</a>, report the persona experiment summarized in Section <a href="#sec-ch13-few-shot" class="quarto-xref"><span>Section 13.6</span></a>.</li>
+<li>Opsahl-Ong et al., <a href="https://arxiv.org/abs/2406.11695">“Optimizing Instructions and Demonstrations for Multi-Stage Language Model Programs”</a>, introduce MIPRO; Agrawal et al., <a href="https://arxiv.org/abs/2507.19457">“GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning”</a>, describe reflective prompt evolution. Reported benchmark gains are attached to their evaluated tasks.</li>
+<li>Current cache behavior is sourced from the official <a href="https://developers.openai.com/api/docs/guides/prompt-caching">OpenAI</a>, <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Anthropic</a>, and <a href="https://ai.google.dev/gemini-api/docs/caching">Google</a> documentation linked in the dated box. Recheck rather than copying thresholds or prices into architecture documents.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/12-api-surface.html" class="pagination-link" aria-label="The API Surface: Messages, Structured Outputs, and Tool Calling [F]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/14-embeddings-rag.html" class="pagination-link" aria-label="Embeddings and RAG Systems [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

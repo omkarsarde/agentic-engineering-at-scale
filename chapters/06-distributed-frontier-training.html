@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Turn a model-and-token budget into a memory-safe, topology-aware, fault-tolerant training system, then translate useful throughput into time, power, and cost.">
+
+<title>6&nbsp; Distributed and Frontier Training [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/07-post-training.html" rel="next">
+<link href="../chapters/05-scaling-laws-pretraining-data.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/05-scaling-laws-pretraining-data.html">Part II — Training and Post-Training</a></li><li class="breadcrumb-item"><a href="../chapters/06-distributed-frontier-training.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch06-prerequisites" id="toc-sec-ch06-prerequisites" class="nav-link active" data-scroll-target="#sec-ch06-prerequisites"><span class="header-section-number">6.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch06-contents" id="toc-sec-ch06-contents" class="nav-link" data-scroll-target="#sec-ch06-contents"><span class="header-section-number">6.2</span> Contents</a></li>
+  <li><a href="#sec-ch06-opening" id="toc-sec-ch06-opening" class="nav-link" data-scroll-target="#sec-ch06-opening"><span class="header-section-number">6.3</span> A Run That Fits Still May Not Train</a></li>
+  <li><a href="#sec-ch06-will-build" id="toc-sec-ch06-will-build" class="nav-link" data-scroll-target="#sec-ch06-will-build"><span class="header-section-number">6.4</span> What you will build</a></li>
+  <li><a href="#sec-ch06-memory" id="toc-sec-ch06-memory" class="nav-link" data-scroll-target="#sec-ch06-memory"><span class="header-section-number">6.5</span> A Training Step Has a Byte Ledger</a></li>
+  <li><a href="#sec-ch06-sharding" id="toc-sec-ch06-sharding" class="nav-link" data-scroll-target="#sec-ch06-sharding"><span class="header-section-number">6.6</span> Shard Model State with ZeRO and FSDP</a></li>
+  <li><a href="#sec-ch06-parallelism" id="toc-sec-ch06-parallelism" class="nav-link" data-scroll-target="#sec-ch06-parallelism"><span class="header-section-number">6.7</span> Compose Tensor, Pipeline, Context, and Expert Parallelism</a></li>
+  <li><a href="#sec-ch06-precision" id="toc-sec-ch06-precision" class="nav-link" data-scroll-target="#sec-ch06-precision"><span class="header-section-number">6.8</span> Trade Precision and Recomputation for Capacity</a></li>
+  <li><a href="#sec-ch06-optimization" id="toc-sec-ch06-optimization" class="nav-link" data-scroll-target="#sec-ch06-optimization"><span class="header-section-number">6.9</span> Optimizers and Schedules Are Scaling Interfaces</a></li>
+  <li><a href="#sec-ch06-topology" id="toc-sec-ch06-topology" class="nav-link" data-scroll-target="#sec-ch06-topology"><span class="header-section-number">6.10</span> Compose the Mesh Around the Topology</a></li>
+  <li><a href="#sec-ch06-goodput" id="toc-sec-ch06-goodput" class="nav-link" data-scroll-target="#sec-ch06-goodput"><span class="header-section-number">6.11</span> Frontier Stability Is a Goodput Problem</a></li>
+  <li><a href="#sec-ch06-economics" id="toc-sec-ch06-economics" class="nav-link" data-scroll-target="#sec-ch06-economics"><span class="header-section-number">6.12</span> Training Economics Converts Utilization into Procurement</a></li>
+  <li><a href="#sec-ch06-landscape" id="toc-sec-ch06-landscape" class="nav-link" data-scroll-target="#sec-ch06-landscape"><span class="header-section-number">6.13</span> Landscape 2026 (dated)</a></li>
+  <li><a href="#sec-ch06-build" id="toc-sec-ch06-build" class="nav-link" data-scroll-target="#sec-ch06-build"><span class="header-section-number">6.14</span> Build</a></li>
+  <li><a href="#sec-ch06-endures" id="toc-sec-ch06-endures" class="nav-link" data-scroll-target="#sec-ch06-endures"><span class="header-section-number">6.15</span> What Endures, What Changes</a></li>
+  <li><a href="#sec-ch06-exercises" id="toc-sec-ch06-exercises" class="nav-link" data-scroll-target="#sec-ch06-exercises"><span class="header-section-number">6.16</span> Exercises</a></li>
+  <li><a href="#sec-ch06-notes" id="toc-sec-ch06-notes" class="nav-link" data-scroll-target="#sec-ch06-notes"><span class="header-section-number">6.17</span> Notes and Sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/05-scaling-laws-pretraining-data.html">Part II — Training and Post-Training</a></li><li class="breadcrumb-item"><a href="../chapters/06-distributed-frontier-training.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch06" class="quarto-section-identifier"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch06-prerequisites" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="sec-ch06-prerequisites"><span class="header-section-number">6.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, gradient-based optimization, basic Python, and beginner PyTorch.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/02-transformer-first-principles.html#sec-ch02-objective">Chapter 2, The Training Objective</a> supplies the decoder and training loop; <a href="../chapters/02-transformer-first-principles.html#sec-ch02-accounting">Chapter 2, The Accounting Ledger</a> supplies parameter and FLOP accounting; <a href="../chapters/03-attention-position-long-context.html">Chapter 3</a> supplies attention and long-context mechanics; <a href="../chapters/04-moe-efficient-architectures.html">Chapter 4</a> separates stored from active parameters in mixture-of-experts models; and <a href="../chapters/05-scaling-laws-pretraining-data.html">Chapter 5</a> chooses the parameter, token, and compute budget that this chapter must execute.</p>
+<p><strong>Not required:</strong> prior experience operating a cluster. This chapter defines each parallelism axis and collective when it becomes useful. Inference batching and KV-cache placement belong to Chapter 10; reinforcement-learning infrastructure belongs to Chapter 23; the production cost ledger across training, serving, and durable agent effects belongs to Chapter 26.</p>
+</blockquote>
+</section>
+<section id="sec-ch06-contents" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="sec-ch06-contents"><span class="header-section-number">6.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch06-opening">A run that fits still may not train</a></li>
+<li><a href="#sec-ch06-will-build">What you will build</a></li>
+<li><a href="#sec-ch06-memory">A training step has a byte ledger</a></li>
+<li><a href="#sec-ch06-sharding">Shard model state with ZeRO and FSDP</a></li>
+<li><a href="#sec-ch06-parallelism">Compose tensor, pipeline, context, and expert parallelism</a></li>
+<li><a href="#sec-ch06-precision">Trade precision and recomputation for capacity</a></li>
+<li><a href="#sec-ch06-optimization">Optimizers and schedules are scaling interfaces</a></li>
+<li><a href="#sec-ch06-topology">Compose the mesh around the topology</a></li>
+<li><a href="#sec-ch06-goodput">Frontier stability is a goodput problem</a></li>
+<li><a href="#sec-ch06-economics">Training economics converts utilization into procurement</a></li>
+<li><a href="#sec-ch06-landscape">Landscape 2026 (dated)</a></li>
+<li><a href="#sec-ch06-build">Build</a></li>
+<li><a href="#sec-ch06-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch06-exercises">Exercises</a></li>
+<li><a href="#sec-ch06-notes">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch06-opening" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="sec-ch06-opening"><span class="header-section-number">6.3</span> A Run That Fits Still May Not Train</h2>
+<p>A team’s parameter files fit across its accelerators, so the capacity review passes. The first step fails when Adam state initializes. A second layout waits on an all-to-all across a slow fabric. A third loses forty minutes per host failure, then resumes with a data cursor inconsistent with its optimizer step. Each failure comes from treating distributed training as “put the model on more GPUs.”</p>
+<p>The real objective is <strong>productive learning per unit of wall time and capital</strong>. A valid training design must satisfy several ledgers simultaneously: persistent model state, peak activations, temporary collective buffers, communication volume, numerical error, failure waste, power, and money. Model FLOPs are necessary work, but the system only makes progress when those FLOPs update the intended parameters on the intended tokens and leave a restartable state.</p>
+<p>We begin with bytes on one rank, then shard state and computation along explicit device-mesh dimensions. We treat precision and checkpointing as measured policies, connect optimizer parameterization to proxy transfer, and replace one utilization percentage with goodput, recovery, and cost. By the end, you can turn a proposed run into a memory ledger, parallelism map, checkpoint plan, and economic sensitivity analysis.</p>
+</section>
+<section id="sec-ch06-will-build" class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="sec-ch06-will-build"><span class="header-section-number">6.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>The chapter artifact.</strong> The integrated laboratory reuses Chapter 2’s <code>TinyGPT</code>, launches a real fully sharded training job, and measures local parameter, gradient, and optimizer-state bytes. Freshly initialized checkpoint-off and checkpoint-on phases use identical weights, optimizer state, RNG, and batches; the probe compares final loss and gradient norm, counts tensors saved by autograd, records tokens per second, and computes a labeled local-roofline MFU proxy. A seeded optimizer probe compares AdamW with a small Muon-like matrix update under one warmup-stable-decay schedule. A formula-driven XLSX cost workbook and CSV model translate a hypothetical 30-billion-parameter, 600-billion-token dense run into FLOPs, accelerator-hours, wall time, power, energy, and cost across an MFU sweep.</p>
+<p>Success means actual distributed tensors and collectives execute; the measured sharded state agrees with the byte ledger; checkpointing saves activation bytes; all optimizer losses remain finite; and every plotted number exists in CSV or JSON. The optimizer curves are a mechanism probe, not a speedrun ranking. The CPU MFU denominator is a measured local matrix-multiplication roofline, not a vendor peak. The dollar and power inputs are illustrative assumptions, not quotes.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch06-memory" class="level2" data-number="6.5">
+<h2 data-number="6.5" class="anchored" data-anchor-id="sec-ch06-memory"><span class="header-section-number">6.5</span> A Training Step Has a Byte Ledger</h2>
+<p>Start with a classic mixed-precision Adam estimate. For each trainable parameter, store a two-byte BF16 parameter, a two-byte gradient, a four-byte FP32 master copy, and two four-byte FP32 moments. The persistent model-state total is therefore approximately</p>
+<p><span class="math display">
+M_{\text{Adam}} = P(2+2+4+8)=16P\ \text{bytes},
+</span></p>
+<p>where <span class="math inline">P</span> is the number of trainable parameters. Other component choices can yield the same total. BF16-native updates, quantized moments, fused layouts, factored statistics, or Muon state require a different ledger.</p>
+<p>Sixteen bytes per parameter is a conventional mixed-precision Adam baseline, not a lower bound or peak-memory forecast. Activations depend on microbatch size, sequence length, width, depth, attention algorithm, and checkpoint policy. Temporary memory includes an all-gathered parameter unit, reduction buckets, attention workspaces, logits, allocator fragmentation, and framework metadata. Some bytes persist; others overlap briefly. An out-of-memory incident depends on the maximum simultaneous set, so a design review asks for a timeline as well as a total.</p>
+<p>Ordinary <strong>distributed data parallelism</strong> (DDP) gives every rank a full copy of the model and optimizer state. Each rank processes a different microbatch, computes local gradients, and participates in a gradient all-reduce so all replicas apply the same update. In an ideal ring all-reduce over <span class="math inline">p</span> ranks, reducing a gradient payload of <span class="math inline">S</span> bytes moves approximately</p>
+<p><span class="math display">
+V_{\text{rank}} \approx \frac{2(p-1)}{p}S
+</span></p>
+<p>bytes per rank. A latency-aware estimate adds <span class="math inline">\,2(p-1)\alpha</span>, where <span class="math inline">\alpha</span> is per-hop startup latency. Libraries bucket gradients and overlap reductions with backward, so readiness and message size matter alongside total bytes.</p>
+<p>Gradient accumulation delays synchronization while one rank processes several microbatches. For fixed-size sequences,</p>
+<p><span class="math display">
+B_{\text{global}}=B_{\text{micro}}\,a\,p_{\text{DP}},
+</span></p>
+<p>where <span class="math inline">B_{\text{micro}}</span> is examples per rank per forward pass, <span class="math inline">a</span> is the number of accumulated microbatches, and <span class="math inline">p_{\text{DP}}</span> is the data-parallel degree. Variable-length training should record non-padding tokens instead of examples. Accumulation lowers communication frequency and can make a model fit, but it retains the activation cost of only one microbatch while increasing update latency.</p>
+<p>The <strong>critical batch size</strong> is the regime beyond which more examples per update yield sharply diminishing reductions in gradient noise. It changes with training phase, data, optimizer, and learning rate. Measure loss versus seen tokens and wall time across a batch ladder. If doubling hardware barely reduces steps to target loss, the extra replicas bought utilization rather than learning speed.</p>
+<p><a href="../code/ch06/memory_math.py"><code>memory_math.py</code></a> makes the steady-state components and transient largest-unit parameters explicit. Its communication estimate is deliberately a ring-equivalent byte model, not a network simulator.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>memory_math.py</code> ledger</td>
+<td style="text-align: right;">153 lines</td>
+<td>DDP holds <span class="math inline">\,16P</span> modeled bytes; each ZeRO stage shards only its promised state</td>
+</tr>
+</tbody>
+</table>
+<p>Name every byte by owner, lifetime, dtype, and shard group. “The model fits” is not a memory invariant.</p>
+</section>
+<section id="sec-ch06-sharding" class="level2" data-number="6.6">
+<h2 data-number="6.6" class="anchored" data-anchor-id="sec-ch06-sharding"><span class="header-section-number">6.6</span> Shard Model State with ZeRO and FSDP</h2>
+<p>DDP stops scaling when replicated state consumes each rank. <strong>Zero Redundancy Optimizer</strong> (ZeRO) removes one class of replication at each stage. Let <span class="math inline">p_s</span> be the state-sharding degree and retain the 16-byte Adam convention. Ignoring rounding and transient buffers, the per-rank persistent state is approximately:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 15%">
+<col style="width: 21%">
+<col style="width: 21%">
+<col style="width: 21%">
+<col style="width: 21%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Strategy</th>
+<th style="text-align: right;">Parameters</th>
+<th style="text-align: right;">Gradients</th>
+<th style="text-align: right;">Master + moments</th>
+<th style="text-align: right;">Per-rank total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>DDP / stage 0</td>
+<td style="text-align: right;"><span class="math inline">\,2P</span></td>
+<td style="text-align: right;"><span class="math inline">\,2P</span></td>
+<td style="text-align: right;"><span class="math inline">\,12P</span></td>
+<td style="text-align: right;"><span class="math inline">\,16P</span></td>
+</tr>
+<tr class="even">
+<td>ZeRO stage 1</td>
+<td style="text-align: right;"><span class="math inline">\,2P</span></td>
+<td style="text-align: right;"><span class="math inline">\,2P</span></td>
+<td style="text-align: right;"><span class="math inline">\,12P/p_s</span></td>
+<td style="text-align: right;"><span class="math inline">\,4P+12P/p_s</span></td>
+</tr>
+<tr class="odd">
+<td>ZeRO stage 2</td>
+<td style="text-align: right;"><span class="math inline">\,2P</span></td>
+<td style="text-align: right;"><span class="math inline">\,2P/p_s</span></td>
+<td style="text-align: right;"><span class="math inline">\,12P/p_s</span></td>
+<td style="text-align: right;"><span class="math inline">\,2P+14P/p_s</span></td>
+</tr>
+<tr class="even">
+<td>ZeRO stage 3 / fully sharded</td>
+<td style="text-align: right;"><span class="math inline">\,2P/p_s</span></td>
+<td style="text-align: right;"><span class="math inline">\,2P/p_s</span></td>
+<td style="text-align: right;"><span class="math inline">\,12P/p_s</span></td>
+<td style="text-align: right;"><span class="math inline">\,16P/p_s</span></td>
+</tr>
+</tbody>
+</table>
+<p>Stage 1 shards optimizer state. Stage 2 also shards gradients; stage 3 shards parameters between computations. Its attractive <span class="math inline">\,16P/p_s</span> term does not let a layer execute from arbitrary fragments. Before a sharded module computes, its parameter group is gathered into the required layout and later resharded. Peak memory includes the largest materialized unit, activations, and collective workspaces.</p>
+<p>Granularity matters. One root-sized unit creates a huge blocking all-gather. Transformer-block units expose prefetch and reshard overlap; units that are too small pay excessive startup and bookkeeping. Measure boundaries against layer size, fabric latency, prefetch depth, and peak memory.</p>
+<p>A distributed tensor pairs one logical global tensor with a device mesh and shard, replicate, or partial placements. A matrix may be output-sharded for tensor parallelism while its state is sharded on a data-parallel dimension. Operators propagate compatible layouts or redistribute. Every layout transformation must remain accountable.</p>
+<p><strong>Hybrid sharded data parallelism</strong> (HSDP) shards within a group and replicates shards across groups. With <span class="math inline">p_s=8</span> rack-local ranks and <span class="math inline">r=16</span> replicas, each rank retains about <span class="math inline">\,16P/8</span>, not <span class="math inline">\,16P/128</span>. Latency-sensitive gather and scatter stay inside eight ranks; replica synchronization crosses the slower boundary.</p>
+<p>Sharding changes checkpoints too. A local rank shard is not a model checkpoint. A distributed writer should stage rank-local shards without blocking every training step, record global tensor names, shapes, placements, optimizer state, and checksums in a reshardable manifest, flush to durable storage, validate completeness, then atomically publish a commit marker. Bound staging memory and bandwidth with backpressure; never expose a partial save. Recovery should reconstruct logical tensors on a different world size, not depend on old rank identities.</p>
+<p>The central trade is not “memory versus communication” in the abstract. It is persistent replication versus timed materialization across a particular collective group. A useful plan lists steady-state bytes, largest gathered unit, collective type and message size, and whether communication can overlap useful computation.</p>
+</section>
+<section id="sec-ch06-parallelism" class="level2" data-number="6.7">
+<h2 data-number="6.7" class="anchored" data-anchor-id="sec-ch06-parallelism"><span class="header-section-number">6.7</span> Compose Tensor, Pipeline, Context, and Expert Parallelism</h2>
+<p>State sharding alone does not divide the computation of a layer. When one rank cannot execute a layer quickly or fit its transient tensors, add model-parallel axes. Each axis partitions a different mathematical object and therefore introduces a different collective.</p>
+<p><strong>Tensor parallelism</strong> (TP) partitions matrices inside a layer. Column-parallel linears split output features; row-parallel linears consume split inputs and sum partial outputs. Alternating layouts can avoid gathers, but reductions sit on nearly every layer’s critical path. TP belongs on fast scale-up links, and excessive TP leaves kernels too small to saturate devices.</p>
+<p><strong>Pipeline parallelism</strong> (PP) partitions depth into <span class="math inline">s</span> sequential stages. Microbatches flow through the stages so forward and backward work overlaps. For balanced stages and a simplified one-forward/one-backward schedule, the fill-and-drain bubble fraction is</p>
+<p><span class="math display">
+f_{\text{bubble}}\approx\frac{s-1}{m+s-1},
+</span></p>
+<p>where <span class="math inline">m</span> is microbatches per optimizer step. Eight stages and 32 microbatches give <span class="math inline">\,7/39\approx17.9\%</span> idle bubble before imbalance and communication. More microbatches reduce it but add overhead and may alter global batch. Interleaved virtual stages avoid multiplying the batch but add transfers and scheduling complexity.</p>
+<p><strong>Context parallelism</strong> (CP) partitions sequence positions. Ring Attention keeps a query block local, circulates key/value blocks, and incrementally combines exact attention statistics. Ulysses-style parallelism all-to-all transposes sequence shards into head shards, computes full-sequence attention for subsets of heads, then reverses the transpose. Ring exposes point-to-point overlap; Ulysses needs head divisibility and strong all-to-all. The system question is whether communication fits the topology and hides behind compute.</p>
+<p><strong>Expert parallelism</strong> (EP) places different mixture-of-experts feed-forward networks on different ranks. Routing becomes a dispatch all-to-all before expert compute and a combine all-to-all after it. A simple dispatch-plus-combine payload estimate is</p>
+<p><span class="math display">
+V_{\text{EP}}\approx2Tdkbf,
+</span></p>
+<p>where <span class="math inline">T</span> is routed tokens in the group, <span class="math inline">d</span> is hidden width, <span class="math inline">k</span> is experts selected per token, <span class="math inline">b</span> is bytes per activation scalar, and <span class="math inline">f</span> is the fraction assigned off-rank. It omits metadata, padding, quantization scales, congestion, and load imbalance. A dropless router preserves every assignment but lets the most loaded expert set step time unless kernels and routing rebalance work. Static expert capacity bounds time and memory but may drop or reroute tokens, changing the model computation.</p>
+<p>An existing dense checkpoint can be <strong>upcycled</strong> into an MoE by copying feed-forward weights into experts, initializing routers, and continuing training. Duplicated experts initially lack specialization and routing can destabilize optimization, so compare with a from-scratch compute-matched control.</p>
+<p>These dimensions are not automatically independent. A convenient first sketch is</p>
+<p><span class="math display">
+p_{\text{world}}=p_{\text{DP}}p_{\text{TP}}p_{\text{PP}}p_{\text{CP}},
+</span></p>
+<p>but EP may reuse a process-group dimension rather than multiply world size. Draw rank sets: one rank can join TP for attention, EP for feed-forward dispatch, a PP edge, and a sharded-data group. Unmapped labels produce impossible counts and double-counted bandwidth.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart TB</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  W["Training world"] --&gt; D0["DP replica 0"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  W --&gt; D1["DP replica 1"]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  subgraph R0["Replica 0 pipeline"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    S00["PP stage 0: TP ranks 0–1"] --&gt;|"activations"| S01["PP stage 1: TP ranks 2–3"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  end</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  subgraph R1["Replica 1 pipeline"]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    S10["PP stage 0: TP ranks 4–5"] --&gt;|"activations"| S11["PP stage 1: TP ranks 6–7"]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  end</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  D0 --&gt; S00</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  D1 --&gt; S10</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  S00 &lt;--&gt;|"DP / shard-group synchronization"| S10</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  S01 &lt;--&gt;|"DP / shard-group synchronization"| S11</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  CP["CP overlay: sequence shards in attention"] -.-&gt; S00</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  CP -.-&gt; S10</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  EP["EP overlay: token dispatch to experts"] -.-&gt; S01</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  EP -.-&gt; S11</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch06-mesh" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch06-mesh-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch06-mesh">flowchart TB
+  W["Training world"] --&gt; D0["DP replica 0"]
+  W --&gt; D1["DP replica 1"]
+  subgraph R0["Replica 0 pipeline"]
+    S00["PP stage 0: TP ranks 0–1"] --&gt;|"activations"| S01["PP stage 1: TP ranks 2–3"]
+  end
+  subgraph R1["Replica 1 pipeline"]
+    S10["PP stage 0: TP ranks 4–5"] --&gt;|"activations"| S11["PP stage 1: TP ranks 6–7"]
+  end
+  D0 --&gt; S00
+  D1 --&gt; S10
+  S00 &lt;--&gt;|"DP / shard-group synchronization"| S10
+  S01 &lt;--&gt;|"DP / shard-group synchronization"| S11
+  CP["CP overlay: sequence shards in attention"] -.-&gt; S00
+  CP -.-&gt; S10
+  EP["EP overlay: token dispatch to experts"] -.-&gt; S01
+  EP -.-&gt; S11
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch06-mesh-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6.1: A logical training mesh: which parallel dimensions partition computation, and which may overlap rather than multiply device count?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The textual invariant in <a href="#fig-ch06-mesh" class="quarto-xref">Figure&nbsp;<span>6.1</span></a> is that DP, TP, PP, and CP identify orthogonal partitions only when their rank sets are actually orthogonal; EP is an overlay until the process-group map proves it is an additional physical dimension. The diagram is a logical map, not a claim that eight devices suit a real model.</p>
+</section>
+<section id="sec-ch06-precision" class="level2" data-number="6.8">
+<h2 data-number="6.8" class="anchored" data-anchor-id="sec-ch06-precision"><span class="header-section-number">6.8</span> Trade Precision and Recomputation for Capacity</h2>
+<p>Precision is a policy over tensors and operations. BF16 keeps an FP32-like exponent range with fewer significand bits, usually avoiding the dynamic-range failures that make FP16 loss scaling necessary. Reductions, normalization, optimizer state, attention logits, and softmax accumulation may still need FP32; gradient communication may use another dtype. Record each choice.</p>
+<p>FP8 adds scaling. E4M3 favors precision; E5M2 favors range. Specify tensor eligibility, scale granularity and updates, accumulator dtype, clipping, rounding, and high-precision islands. “FP8 training” never means every operation is FP8. Inspect overflow, underflow, saturation, scales, gradients, attention-logit tails, and agreement with a higher-precision reference.</p>
+<p><strong>Activation checkpointing</strong> attacks a different term. Autograd normally stores intermediate tensors during forward so backward can reuse them. Checkpointing saves selected boundary tensors and recomputes the enclosed forward region during backward. It exchanges extra FLOPs for lower peak activation memory. Transformer-block granularity is a robust starting point: checkpoint every block, measure peak allocated bytes and tokens per second, then selectively retain expensive-to-recompute regions if memory allows.</p>
+<p>Recomputation must be semantically identical. Dropout requires consistent RNG state; stateful modules, mutable caches, or side effects can change gradients. Compare one step from identical parameters and inputs, check finite gradients, and bound differences under the chosen precision.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  participant R0 as Rank 0</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  participant R1 as Rank 1</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  participant A as Autograd</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  R0-&gt;&gt;R1: all-gather block parameter shards</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  R1-&gt;&gt;R0: all-gather block parameter shards</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  Note over R0,R1: full block parameters are transient</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  R0-&gt;&gt;R0: forward on local microbatch</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  R1-&gt;&gt;R1: forward on local microbatch</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  R0--&gt;&gt;A: save block boundary only</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  R1--&gt;&gt;A: save block boundary only</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  Note over R0,R1: reshard parameters after forward</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  A-&gt;&gt;R0: backward requests block</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  A-&gt;&gt;R1: backward requests block</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  R0-&gt;&gt;R1: all-gather, recompute, differentiate</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  R1-&gt;&gt;R0: all-gather, recompute, differentiate</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  R0-&gt;&gt;R1: reduce-scatter gradient shards</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  R1-&gt;&gt;R0: reduce-scatter gradient shards</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch06-step-sequence" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch06-step-sequence-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch06-step-sequence">sequenceDiagram
+  participant R0 as Rank 0
+  participant R1 as Rank 1
+  participant A as Autograd
+  R0-&gt;&gt;R1: all-gather block parameter shards
+  R1-&gt;&gt;R0: all-gather block parameter shards
+  Note over R0,R1: full block parameters are transient
+  R0-&gt;&gt;R0: forward on local microbatch
+  R1-&gt;&gt;R1: forward on local microbatch
+  R0--&gt;&gt;A: save block boundary only
+  R1--&gt;&gt;A: save block boundary only
+  Note over R0,R1: reshard parameters after forward
+  A-&gt;&gt;R0: backward requests block
+  A-&gt;&gt;R1: backward requests block
+  R0-&gt;&gt;R1: all-gather, recompute, differentiate
+  R1-&gt;&gt;R0: all-gather, recompute, differentiate
+  R0-&gt;&gt;R1: reduce-scatter gradient shards
+  R1-&gt;&gt;R0: reduce-scatter gradient shards
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch06-step-sequence-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6.2: A sharded, checkpointed block: when do full parameters and activations exist on each rank?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-ch06-step-sequence" class="quarto-xref">Figure&nbsp;<span>6.2</span></a> explains why multiplying “sharded parameter bytes” by a safety factor is not enough. Full unit parameters reappear during compute, checkpointed activations disappear and later reappear through recomputation, and gradient shards emerge only after a collective. Prefetch can overlap these events and increase the simultaneous peak.</p>
+<div id="fig-ch06-memory-checkpoint" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Stacked bars show state memory falling as optimizer state, gradients, and parameters are sharded. A separate bar chart shows checkpointing greatly reducing locally measured autograd-saved bytes.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch06-memory-checkpoint-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch06/generated/memory-checkpoint.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;6.3: A two-panel locally measured figure. The left panel stacks predicted state bytes for DDP and three sharding stages. The right panel compares autograd-saved tensor bytes without and with block checkpointing."><img src="../code/ch06/generated/memory-checkpoint.svg" class="img-fluid figure-img" alt="Stacked bars show state memory falling as optimizer state, gradients, and parameters are sharded. A separate bar chart shows checkpointing greatly reducing locally measured autograd-saved bytes."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch06-memory-checkpoint-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6.3: A two-panel locally measured figure. The left panel stacks predicted state bytes for DDP and three sharding stages. The right panel compares autograd-saved tensor bytes without and with block checkpointing.
+</figcaption>
+</figure>
+</div>
+<p>In the seeded Chapter 2 model, checkpointing reduced tensors saved by autograd from 3,130,372 to 610,052 bytes, an 80.5 percent reduction. The two-rank CPU phase took longer with checkpointing in the recorded run, as recomputation predicts, but the tiny timing is environment-specific and noisy. The durable conclusion from <a href="#fig-ch06-memory-checkpoint" class="quarto-xref">Figure&nbsp;<span>6.3</span></a> is the byte trade, not its absolute speed.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>probe_model.py</code> plus <code>train_dist.py</code></td>
+<td style="text-align: right;">235 lines across two mechanism-focused files</td>
+<td>block checkpointing preserves a valid backward pass while reducing saved tensors</td>
+</tr>
+</tbody>
+</table>
+<p>Use low precision to reduce storage, bandwidth, and arithmetic cost; use checkpointing to reduce saved activations. They compose, but their error and recomputation effects must be measured separately.</p>
+</section>
+<section id="sec-ch06-optimization" class="level2" data-number="6.9">
+<h2 data-number="6.9" class="anchored" data-anchor-id="sec-ch06-optimization"><span class="header-section-number">6.9</span> Optimizers and Schedules Are Scaling Interfaces</h2>
+<p>AdamW is a strong reference: it maintains exponential first and second moments, divides the first by the square root of the second, and applies decoupled weight decay. A new optimizer must beat a tuned control at equal tokens, active FLOPs, batch, precision, data order, and architecture—not merely equal steps.</p>
+<p>Muon takes a different view of two-dimensional hidden weight matrices. It forms a momentum matrix and approximately orthogonalizes the update, commonly through a few Newton–Schulz iterations. In schematic form,</p>
+<p><span class="math display">
+B_t=\mu B_{t-1}+G_t,\qquad O_t\approx\operatorname{NS}_k\!\left(\frac{B_t}{\lVert B_t\rVert_F}\right),
+</span></p>
+<p>where <span class="math inline">G_t</span> is the current gradient matrix, <span class="math inline">\mu</span> is momentum, <span class="math inline">\lVert\cdot\rVert_F</span> is the Frobenius norm, and <span class="math inline">\operatorname{NS}_k</span> denotes <span class="math inline">k</span> approximate orthogonalization iterations. Embeddings, biases, normalization vectors, and sometimes input/output projections remain on AdamW. Update scaling, weight decay, distributed implementation, and precision are part of the recipe; “replace Adam with Muon” is underspecified. Shampoo also preconditions matrix gradients from second-order statistics, while SOAP combines Shampoo-like preconditioning with Adam-style updates; both introduce state and distributed-preconditioner costs that need their own ledger.</p>
+<p>The <strong>maximal update parameterization</strong>, or <span class="math inline">\mu</span>P, uses width-dependent initialization, learning-rate, and output scalings so many proxy-model hyperparameters remain useful at larger width. Transfer assumes the same parameterization, architecture family, and optimizer regime; it does not cover arbitrary data, context, batch, or architecture changes. Verify it on a proxy ladder.</p>
+<p>The learning-rate schedule is also a scaling interface. Cosine decay ties the entire curve to a known terminal token budget. <strong>Warmup-stable-decay</strong> (WSD) raises the rate, holds a long stable trunk, and attaches a final decay. The stable checkpoint can branch into several short decays for different budgets, which is valuable when the final token allocation may change. A branch is not free: each candidate consumes data and compute, and its comparison must preserve the data cursor and evaluation protocol.</p>
+<p>The probe cannot establish a winner. Both strategies see identical batches and weights under one WSD curve. AdamW falls from 4.1522 to 1.0701 nats per token; the Muon-like split ends at 1.0690. A short single-seed check can expose divergence, not validate a frontier claim.</p>
+<div id="fig-ch06-optimizer" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two nearly overlapping loss curves decrease from about 4.15 to about 1.07. A dotted schedule rises during warmup, stays flat, and decays near the end.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch06-optimizer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch06/generated/optimizer-curves.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;6.4: Training loss for AdamW and a Muon-like matrix optimizer on identical seeded TinyGPT batches, with the shared warmup-stable-decay multiplier on a second axis."><img src="../code/ch06/generated/optimizer-curves.svg" class="img-fluid figure-img" alt="Two nearly overlapping loss curves decrease from about 4.15 to about 1.07. A dotted schedule rises during warmup, stays flat, and decays near the end."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch06-optimizer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6.4: Training loss for AdamW and a Muon-like matrix optimizer on identical seeded TinyGPT batches, with the shared warmup-stable-decay multiplier on a second axis.
+</figcaption>
+</figure>
+</div>
+<p><a href="#fig-ch06-optimizer" class="quarto-xref">Figure&nbsp;<span>6.4</span></a> uses line style as well as color, so its conclusion survives grayscale: both implementations are finite and learn under the controlled fixture; their tiny final separation is not evidence of general superiority. A real optimizer evaluation needs paired seeds, learning-rate and weight-decay sweeps, equal-token quality, throughput, state bytes, communication, checkpoint compatibility, and stability at the target width.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>optimizer_probe.py</code></td>
+<td style="text-align: right;">137 lines</td>
+<td>AdamW and the matrix-update strategy see identical batches and remain finite under one WSD schedule</td>
+</tr>
+</tbody>
+</table>
+<p>The durable engineering question is whether an optimizer-schedule-parameterization package transfers useful progress per token and per wall-clock dollar. An optimizer name alone is not an experiment.</p>
+</section>
+<section id="sec-ch06-topology" class="level2" data-number="6.10">
+<h2 data-number="6.10" class="anchored" data-anchor-id="sec-ch06-topology"><span class="header-section-number">6.10</span> Compose the Mesh Around the Topology</h2>
+<p>A parallelism plan becomes credible only on physical links. A fast scale-up domain usually carries latency-sensitive TP, EP, or CP; scale-out often carries PP, DP, or HSDP replica traffic. Benchmark the actual collective, message size, concurrency, route, and failure domain.</p>
+<p>For a collective with <span class="math inline">n</span> participating ranks and payload <span class="math inline">S</span>, the shorthand</p>
+<p><span class="math display">
+t_{\text{collective}}\approx a(n)\alpha+b(n)\frac{S}{\beta}
+</span></p>
+<p>separates startup latency <span class="math inline">\alpha</span> from effective bandwidth <span class="math inline">\beta</span>; algorithm-dependent <span class="math inline">a(n)</span> and <span class="math inline">b(n)</span> encode rings, trees, hierarchical algorithms, or all-to-all schedules. Peak link bandwidth is not <span class="math inline">\beta</span>. Congestion, protocol overhead, topology, other collectives, and small-message inefficiency reduce it. Benchmark at the shapes generated by the model, then record p50 and tail latency. Step time follows the slowest rank.</p>
+<p>Three reference compositions cover many starting points:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Workload</th>
+<th>First composition to test</th>
+<th>Main reason to reject it</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Model state fits one device</td>
+<td>DDP, gradient accumulation, BF16, block checkpointing</td>
+<td>replicated Adam state or critical-batch inefficiency</td>
+</tr>
+<tr class="even">
+<td>Large dense model in one strong cluster</td>
+<td>HSDP plus intra-domain TP; add PP only for depth/peak constraints</td>
+<td>TP collectives cross slow links or PP bubbles dominate</td>
+</tr>
+<tr class="odd">
+<td>Long-context MoE</td>
+<td>previous stack plus CP for attention and EP for experts</td>
+<td>CP/EP all-to-all contention, routing skew, or too-small kernels</td>
+</tr>
+</tbody>
+</table>
+<p>Start with the fewest axes that satisfy memory. Choose TP from layer shape and the scale-up domain. Add PP when stages exceed memory or avoid cross-domain TP; CP for long-sequence work; EP from expert placement and overlap; then DP only while the global batch remains efficient.</p>
+<p>Hardware selection is system selection: device memory and bandwidth, fabrics, host paths, storage, checkpoint bandwidth, scheduling, telemetry, firmware, spares, rack power, and cooling all matter. A faster chip can lose time to target behind a weak fabric or slow recovery.</p>
+<p>Wide-area or decentralized training changes the algorithm because synchronous collectives cannot tolerate WAN latency and churn. Local-update methods let each island run many inner optimizer steps, then periodically combine parameter deltas through an outer optimizer. Communication falls, but replicas drift; staleness, non-identically distributed data, security, and quorum behavior become optimization variables. Treat these methods as local-SGD families with explicit convergence and failure assumptions, not drop-in replacements for a healthy low-latency cluster.</p>
+<p>The topology invariant is: place the most frequent and least hideable communication on the strongest links, and make every cross-domain byte justify itself. A process-group diagram and collective trace should agree.</p>
+</section>
+<section id="sec-ch06-goodput" class="level2" data-number="6.11">
+<h2 data-number="6.11" class="anchored" data-anchor-id="sec-ch06-goodput"><span class="header-section-number">6.11</span> Frontier Stability Is a Goodput Problem</h2>
+<p>Model FLOPs utilization (MFU) estimates what fraction of aggregate peak arithmetic performs the model’s nominal forward-and-backward work:</p>
+<p><span class="math display">
+\operatorname{MFU}=\frac{q\,F_{\text{model/token}}}{G P_{\text{peak}}},
+</span></p>
+<p>where <span class="math inline">q</span> is observed training tokens per second, <span class="math inline">F_{\text{model/token}}</span> is the declared model FLOPs per token, <span class="math inline">G</span> is accelerator count, and <span class="math inline">P_{\text{peak}}</span> is peak FLOPs per accelerator in the relevant precision. A dense Transformer baseline often uses <span class="math inline">F_{\text{model/token}}\approx6P</span>, with attention-length corrections. For MoE, use activated parameters or profiler-derived FLOPs. Publish the counting convention, precision, sparsity treatment, and whether recomputation is excluded.</p>
+<p>Hardware FLOPs utilization (HFU) counts implementation-executed arithmetic, including recomputation. Checkpointing can raise HFU while leaving model progress unchanged, so HFU is useful for kernel diagnosis but less comparable across implementations. MFU can also hide idle days: it is normally computed while steps execute.</p>
+<p><strong>Goodput</strong> is useful work completed per wall-clock resource. One component is the effective-training-time rate (ETTR), productive nominal iteration time divided by elapsed wall time. When denominators align, <span class="math inline">\operatorname{MFU}\times\operatorname{ETTR}</span> is a rough productive fraction of peak capacity. Keep both terms: low MFU points toward kernels, communication, or bubbles; low ETTR points toward failures, checkpoint stalls, data starvation, validation pauses, or scheduler gaps.</p>
+<p>Expected time to recovery—also abbreviated ETTR by some teams—is detection, isolation, replacement, checkpoint load, and replay. Spell out the ambiguous acronym. Record interruption rate, tail recovery, lost tokens, automated-handling fraction, and first-step correctness.</p>
+<p>A complete checkpoint includes model, optimizer, schedule, scaler, token count, data cursor, per-rank RNG, topology, configuration, tokenizer/data/code digests, and the integrity manifest. A clean-worker, different-world-size restart drill is stronger evidence than a save log.</p>
+<p>Checkpoint frequency has an economic optimum. If a synchronous checkpoint costs <span class="math inline">C_s</span> seconds, job mean time between interrupting failures is <span class="math inline">M</span>, restart cost is <span class="math inline">R</span>, and checkpoints occur every <span class="math inline">I</span> seconds, a simple waste model is</p>
+<p><span class="math display">
+w(I)\approx\frac{C_s}{I}+\frac{I}{2M}+\frac{R}{M}.
+</span></p>
+<p>The first term is checkpoint overhead; the second is average work lost since the last checkpoint under uniformly timed failures; the third is restart overhead. Minimizing the first two gives Young’s approximation <span class="math inline">I^*\approx\sqrt{2C_sM}</span>. Correlated rack failures, preemption warnings, asynchronous staging, remote persistence lag, and checkpoint corruption violate the model. Use it to initialize policy, then fit failure and save distributions from operations data.</p>
+<p><strong>Silent data corruption</strong> (SDC) produces plausible but wrong values. ECC cannot cover every arithmetic, transfer, firmware, or software fault. Layer defenses include burn-in, distribution checks, training monitors, collective probes, checksums, quarantine, replay, and clean restoration. Measure detector coverage and false positives; restarting a corrupt checkpoint only reproduces failure.</p>
+<p>Frontier stability is also optimization stability. Classify a spike before responding: <strong>data</strong> faults include corrupt or shifted batches; <strong>numerical</strong> faults include overflow, attention-logit growth, and bad scales; <strong>routing</strong> faults include expert collapse or overload; <strong>system</strong> faults include corrupted arithmetic, collectives, or state. Preserve batch identifiers, metrics, and state hashes for replay. A skip policy must be explicit, bounded, and logged; nonfinite or corrupted optimizer state requires rollback to a verified checkpoint, not blind continuation. Preventive controls can include gradient clipping, <strong>QK-clip</strong> or query/key rescaling to cap attention logits, and router <strong>z-loss</strong> to penalize extreme routing logits. Each changes optimization and needs an ablation. “Loss recovered” is not proof that moments and data order remained valid.</p>
+<p>The operating invariant is that a run is healthy only when it makes verifiable forward progress and can recover to the same logical training state. High MFU during surviving minutes does not compensate for low goodput across the month.</p>
+</section>
+<section id="sec-ch06-economics" class="level2" data-number="6.12">
+<h2 data-number="6.12" class="anchored" data-anchor-id="sec-ch06-economics"><span class="header-section-number">6.12</span> Training Economics Converts Utilization into Procurement</h2>
+<p>The compute budget from Chapter 5 becomes an elapsed-time model. For a dense Transformer with <span class="math inline">P</span> parameters and <span class="math inline">D</span> training tokens,</p>
+<p><span class="math display">
+C_{\text{train}}\approx6PD.
+</span></p>
+<p>With <span class="math inline">G</span> accelerators, per-device peak rate <span class="math inline">F</span>, and MFU <span class="math inline">u</span>,</p>
+<p><span class="math display">
+T_{\text{seconds}}=\frac{C_{\text{train}}}{GFu},\qquad
+H_{\text{accelerator}}=\frac{C_{\text{train}}}{Fu\,3600}.
+</span></p>
+<p>The second equation is independent of <span class="math inline">G</span>: ideal scaling changes wall time, not accelerator-hours. Real scaling changes <span class="math inline">u</span>, batch, ETTR, and often price. For MoE and long context, replace <span class="math inline">\,6P</span> with activated or profiled FLOPs and include attention’s sequence-dependent work.</p>
+<p>Cloud cost begins with <span class="math inline">H_{\text{accelerator}}</span> times an effective rate. Add storage, transfer, orchestration, support, failed and development runs, idle reservations, and preemption. Spot lowers nominal rates but increases interruption waste; reserved capacity can create utilization risk. Model distributions, not one rate cell.</p>
+<p>Power needs an equally explicit boundary. If the combined accelerator-and-node IT draw averages <span class="math inline">W_{\text{IT}}</span> per accelerator and the facility power-usage effectiveness is PUE,</p>
+<p><span class="math display">
+P_{\text{facility}}\approx G W_{\text{IT}}\operatorname{PUE}.
+</span></p>
+<p>Energy is power integrated over wall time. Do not multiply a facility-inclusive watt assumption by PUE a second time. Average draw, peak rack provisioning, and grid capacity answer different questions: the energy bill uses the first; cluster feasibility and demand charges care about the others.</p>
+<p>Buying capacity replaces the hourly quote with annualized ownership. For discount rate <span class="math inline">r</span> and useful life <span class="math inline">L</span>, the capital-recovery factor is</p>
+<p><span class="math display">
+\operatorname{CRF}=\frac{r(1+r)^L}{(1+r)^L-1}.
+</span></p>
+<p>Divide annualized capex plus energy, facility, network, spares, software, financing, and staff by <strong>productive</strong> accelerator-hours, with utilization and ETTR in the denominator. A cluster bought for one burst can cost more than cloud despite cheap chip-plus-electricity arithmetic.</p>
+<div id="fig-ch06-cost" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two line plots fall as MFU rises from 25 to 60 percent: illustrative training cost on the left and wall days on the right.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch06-cost-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch06/generated/cost-sensitivity.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Figure&nbsp;6.5: Illustrative sensitivity of training cost and wall time to MFU while model size, token budget, accelerator peak, count, and hourly rate remain fixed."><img src="../code/ch06/generated/cost-sensitivity.svg" class="img-fluid figure-img" alt="Two line plots fall as MFU rises from 25 to 60 percent: illustrative training cost on the left and wall days on the right."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch06-cost-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6.5: Illustrative sensitivity of training cost and wall time to MFU while model size, token budget, accelerator peak, count, and hourly rate remain fixed.
+</figcaption>
+</figure>
+</div>
+<p>The base case behind <a href="#fig-ch06-cost" class="quarto-xref">Figure&nbsp;<span>6.5</span></a> is hypothetical: 30B parameters, 600B tokens, 8,192 accelerators, 1,000 TFLOP/s each, 40 percent MFU, a $4 accelerator-hour, and 1.2 facility-inclusive kW each. It yields <span class="math inline">\,1.08\times10^{23}</span> FLOPs, 75,000 accelerator-hours, 9.16 hours, $300,000, 9.8304 MW, and 90 MWh. These are fixtures, not a forecast. Moving MFU from 40 to 50 percent multiplies time and compute charge by <span class="math inline">\,0.4/0.5=0.8</span>.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>cost_model.py</code> plus <code>cost-sensitivity.csv</code></td>
+<td style="text-align: right;">54 lines plus eight auditable rows</td>
+<td>compute remains fixed while time and accelerator-hours scale as <span class="math inline">\,1/u</span></td>
+</tr>
+</tbody>
+</table>
+<p>A rent-versus-buy decision also values time to capacity, topology guarantees, capacity certainty, scaling efficiency, egress, compliance, support, and technology-stranding risk. Ask what happens at twice the nominal dollars per useful FLOP, half the expected utilization, a six-month delivery slip, or correlated failures. Procurement is a distribution over outcomes, not a comparison of one chip price with one cloud rate.</p>
+</section>
+<section id="sec-ch06-landscape" class="level2" data-number="6.13">
+<h2 data-number="6.13" class="anchored" data-anchor-id="sec-ch06-landscape"><span class="header-section-number">6.13</span> Landscape 2026 (dated)</h2>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This section contains current APIs, products, training reports, and policy status. Deleting it leaves the byte, collective, precision, checkpoint, goodput, and economics mechanisms intact.</p>
+<section id="current-pytorch-distributed-surface" class="level3" data-number="6.13.1">
+<h3 data-number="6.13.1" class="anchored" data-anchor-id="current-pytorch-distributed-surface"><span class="header-section-number">6.13.1</span> Current PyTorch distributed surface</h3>
+<p>As of 2026-07-19, PyTorch FSDP2’s <code>fully_shard</code> represents parameters as per-parameter dimension-0 <code>DTensor</code>s. Forward hooks all-gather and reshard; backward reduce-scatters. Current guidance shards blocks bottom-up and then the root, with the optimizer constructed afterward. Recheck <code>MixedPrecisionPolicy</code>, offload, resharding, mesh naming, and the activation-checkpoint recommendation to pass <code>use_reentrant=False</code>. The build follows this surface while teaching its layout invariants separately.</p>
+<p><strong>Verify live: 2026-07-19.</strong> Recheck the official <a href="https://docs.pytorch.org/docs/main/distributed.fsdp.fully_shard.html"><code>fully_shard</code></a>, <a href="https://docs.pytorch.org/docs/stable/distributed.tensor.html">DTensor</a>, <a href="https://docs.pytorch.org/docs/stable/distributed.tensor.parallel.html">tensor-parallel</a>, <a href="https://docs.pytorch.org/docs/stable/distributed.pipelining.html">pipeline-parallel</a>, <a href="https://docs.pytorch.org/docs/stable/checkpoint.html">activation-checkpoint</a>, and <a href="https://docs.pytorch.org/docs/stable/distributed.checkpoint.html">Distributed Checkpoint</a> documentation before changing a training stack.</p>
+</section>
+<section id="low-precision-optimizers-moe-communication-and-decentralized-training" class="level3" data-number="6.13.2">
+<h3 data-number="6.13.2" class="anchored" data-anchor-id="low-precision-optimizers-moe-communication-and-decentralized-training"><span class="header-section-number">6.13.2</span> Low precision, optimizers, MoE communication, and decentralized training</h3>
+<p>Current FP8 recipes combine E4M3/E5M2 tensors, scaling, and higher-precision islands; DeepSeek-V3 is one published example. OCP Microscaling defines MX block formats, while NVIDIA’s 2025 NVFP4 work describes two-level scaling, higher-precision islands, transforms, two-dimensional quantization, and stochastic rounding. Hardware support is dated; the durable requirement is to declare scale granularity, accumulation, rounding, and telemetry.</p>
+<p>Muon now appears in larger recipes and a PyTorch API. Kimi K2’s MuonClip rescales query/key projections when attention logits cross a threshold; eligible parameters and distributed details remain recipe-specific. Shampoo and SOAP are matrix-preconditioning comparisons. WSD appears in MiniCPM and later analyses. <code>modded-nanogpt</code> is a useful laboratory, but its records combine optimizer, architecture, data, kernels, and schedule.</p>
+<p>Current reference stacks include Megatron-Core, PyTorch TorchTitan, and JAX/MaxText; their defaults change. DeepEP specializes MoE dispatch. DiLoCo uses local inner steps plus outer optimization; INTELLECT-1 reported a 10B decentralized pretraining proof of concept; 2026 Decoupled DiLoCo explores asynchronous fragment exchange and quorum-style merging. Their convergence is experiment-specific; INTELLECT-2 concerns reinforcement learning.</p>
+<p><strong>Verify live: 2026-07-19.</strong> Check the <a href="https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf">OCP MX specification</a>, <a href="https://docs.nvidia.com/deeplearning/transformer-engine/user-guide/examples/fp8_primer.html">Transformer Engine FP8 guide</a>, <a href="https://arxiv.org/abs/2509.25149">NVFP4 paper</a>, <a href="https://docs.pytorch.org/docs/stable/generated/torch.optim.Muon.html">PyTorch Muon API</a>, <a href="https://github.com/pytorch/torchtitan">TorchTitan</a>, <a href="https://github.com/AI-Hypercomputer/maxtext">MaxText</a>, <a href="https://github.com/deepseek-ai/DeepEP">DeepEP</a>, <a href="https://arxiv.org/abs/2412.01152">INTELLECT-1</a>, and <a href="https://arxiv.org/abs/2604.21428">Decoupled DiLoCo</a>.</p>
+</section>
+<section id="frontier-operations-and-hardware" class="level3" data-number="6.13.3">
+<h3 data-number="6.13.3" class="anchored" data-anchor-id="frontier-operations-and-hardware"><span class="header-section-number">6.13.3</span> Frontier operations and hardware</h3>
+<p>Llama 3’s 405B snapshot records 466 interruptions over 54 days: 47 planned and 419 unexpected, about 78 percent hardware-related or suspected; effective training time exceeded 90 percent. MegaScale reports 55.2 percent MFU for 175B over 12,288 GPUs and production runs with more than 100 restarts, over 90 percent automatically handled, and over 90 percent effective training time. These are existence proofs, not universal rates.</p>
+<p>The hardware landscape now includes NVIDIA GB300 NVL72 systems and an announced Vera Rubin platform, Google’s Ironwood TPU, and AMD MI350-series accelerators. Vendor peak numbers differ by dtype, sparsity, scale, and system boundary and are not directly comparable. Procurement work must use dated specifications plus workload-shaped collective and kernel measurements.</p>
+<p><strong>Verify live: 2026-07-19.</strong> Recheck the <a href="https://arxiv.org/abs/2407.21783">Llama 3 report</a>, <a href="https://arxiv.org/abs/2402.15627">MegaScale</a>, <a href="https://docs.nvidia.com/enterprise-reference-architectures/nvl72-ai-factory/latest/components.html">GB300 NVL72 reference architecture</a>, <a href="https://nvidianews.nvidia.com/news/nvidia-vera-rubin-platform">Vera Rubin announcement</a>, <a href="https://blog.google/innovation-and-ai/infrastructure-and-cloud/google-cloud/ironwood-google-tpu-things-to-know/">Google Ironwood overview</a>, and <a href="https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/solution-briefs/amd-instinct-mi350-series-5-reasons-why.pdf">AMD MI350 overview</a>. Obtain live, workload-specific quotes for any financial decision.</p>
+</section>
+<section id="the-historical-u.s.-1026-operation-threshold" class="level3" data-number="6.13.4">
+<h3 data-number="6.13.4" class="anchored" data-anchor-id="the-historical-u.s.-1026-operation-threshold"><span class="header-section-number">6.13.4</span> The historical U.S. <span class="math inline">\,10^{26}</span>-operation threshold</h3>
+<p>Executive Order 14110 historically used a threshold above <span class="math inline">\,10^{26}</span> integer or floating-point operations for certain reporting about dual-use foundation models, with a separate biological-sequence threshold. It is <strong>not an active general U.S. reporting requirement as of 2026-07-19</strong>. Executive Order 14110 was revoked in January 2025 by Executive Order 14148. Executive Order 14409, issued June 2, 2026, emphasizes classified capability benchmarking and a voluntary developer framework; it does not reinstate the general <span class="math inline">\,10^{26}</span> reporting threshold. Treat the number as a dated policy case study, not a current compliance trigger. Verify current federal, state, export-control, outbound-investment, contractual, and sector rules with qualified counsel.</p>
+<p><strong>Verify live: 2026-07-19.</strong> Read the archived <a href="https://www.govinfo.gov/content/pkg/CFR-2024-title3-vol1/pdf/CFR-2024-title3-vol1-eo14110.pdf">Executive Order 14110</a>, the <a href="https://www.congress.gov/crs_external_products/R/HTML/R48555.web.html">Congressional Research Service status summary</a>, the <a href="https://www.govinfo.gov/app/details/DCPD-202500115">revocation record</a>, and <a href="https://www.whitehouse.gov/presidential-actions/2026/06/promoting-advanced-artificial-intelligence-innovation-and-security/">Executive Order 14409</a>. Legal status can change faster than a textbook release.</p>
+</section>
+</div>
+</div>
+</section>
+<section id="sec-ch06-build" class="level2" data-number="6.14">
+<h2 data-number="6.14" class="anchored" data-anchor-id="sec-ch06-build"><span class="header-section-number">6.14</span> Build</h2>
+<p>Run the integrated offline laboratory from the book root (<code>newbook/</code> in this workspace).</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch06/run_build.py</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pytest</span> <span class="at">-q</span> tests/test_ch06_distributed_training.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><a href="../code/ch06/run_build.py"><code>run_build.py</code></a> is the only integrated runner. It launches <a href="../code/ch06/train_dist.py"><code>train_dist.py</code></a> under two CPU or multi-GPU processes, falling back to one process when only one GPU is visible. The probe builds a one-dimensional device mesh, shards transformer blocks bottom-up and then the root, and creates AdamW afterward. Each checkpoint condition restarts from identical weights, optimizer state, RNG, and rank-local batches; tests bound final loss and gradient-norm differences. Rank 0 separately measures saved tensors on an identical unsharded replica, which isolates checkpoint policy but is not FSDP peak memory. CPU uses Gloo and CUDA uses NCCL; an explicitly requested GPU world larger than visible capacity is rejected.</p>
+<p>The model contains 127,360 trainable parameters. Its largest FSDP unit is the 45,120-parameter root-owned group, not either 41,120-parameter block. The actual FP32 runtime ledger predicts 254,720 parameter bytes, 254,720 gradient bytes, and 509,440 moment bytes on rank 0; measurement matches parameters and gradients exactly and records 509,520 optimizer bytes, including 80 bytes of step scalars. The classic BF16-plus-master-copy baseline is reported separately. This component-level comparison does not include allocator fragmentation or claim a frontier peak.</p>
+<p>Throughput and local-roofline MFU fields vary across runs and hosts. Their denominator is a small local matrix-multiplication calibration, not a vendor peak, so it must not be compared with published GPU MFU. Stable evidence is the executed collective path, matched loss and gradient checks, finite state, component bytes, and saved-tensor reduction.</p>
+<p>The runner writes:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Output</th>
+<th>What it makes auditable</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>fsdp-probe.json</code></td>
+<td>actual world, device, precision policy, sharded bytes, saved tensors, loss, tokens/s, and MFU denominator</td>
+</tr>
+<tr class="even">
+<td><code>memory-ledger.csv</code> and <code>runtime-memory-ledger.csv</code></td>
+<td>classic BF16/master-copy and actual FP32 state ledgers, transient unit, and communication bytes</td>
+</tr>
+<tr class="odd">
+<td><code>optimizer-curves.csv</code></td>
+<td>paired seeded loss and WSD multiplier for AdamW and the Muon-like split strategy</td>
+</tr>
+<tr class="even">
+<td><code>cost-sensitivity.csv</code></td>
+<td>every assumption and result for eight MFU values</td>
+</tr>
+<tr class="odd">
+<td><a href="../code/ch06/generated/cost-model.xlsx"><code>cost-model.xlsx</code></a></td>
+<td>editable assumptions, formula model, MFU sensitivity, checks, sources, and native chart</td>
+</tr>
+<tr class="even">
+<td><code>metrics.json</code></td>
+<td>experiment contracts, summaries, runtime versions, and seeds</td>
+</tr>
+<tr class="odd">
+<td>three generated SVGs</td>
+<td>the exact values used by the chapter’s quantitative figures</td>
+</tr>
+</tbody>
+</table>
+<p>The tests enforce six contracts: conventional Adam and ZeRO algebra; mesh and collective equations; compute-preserving MFU sensitivity; checkpoint savings; finite optimizer learning; and a real FSDP2/DTensor build with matched phases, component-level byte checks, and a formula-bearing XLSX. Timing fields are measurements; seeds, shapes, data, byte results, curves, cost rows, and style are fixed.</p>
+<p>To adapt the build, replace the toy configuration first and keep the evidence schema. Then run a memory-only scale test, a short numerical-equivalence test, a collective microbenchmark at the resulting message sizes, and an end-to-end throughput test. Change one axis at a time until memory forces composition. A successful smoke step is the start of capacity validation, not the end.</p>
+</section>
+<section id="sec-ch06-endures" class="level2" data-number="6.15">
+<h2 data-number="6.15" class="anchored" data-anchor-id="sec-ch06-endures"><span class="header-section-number">6.15</span> What Endures, What Changes</h2>
+<p><strong>Endures:</strong></p>
+<ul>
+<li>Parameter, gradient, optimizer, activation, transient, communication, and checkpoint bytes are separate ledgers with different lifetimes and owners.</li>
+<li>DDP replicates state; ZeRO-style stages progressively shard optimizer state, gradients, and parameters; full parameters still become transiently available for computation.</li>
+<li>TP partitions layer matrices, PP partitions depth, CP partitions sequence positions, EP partitions experts, and DP partitions examples or tokens. Their process groups must be drawn, not inferred from labels.</li>
+<li>Pipeline bubbles, collective latency-bandwidth tradeoffs, expert skew, and the critical batch can erase nominal scaling.</li>
+<li>Precision is an operation-and-scaling policy. Activation checkpointing trades recomputation for saved tensors. Both require numerical verification.</li>
+<li>Optimizer, schedule, parameterization, data order, batch, precision, and hardware form one experimental package.</li>
+<li>MFU describes model arithmetic while executing; goodput and recovery describe productive wall time. A complete, atomic, reshardable checkpoint is a correctness artifact.</li>
+<li>Dense compute, useful throughput, facility power, ETTR, and productive utilization connect the training design to finance. Rent-versus-buy is a sensitivity analysis, not one quoted rate.</li>
+</ul>
+<p><strong>Changes:</strong></p>
+<ul>
+<li>Framework names, sharding APIs, compiler behavior, collective implementations, checkpoint formats, and process-mesh helpers.</li>
+<li>Preferred FP8, microscaling, FP4, accumulator, rounding, and scaling recipes—and which hardware executes them safely.</li>
+<li>Optimizer recipes, Muon variants, preconditioners, update scaling, schedule branches, and speedrun records.</li>
+<li>Accelerator SKUs, system topologies, peak-FLOP conventions, cloud availability, prices, power envelopes, and delivery times.</li>
+<li>The best composition of TP, PP, CP, EP, HSDP, and local-update training for a particular model and fabric.</li>
+<li>Published interruption statistics, SDC detectors, decentralized-training results, and the policy obligations attached to large runs.</li>
+</ul>
+<p>The senior habit is stable: convert every claim into a tensor layout, byte count, collective trace, numerical check, failure-recovery invariant, and economic denominator. A larger cluster amplifies an incorrect assumption faster than it fixes one.</p>
+</section>
+<section id="sec-ch06-exercises" class="level2" data-number="6.16">
+<h2 data-number="6.16" class="anchored" data-anchor-id="sec-ch06-exercises"><span class="header-section-number">6.16</span> Exercises</h2>
+<ol type="1">
+<li><p><strong>Replace Adam state with an 8-bit optimizer.</strong> For a 30B-parameter model, begin with the chapter’s two-byte parameter, two-byte gradient, four-byte master copy, and eight-byte Adam moments. Replace the two moments with one byte each plus 0.5 bytes per parameter of scales and metadata. Compute DDP and ideal 64-way stage-3 persistent bytes per rank. Add a two-byte transient largest unit containing 600M parameters. State which accuracy, kernel, and checkpoint assumptions the arithmetic does not validate.</p></li>
+<li><p><strong>Map 512 H100s for a 235B MoE.</strong> Design DP, TP, PP, CP, and EP groups for a 235B-total, 22B-active model with 128 experts, top-8 routing, and 128K training sequences. Give exact rank-set dimensions and say whether EP is independent or overlaps another dimension. Estimate dispatch-plus-combine bytes for one expert group from <span class="math inline">\,2Tdkbf</span>. Defend which collectives stay inside a node, which cross nodes, and how dropless skew changes the plan.</p></li>
+<li><p><strong>Cut a pipeline bubble two ways.</strong> Compute the simplified bubble for <span class="math inline">s=8,m=32</span>. Halve it once by changing the number of microbatches while keeping stages fixed, and once through an interleaved schedule without changing the global batch. Quantify the first solution exactly; for the second, define a schedule assumption and its effective virtual-stage count. List memory, communication, and imbalance costs that the formula omits.</p></li>
+<li><p><strong>Reproduce a speedrun optimizer ablation.</strong> Extend <code>optimizer_probe.py</code> with paired seeds and a small learning-rate/weight-decay grid for AdamW and the Muon-like split. Hold model, tokens, batches, WSD curve, and initialization fixed. Report median loss at equal tokens, <strong>tokens to a prespecified target loss</strong>, tokens per second, optimizer bytes, and divergence count with uncertainty. Then compare one current speedrun recipe and identify every change that prevents attributing its record to the optimizer alone.</p></li>
+<li><p><strong>Stress the cost model.</strong> Add spot and reserved capacity to <code>cost_model.py</code>. Model interruption arrivals, checkpoint interval, save time, recovery time, and reserved-capacity idle fraction. Produce expected and p90 wall time and cost for at least three mixes. Use the checkpoint-waste equation as a baseline, then explain where correlated failures and preemption warnings violate it.</p></li>
+<li><p><strong>Defend rent versus buy to a CFO.</strong> Your proposed run faces cloud dollars per useful FLOP that may be twice nominal because MFU and failure overhead are worse than forecast. Compare renting with buying a cluster using CRF, facility build time, PUE, staff, spares, network, utilization, ETTR, residual value, and technology-stranding risk. Present a break-even productive-hours range and three observations that would reverse your recommendation. Separate accounting assumptions from technical measurements and include the cost of a six-month capacity delay.</p></li>
+</ol>
+</section>
+<section id="sec-ch06-notes" class="level2" data-number="6.17">
+<h2 data-number="6.17" class="anchored" data-anchor-id="sec-ch06-notes"><span class="header-section-number">6.17</span> Notes and Sources</h2>
+<p>For replicated and sharded state, see PyTorch’s <a href="https://docs.pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html">DistributedDataParallel documentation</a>, Rajbhandari et al., <a href="https://arxiv.org/abs/1910.02054"><em>ZeRO: Memory Optimizations Toward Training Trillion Parameter Models</em></a>, and the current primary documentation linked in the dated landscape. The chapter’s ring payload and latency-bandwidth equations are leading-order models; production decisions require collective traces.</p>
+<p>For model-parallel mechanisms, see Megatron-LM’s <a href="https://arxiv.org/abs/1909.08053">tensor-parallel work</a>, GPipe for <a href="https://arxiv.org/abs/1811.06965">pipeline parallelism</a>, <a href="https://arxiv.org/abs/2310.01889">Ring Attention</a>, <a href="https://arxiv.org/abs/2309.14509">DeepSpeed-Ulysses</a>, and the current <a href="https://docs.nvidia.com/megatron-core/developer-guide/0.17.0/user-guide/features/moe.html">Megatron-Core MoE guide</a>. The implementation-oriented <a href="https://huggingface.co/spaces/nanotron/ultrascale-playbook">Ultra-Scale Playbook</a> and JAX team’s <a href="https://jax-ml.github.io/scaling-book/"><em>How to Scale Your Model</em></a> are useful comparative guides. These sources use different hardware and accounting conventions; borrow mechanisms, not interchangeable benchmark numbers.</p>
+<p>For low precision, the <a href="https://arxiv.org/abs/2412.19437">DeepSeek-V3 report</a> supplies one large FP8 training recipe; the <a href="https://arxiv.org/abs/2310.10537">Microscaling paper</a> and OCP specification define the MX lineage; and the dated landscape links current NVFP4 work. For optimizers and schedules, see the <a href="https://kellerjordan.github.io/posts/muon/">Muon design note</a>, <a href="https://arxiv.org/abs/2502.16982">Muon scaling study</a>, <a href="https://arxiv.org/abs/2507.20534">Kimi K2</a> for MuonClip, <a href="https://arxiv.org/abs/2203.03466">Tensor Programs V</a> for <span class="math inline">\mu</span>P, <a href="https://arxiv.org/abs/2404.06395">MiniCPM</a> for WSD, and a later <a href="https://arxiv.org/abs/2410.05192">WSD analysis</a>. None makes optimizer transfer automatic across a changed training system.</p>
+<p>For utilization and operations, PaLM distinguishes <a href="https://arxiv.org/abs/2204.02311">model and hardware FLOPs utilization</a>. The dated landscape links Llama 3 and MegaScale for report-specific interruption and goodput evidence. Young’s original checkpoint-interval approximation is available <a href="https://graal.ens-lyon.fr/~abenoit/CR02/papers/young.pdf">here</a>. For current SDC evidence, see a <a href="https://arxiv.org/abs/2502.12340">2025 large-scale study</a>, <a href="https://arxiv.org/abs/2604.00726">2026 GEMM fault-injection work</a>, and <a href="https://www.usenix.org/conference/osdi26/presentation/lei">AEGIS at OSDI 2026</a>.</p>
+<p>For economics, Epoch AI’s <a href="https://epoch.ai/publications/how-much-does-it-cost-to-train-frontier-ai-models">frontier training-cost study</a> and <a href="https://epoch.ai/data-insights/ai-datacenter-cost-breakdown">one-gigawatt data-center cost model</a> illustrate the categories and uncertainties. Live cloud pricing pages are inputs to a dated scenario, not primary laws. The chapter therefore generates its chart from replaceable assumptions and keeps provider prices out of the durable spine.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/05-scaling-laws-pretraining-data.html" class="pagination-link" aria-label="Scaling Laws and Pretraining Data [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/07-post-training.html" class="pagination-link" aria-label="Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

@@ -1,0 +1,1896 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Spend inference compute deliberately, verify reasoning without assuming the verifier is perfect, and derive critic-free RL with verifiable rewards.">
+
+<title>8&nbsp; Reasoning: Test-Time Compute and RLVR [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/09-inference-behavior.html" rel="next">
+<link href="../chapters/07-post-training.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/05-scaling-laws-pretraining-data.html">Part II — Training and Post-Training</a></li><li class="breadcrumb-item"><a href="../chapters/08-reasoning-test-time-compute.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch08-prerequisites" id="toc-sec-ch08-prerequisites" class="nav-link active" data-scroll-target="#sec-ch08-prerequisites"><span class="header-section-number">8.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch08-contents" id="toc-sec-ch08-contents" class="nav-link" data-scroll-target="#sec-ch08-contents"><span class="header-section-number">8.2</span> Contents</a></li>
+  <li><a href="#sec-ch08-opening" id="toc-sec-ch08-opening" class="nav-link" data-scroll-target="#sec-ch08-opening"><span class="header-section-number">8.3</span> A correct answer can be generated and still be lost</a></li>
+  <li><a href="#sec-ch08-will-build" id="toc-sec-ch08-will-build" class="nav-link" data-scroll-target="#sec-ch08-will-build"><span class="header-section-number">8.4</span> What you will build</a></li>
+  <li><a href="#sec-ch08-coverage" id="toc-sec-ch08-coverage" class="nav-link" data-scroll-target="#sec-ch08-coverage"><span class="header-section-number">8.5</span> Coverage turns samples into opportunity</a></li>
+  <li><a href="#sec-ch08-search" id="toc-sec-ch08-search" class="nav-link" data-scroll-target="#sec-ch08-search"><span class="header-section-number">8.6</span> Search chooses where reasoning branches</a></li>
+  <li><a href="#sec-ch08-verifiers" id="toc-sec-ch08-verifiers" class="nav-link" data-scroll-target="#sec-ch08-verifiers"><span class="header-section-number">8.7</span> Verifiers set the ceiling</a></li>
+  <li><a href="#sec-ch08-allocation" id="toc-sec-ch08-allocation" class="nav-link" data-scroll-target="#sec-ch08-allocation"><span class="header-section-number">8.8</span> Allocate compute by marginal value</a></li>
+  <li><a href="#sec-ch08-grpo" id="toc-sec-ch08-grpo" class="nav-link" data-scroll-target="#sec-ch08-grpo"><span class="header-section-number">8.9</span> GRPO replaces the critic with siblings</a></li>
+  <li><a href="#sec-ch08-rlvr" id="toc-sec-ch08-rlvr" class="nav-link" data-scroll-target="#sec-ch08-rlvr"><span class="header-section-number">8.10</span> RLVR turns verification into training</a></li>
+  <li><a href="#sec-ch08-pathologies" id="toc-sec-ch08-pathologies" class="nav-link" data-scroll-target="#sec-ch08-pathologies"><span class="header-section-number">8.11</span> Entropy, length, and Goodhart break naive RL</a>
+  <ul class="collapse">
+  <li><a href="#entropy-collapse-removes-exploration" id="toc-entropy-collapse-removes-exploration" class="nav-link" data-scroll-target="#entropy-collapse-removes-exploration"><span class="header-section-number">8.11.1</span> Entropy collapse removes exploration</a></li>
+  <li><a href="#length-can-be-rewarded-accidentally-by-loss-or-data" id="toc-length-can-be-rewarded-accidentally-by-loss-or-data" class="nav-link" data-scroll-target="#length-can-be-rewarded-accidentally-by-loss-or-data"><span class="header-section-number">8.11.2</span> Length can be rewarded accidentally by loss or data</a></li>
+  <li><a href="#goodharts-law-separates-proxy-reward-from-utility" id="toc-goodharts-law-separates-proxy-reward-from-utility" class="nav-link" data-scroll-target="#goodharts-law-separates-proxy-reward-from-utility"><span class="header-section-number">8.11.3</span> Goodhart’s law separates proxy reward from utility</a></li>
+  </ul></li>
+  <li><a href="#sec-ch08-capability" id="toc-sec-ch08-capability" class="nav-link" data-scroll-target="#sec-ch08-capability"><span class="header-section-number">8.12</span> Capability claims require pass@k and proof</a></li>
+  <li><a href="#sec-ch08-landscape" id="toc-sec-ch08-landscape" class="nav-link" data-scroll-target="#sec-ch08-landscape"><span class="header-section-number">8.13</span> Landscape 2026 (dated)</a></li>
+  <li><a href="#sec-ch08-build" id="toc-sec-ch08-build" class="nav-link" data-scroll-target="#sec-ch08-build"><span class="header-section-number">8.14</span> Build</a></li>
+  <li><a href="#sec-ch08-endures" id="toc-sec-ch08-endures" class="nav-link" data-scroll-target="#sec-ch08-endures"><span class="header-section-number">8.15</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch08-exercises" id="toc-sec-ch08-exercises" class="nav-link" data-scroll-target="#sec-ch08-exercises"><span class="header-section-number">8.16</span> Exercises</a></li>
+  <li><a href="#sec-ch08-sources" id="toc-sec-ch08-sources" class="nav-link" data-scroll-target="#sec-ch08-sources"><span class="header-section-number">8.17</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/05-scaling-laws-pretraining-data.html">Part II — Training and Post-Training</a></li><li class="breadcrumb-item"><a href="../chapters/08-reasoning-test-time-compute.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch08" class="quarto-section-identifier"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch08-prerequisites" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="sec-ch08-prerequisites"><span class="header-section-number">8.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, backpropagation, basic Python, and beginner PyTorch.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/07-post-training.html#sec-ch07-policy-gradient">Chapter 7, Policy gradients</a> supplies REINFORCE, baselines, and advantages. <a href="../chapters/07-post-training.html#sec-ch07-rlhf">Chapter 7, RLHF</a> supplies PPO’s clipped ratio and the reference-policy KL. This chapter derives GRPO as a precise change to those mechanisms rather than reteaching them.</p>
+<p><strong>Not required:</strong> search algorithms, Monte Carlo tree search, process reward models, reasoning-model APIs, rollout engines, or prior experience training a reasoning model.</p>
+</blockquote>
+</section>
+<section id="sec-ch08-contents" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="sec-ch08-contents"><span class="header-section-number">8.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch08-opening">A correct answer can be generated and still be lost</a></li>
+<li><a href="#sec-ch08-will-build">What you will build</a></li>
+<li><a href="#sec-ch08-coverage">Coverage turns samples into opportunity</a></li>
+<li><a href="#sec-ch08-search">Search chooses where reasoning branches</a></li>
+<li><a href="#sec-ch08-verifiers">Verifiers set the ceiling</a></li>
+<li><a href="#sec-ch08-allocation">Allocate compute by marginal value</a></li>
+<li><a href="#sec-ch08-grpo">GRPO replaces the critic with siblings</a></li>
+<li><a href="#sec-ch08-rlvr">RLVR turns verification into training</a></li>
+<li><a href="#sec-ch08-pathologies">Entropy, length, and Goodhart break naive RL</a></li>
+<li><a href="#sec-ch08-capability">Capability claims require pass@k and proof</a></li>
+<li><a href="#sec-ch08-landscape">Landscape 2026 (dated)</a></li>
+<li><a href="#sec-ch08-build">Build</a></li>
+<li><a href="#sec-ch08-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch08-exercises">Exercises</a></li>
+<li><a href="#sec-ch08-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch08-opening" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="sec-ch08-opening"><span class="header-section-number">8.3</span> A correct answer can be generated and still be lost</h2>
+<p>Suppose a model solves a hard algebra problem correctly in one of eight sampled responses. The other seven disagree. A plurality vote returns the most common wrong answer. A learned judge prefers a polished but invalid derivation. Asking the model to “check again” changes the right answer into a wrong one. The generator had enough capability to produce success, yet the surrounding inference procedure failed to find and preserve it.</p>
+<p><strong>Test-time compute</strong> is computation spent after the weights are fixed to improve an answer. It can be spent in three distinct ways. <strong>Serial compute</strong> extends one trajectory with more intermediate tokens, revisions, or backtracking. <strong>Parallel compute</strong> samples independent trajectories. <strong>Search compute</strong> branches on partial trajectories, evaluates them, and decides which branches deserve expansion. These mechanisms are often grouped under “thinking longer,” but they make different bets.</p>
+<p>Why can serial reasoning help at all? A transformer applies a fixed number of layers per generated token. When it emits an intermediate token and conditions on that token next, the autoregressive loop creates another serial computation step. A chain of thought is therefore an external scratch sequence that lets a fixed-depth network perform a longer computation. The trace may help the model reach an answer; it is not automatically a faithful explanation of how the answer arose. Chapter 25 owns that monitoring and faithfulness question.</p>
+<p>Parallel compute exploits a different fact: the model defines a distribution over possible paths. One sample may miss a low-probability correct region; repeated sampling can cover it. Search combines both ideas by preserving promising prefixes and abandoning others. Every method eventually needs a selection signal. This creates the <strong>generator–verifier gap</strong>: in some domains, checking a candidate is cheaper and more reliable than generating one. A compiler can reject invalid code much faster than a model can invent a correct program. Substitution can check an arithmetic answer. A proof assistant can validate a formal certificate.</p>
+<p>The gap is conditional, not universal. Judging an essay may be as difficult as writing it. A learned verifier can share the generator’s errors. A test suite can omit the behavior an optimizer exploits. More candidate compute helps only when the selection mechanism can recognize improvement.</p>
+<p>Figure <a href="#fig-ch08-compute-ladder" class="quarto-xref">Figure&nbsp;<span>8.1</span></a> makes the allocation decision explicit. The next unit of compute should buy a new path, a deeper path, or a better check—not merely more tokens by habit.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart TD</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    Q["Problem + current candidate set"] --&gt; V{"Reliable external check available?"}</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    V --&gt;|"yes"| G{"Any candidate passes?"}</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    G --&gt;|"yes"| STOP["Return verified candidate"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    G --&gt;|"no"| CHOOSE{"Current failure is coverage or depth?"}</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    V --&gt;|"no"| UNCERTAIN["Use a calibrated selection rule; retain uncertainty"]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    CHOOSE --&gt;|"coverage"| PAR["Sample another independent trajectory"]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    CHOOSE --&gt;|"depth"| SER["Extend or revise a promising trajectory"]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    CHOOSE --&gt;|"branch uncertainty"| SEARCH["Expand and prune partial thoughts"]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    PAR --&gt; Q</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    SER --&gt; Q</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    SEARCH --&gt; Q</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch08-compute-ladder" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch08-compute-ladder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch08-compute-ladder">flowchart TD
+    Q["Problem + current candidate set"] --&gt; V{"Reliable external check available?"}
+    V --&gt;|"yes"| G{"Any candidate passes?"}
+    G --&gt;|"yes"| STOP["Return verified candidate"]
+    G --&gt;|"no"| CHOOSE{"Current failure is coverage or depth?"}
+    V --&gt;|"no"| UNCERTAIN["Use a calibrated selection rule; retain uncertainty"]
+    CHOOSE --&gt;|"coverage"| PAR["Sample another independent trajectory"]
+    CHOOSE --&gt;|"depth"| SER["Extend or revise a promising trajectory"]
+    CHOOSE --&gt;|"branch uncertainty"| SEARCH["Expand and prune partial thoughts"]
+    PAR --&gt; Q
+    SER --&gt; Q
+    SEARCH --&gt; Q
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch08-compute-ladder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8.1: Where can the next unit of test-time compute produce new information?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The invariant is that extra compute enters a measured loop. Without a verifier, confidence rule, or stopping condition, “think longer” is only an instruction to spend more.</p>
+</section>
+<section id="sec-ch08-will-build" class="level2" data-number="8.4">
+<h2 data-number="8.4" class="anchored" data-anchor-id="sec-ch08-will-build"><span class="header-section-number">8.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled" title="The reasoning-and-RLVR microscope">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>The reasoning-and-RLVR microscope
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will run one engine-free, standard-library CPU build rooted at <code>code/ch08/reason_rl.py</code>. A seeded arithmetic fixture exposes five reasoning strategies across easy, medium, and hard prompts. The same exact-answer verifier first ranks repeated samples and then becomes the reward for a clipped GRPO update.</p>
+<p>The build measures coverage, plurality accuracy, noisy-verifier best-of-<span class="math inline">n</span>, true pass@1, normalized policy entropy, expected response length, and objective reward. A deliberately misspecified length proxy runs through the same GRPO core to show Goodhart’s law. <code>render_metrics.py</code> generates the chapter’s print-safe SVG. Success means exact RLVR raises true accuracy, group advantages are zero-mean, and the broken proxy run visibly separates measured reward from true utility.</p>
+<p><code>hf_generate_adapter.py</code> is an optional <code>transformers</code> adapter that supplies real sampled completions and extracted numeric answers. It requires an explicit model download and is never imported by the deterministic build.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch08-coverage" class="level2" data-number="8.5">
+<h2 data-number="8.5" class="anchored" data-anchor-id="sec-ch08-coverage"><span class="header-section-number">8.5</span> Coverage turns samples into opportunity</h2>
+<p>Let a prompt <span class="math inline">x</span> have per-sample probability <span class="math inline">p_x</span> of producing a response that passes an exact verifier. If <span class="math inline">k</span> samples are conditionally independent, the probability that at least one succeeds is</p>
+<p><span class="math display">
+\operatorname{pass@}k(x)=1-(1-p_x)^k.
+</span></p>
+<p>This is <strong>coverage</strong>: whether the candidate set contains a success. The marginal gain from sample <span class="math inline">k+1</span> is <span class="math inline">p_x(1-p_x)^k</span>, so returns diminish but remain positive whenever <span class="math inline">p_x\in(0,1)</span>. Dataset pass@<span class="math inline">k</span> averages this quantity over prompts. Real samples are correlated, and <span class="math inline">p_x</span> varies widely, so the equation is a mental model rather than an estimator to apply blindly. Empirical work has nevertheless found smooth inference-scaling relationships over large sample ranges in verifiable domains.</p>
+<p>Coverage is not selection accuracy. <strong>Self-consistency</strong> samples reasoning traces, extracts their final answers, and returns the plurality answer:</p>
+<p><span class="math display">
+\hat a=\arg\max_a\sum_{i=1}^{k}\mathbb{1}[a_i=a].
+</span></p>
+<p>Plurality does not require more than half the votes. It works asymptotically when the correct answer <span class="math inline">a^*</span> is the unique most probable answer bucket:</p>
+<p><span class="math display">
+P(A=a^*)&gt;\max_{a\ne a^*}P(A=a).
+</span></p>
+<p>The commonly repeated “each sample must be more than 50% accurate” condition applies to binary majority voting, not general plurality. If wrong mass is diffuse across many answers, a correct bucket with probability 0.35 can still win. If one systematic mistake has probability 0.45, repeated sampling makes the system more confidently wrong even when coverage approaches one.</p>
+<p>The reference fixture gives two correct strategies the same arithmetic answer, one wrong strategy a concentrated off-by-one answer, and other wrong strategies diffuse answers. The core sampling loop records all three selection outcomes:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch08/reason_rl.py — changed region: ttc_curve</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>actions <span class="op">=</span> [sample_index(probabilities, rng) <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(samples)]</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>answers <span class="op">=</span> [</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    candidate_answer(gold, action, trial <span class="op">+</span> i)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, action <span class="kw">in</span> <span class="bu">enumerate</span>(actions)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>correct <span class="op">=</span> [is_correct(action) <span class="cf">for</span> action <span class="kw">in</span> actions]</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>coverage <span class="op">+=</span> <span class="bu">any</span>(correct)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>winner <span class="op">=</span> <span class="bu">max</span>(<span class="bu">dict</span>.fromkeys(answers), key<span class="op">=</span>answers.count)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>plurality <span class="op">+=</span> winner <span class="op">==</span> gold</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>marked <span class="op">=</span> [i <span class="cf">for</span> i, hit <span class="kw">in</span> <span class="bu">enumerate</span>(correct) <span class="cf">if</span> hit <span class="op">!=</span> (rng.random() <span class="op">&lt;</span> <span class="fl">.18</span>)]</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>selected <span class="op">=</span> rng.choice(marked) <span class="cf">if</span> marked <span class="cf">else</span> <span class="dv">0</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>noisy_bon <span class="op">+=</span> correct[selected]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>reason_rl.py</code> after <code>ttc_curve</code></td>
+<td style="text-align: right;">38 lines</td>
+<td>coverage, plurality, and noisy-verifier selection are measured separately on the same candidates</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>At one sample, all three metrics equal the fixture’s 0.397 pass@1. At 32 samples, exact-verifier coverage reaches 1.000, plurality reaches only 0.583, and noisy selection reaches 0.732. The gap between coverage and selected accuracy is not unused model capability in the abstract; it is an engineering opportunity whose value depends on verifier quality.</p>
+<p>Serial and parallel compute can also interact. One can sample <span class="math inline">k</span> short traces or fewer long traces under the same token budget. If the task fails because early paths are diverse but shallow, extra length may help. If one long trajectory repeatedly commits to the same early mistake, parallel restarts may help. Measure success against <em>total sampled tokens</em>, not sample count alone, and stratify by difficulty.</p>
+</section>
+<section id="sec-ch08-search" class="level2" data-number="8.6">
+<h2 data-number="8.6" class="anchored" data-anchor-id="sec-ch08-search"><span class="header-section-number">8.6</span> Search chooses where reasoning branches</h2>
+<p>Independent samples throw away partial work. Search keeps a frontier of partial reasoning states and allocates expansions selectively. To make this useful, define four interfaces: a state representation, an expansion operator, a partial-state score, and a termination check. “Ask the model for another thought” is only the expansion operator.</p>
+<p><strong>Beam search</strong> retains the best <span class="math inline">B</span> prefixes at each depth. Standard token beam search scores cumulative log-probability, which measures model likelihood rather than correctness. Reasoning beam search instead branches on semantic steps and may combine policy likelihood with a process score. It is simple and parallel, but pruning is irreversible: a temporarily low-scored branch cannot recover.</p>
+<p><strong>Tree of Thoughts (ToT)</strong> treats a coherent intermediate thought as a node, expands several child thoughts, scores them, and permits backtracking. The tree preserves distinct histories. <strong>Graph of Thoughts (GoT)</strong> also merges equivalent or reusable intermediate states, which can avoid recomputation and combine partial results. Merging requires canonical state identity. If two states look similar in prose but carry different assumptions, an incorrect merge corrupts every descendant.</p>
+<p><strong>Verifier-guided search</strong> uses a process reward model or deterministic partial checker to rank prefixes. It earns its cost when bad branches can be rejected before they consume full generations. <strong>Monte Carlo tree search (MCTS)</strong> balances exploitation of high-value branches and exploration of uncertain branches. A common selection score is</p>
+<p><span class="math display">
+a^*=\arg\max_a\left[
+Q(s,a)+c\sqrt{\frac{\log N(s)}{1+N(s,a)}}
+\right],
+</span></p>
+<p>where <span class="math inline">Q(s,a)</span> is estimated value after choosing thought <span class="math inline">a</span> from state <span class="math inline">s</span>, <span class="math inline">N(s)</span> is the parent visit count, <span class="math inline">N(s,a)</span> is the edge visit count, and <span class="math inline">c</span> controls exploration. Expansion adds a candidate thought; evaluation or simulation estimates downstream value; backup updates ancestor statistics. Language-model search must decide what constitutes a state, because raw prose creates an enormous, weakly canonicalized tree.</p>
+<p>Figure <a href="#fig-ch08-search-structures" class="quarto-xref">Figure&nbsp;<span>8.2</span></a> compares what the algorithms retain. The arrows encode ancestry; the graph merge and MCTS backup are the operations unavailable to a simple beam.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    subgraph B["Beam: fixed frontier"]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>        B0["prompt"] --&gt; B1["top thought A"]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>        B0 --&gt; B2["top thought B"]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        B1 --&gt; B3["top-B next states"]</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        B2 --&gt; B3</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    subgraph T["Tree of Thoughts: branch and backtrack"]</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        T0["prompt"] --&gt; T1["thought A"]</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        T0 --&gt; T2["thought B"]</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        T1 --&gt; T3["A1"]</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        T1 --&gt; T4["A2"]</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        T2 --&gt; T5["B1"]</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    subgraph G["Graph of Thoughts: merge reusable state"]</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        G0["prompt"] --&gt; G1["route A"]</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        G0 --&gt; G2["route B"]</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        G1 --&gt; G3["canonical intermediate"]</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        G2 --&gt; G3</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    subgraph M["MCTS: selection and value backup"]</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>        M0["visited root N,Q"] --&gt; M1["selected branch"]</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>        M1 --&gt; M2["new expansion"]</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>        M2 -. "value backup" .-&gt; M0</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    end</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch08-search-structures" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch08-search-structures-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch08-search-structures">flowchart LR
+    subgraph B["Beam: fixed frontier"]
+        B0["prompt"] --&gt; B1["top thought A"]
+        B0 --&gt; B2["top thought B"]
+        B1 --&gt; B3["top-B next states"]
+        B2 --&gt; B3
+    end
+    subgraph T["Tree of Thoughts: branch and backtrack"]
+        T0["prompt"] --&gt; T1["thought A"]
+        T0 --&gt; T2["thought B"]
+        T1 --&gt; T3["A1"]
+        T1 --&gt; T4["A2"]
+        T2 --&gt; T5["B1"]
+    end
+    subgraph G["Graph of Thoughts: merge reusable state"]
+        G0["prompt"] --&gt; G1["route A"]
+        G0 --&gt; G2["route B"]
+        G1 --&gt; G3["canonical intermediate"]
+        G2 --&gt; G3
+    end
+    subgraph M["MCTS: selection and value backup"]
+        M0["visited root N,Q"] --&gt; M1["selected branch"]
+        M1 --&gt; M2["new expansion"]
+        M2 -. "value backup" .-&gt; M0
+    end
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch08-search-structures-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8.2: What information does each reasoning-search structure retain?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The selection rule, not the topology name, determines whether search helps. Model likelihood can favor familiar errors. A learned process score can be confidently wrong off distribution. A deterministic partial checker may be incomplete. Track expansions, prunes, verifier calls, recovered branches, and final verified success so extra search has an accountable marginal return.</p>
+</section>
+<section id="sec-ch08-verifiers" class="level2" data-number="8.7">
+<h2 data-number="8.7" class="anchored" data-anchor-id="sec-ch08-verifiers"><span class="header-section-number">8.7</span> Verifiers set the ceiling</h2>
+<p>An <strong>outcome reward model (ORM)</strong> scores a complete response or final answer. It is cheap to call once per candidate and matches tasks whose final result is sufficient. Exact answer matching, unit tests, and a simulator terminal condition are programmatic ORMs. A learned sequence classifier is also an ORM, but its score is a proxy rather than a proof.</p>
+<p>A <strong>process reward model (PRM)</strong> scores intermediate steps or prefixes. It can identify the first invalid transformation, prune a branch early, and provide denser credit during training. Its supervision is much harder. Annotators need consistent step boundaries and must distinguish a locally unusual but valid path from an error. Monte Carlo labels—continue a prefix many times and use downstream success as its value—replace human labels with sampling assumptions and can be noisy on rare but recoverable states.</p>
+<p>The operational choice follows the information available:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Verifier</th>
+<th>Observes</th>
+<th>Useful when</th>
+<th>Residual risk</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>exact ORM</td>
+<td>final artifact</td>
+<td>answer or program has an executable truth condition</td>
+<td>parser or tests omit cases</td>
+</tr>
+<tr class="even">
+<td>learned ORM</td>
+<td>full response</td>
+<td>quality is holistic but labeled comparisons exist</td>
+<td>style and distribution biases</td>
+</tr>
+<tr class="odd">
+<td>deterministic process check</td>
+<td>partial state</td>
+<td>invariants can reject a branch early</td>
+<td>checker is incomplete</td>
+</tr>
+<tr class="even">
+<td>learned PRM</td>
+<td>intermediate reasoning steps</td>
+<td>early pruning saves substantial generation</td>
+<td>local labels may penalize valid alternatives</td>
+</tr>
+</tbody>
+</table>
+<p>A noisy verifier places a mathematical ceiling on best-of-<span class="math inline">n</span>. Suppose a sampled candidate is correct with probability <span class="math inline">p</span>. A binary verifier has symmetric error rate <span class="math inline">q</span>: it marks a correct candidate positive with probability <span class="math inline">(1-q)</span> and a wrong one positive with probability <span class="math inline">q</span>. Among candidates marked positive, its precision is</p>
+<p><span class="math display">
+\pi_v=
+\frac{p(1-q)}{p(1-q)+(1-p)q}.
+</span></p>
+<p>As the candidate pool grows, the probability of finding <em>some</em> marked candidate approaches one, but selecting uniformly among marked candidates approaches precision <span class="math inline">\pi_v</span>, not perfect accuracy. A ranker has a different formula, yet the same constraint: increasing <span class="math inline">n</span> creates more correct candidates and more false positives. The tail behavior of the verifier determines which wins.</p>
+<p>Verification must therefore be evaluated under the candidate distribution induced by search. Measure false positives at the top of the score distribution, not only average classification accuracy on random pairs. Hold out adversarial candidates. For programmatic checks, mutate correct and incorrect solutions and verify that the parser rejects malformed, ambiguous, and multiple-answer outputs.</p>
+<p>This also explains the limits of <strong>intrinsic self-correction</strong>. Asking the same model to reconsider without new evidence reuses correlated knowledge and biases. Empirical work has found that such prompts can leave reasoning unchanged or flip correct answers to wrong ones. This is not a claim that revision never works. It separates revision with new information—compiler errors, test failures, retrieved facts, a PRM signal—from revision that only restates the original uncertainty. Log right-to-wrong and wrong-to-right transitions separately; a net score can hide destructive correction.</p>
+</section>
+<section id="sec-ch08-allocation" class="level2" data-number="8.8">
+<h2 data-number="8.8" class="anchored" data-anchor-id="sec-ch08-allocation"><span class="header-section-number">8.8</span> Allocate compute by marginal value</h2>
+<p>There is no globally optimal number of reasoning tokens or samples. Let <span class="math inline">m</span> denote a strategy—serial extension, parallel sampling, or guided search—and <span class="math inline">b</span> its compute budget. A decision rule can be written</p>
+<p><span class="math display">
+(m^*,b^*)=\arg\max_{m,b}
+\left(\mathbb{E}[U\mid x,m,b]-\lambda C(m,b)\right),
+</span></p>
+<p>where <span class="math inline">U</span> is task utility, <span class="math inline">C</span> is compute measured consistently, and <span class="math inline">\lambda</span> expresses how much utility justifies another unit of compute. The expectation is conditional on the prompt <span class="math inline">x</span> because difficulty changes the curve.</p>
+<p>Easy prompts may already pass a cheap check, so more compute adds little. Medium prompts often benefit most: the generator has nonzero coverage and the verifier can discriminate candidates. On extremely hard prompts, all candidates may fail and group rewards may have zero variance. Search then spends heavily without a useful gradient or selection signal. A stronger base policy, better decomposition, or new external information may be required before test-time scaling pays.</p>
+<p>Compute-optimal studies confirm the need to condition strategy on prompt difficulty and verifier behavior rather than applying one fixed best-of-<span class="math inline">n</span>. In practice, build per-slice curves of utility against total generated tokens and verifier calls. The slope</p>
+<p><span class="math display">
+\frac{\Delta\text{verified utility}}{\Delta\text{sampled tokens}}
+</span></p>
+<p>is more actionable than a single benchmark maximum. Stop when the slope falls below the product’s threshold or when the verifier cannot distinguish additional candidates.</p>
+<p>This chapter owns the allocation mechanism, not production serving controls. Provider-specific reasoning settings, request budgets, cache interaction, length forcing, and the latency economics of long traces belong in Chapter 10. Here, compute is an abstract measured budget so the decision survives changes in API surface.</p>
+</section>
+<section id="sec-ch08-grpo" class="level2" data-number="8.9">
+<h2 data-number="8.9" class="anchored" data-anchor-id="sec-ch08-grpo"><span class="header-section-number">8.9</span> GRPO replaces the critic with siblings</h2>
+<p>Chapter 7 introduced PPO’s value model as a learned baseline. Group Relative Policy Optimization (GRPO), introduced in DeepSeekMath, removes that critic. For each prompt <span class="math inline">x</span>, sample a group of <span class="math inline">G</span> responses <span class="math inline">y_1,\ldots,y_G</span> from the old policy and score them with rewards <span class="math inline">r_1,\ldots,r_G</span>. Define</p>
+<p><span class="math display">
+\bar r=\frac{1}{G}\sum_{i=1}^{G}r_i,
+\qquad
+s_r=\sqrt{\frac{1}{G}\sum_{i=1}^{G}(r_i-\bar r)^2},
+</span></p>
+<p>and the group-relative advantage</p>
+<p><span class="math display">
+\hat A_i=\frac{r_i-\bar r}{s_r+\varepsilon}.
+</span></p>
+<p>The siblings supply the baseline. A response better than its group receives positive advantage; one worse receives negative advantage. If all rewards are equal, every advantage is zero and the prompt supplies no learning signal. The reference fixture implements exactly this population-standardized calculation:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch08/reason_rl.py — changed region: grpo_advantages</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>mean <span class="op">=</span> <span class="bu">sum</span>(rewards) <span class="op">/</span> <span class="bu">len</span>(rewards)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>variance <span class="op">=</span> <span class="bu">sum</span>((reward <span class="op">-</span> mean) <span class="op">**</span> <span class="dv">2</span> <span class="cf">for</span> reward <span class="kw">in</span> rewards) <span class="op">/</span> <span class="bu">len</span>(rewards)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> variance <span class="op">==</span> <span class="fl">0.0</span>:</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [<span class="fl">0.0</span>] <span class="op">*</span> <span class="bu">len</span>(rewards)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>scale <span class="op">=</span> math.sqrt(variance)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> [(reward <span class="op">-</span> mean) <span class="op">/</span> scale <span class="cf">for</span> reward <span class="kw">in</span> rewards]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For token <span class="math inline">t</span> of response <span class="math inline">i</span>, let</p>
+<p><span class="math display">
+\rho_{i,t}(\theta)=
+\frac{\pi_\theta(y_{i,t}\mid x,y_{i,&lt;t})}
+{\pi_{\theta_{\mathrm{old}}}(y_{i,t}\mid x,y_{i,&lt;t})}.
+</span></p>
+<p>A common GRPO loss applies the same sequence advantage to each response token:</p>
+<p><span class="math display">
+\mathcal{L}_{\text{GRPO}}(\theta)=
+-\frac{1}{G}\sum_{i=1}^{G}\frac{1}{|y_i|}
+\sum_{t=1}^{|y_i|}
+\min\!\left(
+\rho_{i,t}\hat A_i,
+\operatorname{clip}(\rho_{i,t},1-\epsilon,1+\epsilon)\hat A_i
+\right)
++\beta D_{\mathrm{KL}}(\pi_\theta\|\pi_{\text{ref}}).
+</span></p>
+<p>Here <span class="math inline">|y_i|</span> is response length, <span class="math inline">\epsilon</span> is PPO’s clipping width, and <span class="math inline">\beta</span> controls an optional reference KL. Implementations vary in normalization, ratio granularity, and whether a reference penalty is retained for a programmatic reward. Those choices are part of the algorithm, not harmless reductions.</p>
+<p>The fixture uses one discrete strategy as a sequence-level action. It reuses each sampled group for three clipped epochs and applies a small reference KL. The active gradient is the exact softmax score gradient:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch08/reason_rl.py — changed region: train_grpo</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>ratio <span class="op">=</span> probabilities[action] <span class="op">/</span> old[action]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>clipped <span class="op">=</span> (advantage <span class="op">&gt;=</span> <span class="dv">0</span> <span class="kw">and</span> ratio <span class="op">&gt;</span> <span class="dv">1</span> <span class="op">+</span> clip) <span class="kw">or</span> (</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    advantage <span class="op">&lt;</span> <span class="dv">0</span> <span class="kw">and</span> ratio <span class="op">&lt;</span> <span class="dv">1</span> <span class="op">-</span> clip</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> clipped:</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> index <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">5</span>):</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        score <span class="op">=</span> <span class="bu">float</span>(index <span class="op">==</span> action) <span class="op">-</span> probabilities[index]</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        gradient[index] <span class="op">-=</span> advantage <span class="op">*</span> ratio <span class="op">*</span> score <span class="op">/</span> group_size</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>reason_rl.py</code> after <code>train_grpo</code></td>
+<td style="text-align: right;">58 lines</td>
+<td>sibling rewards replace the critic, zero-variance groups produce zero signal, and clipped ratios bound sample reuse</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>GRPO removes the learned value network; it does not remove online sampling, old-policy bookkeeping, reward computation, or the need to monitor exploration. The memory saving matters, but we do not repeat Chapter 6’s bytes-per-parameter arithmetic. The conceptual delta from PPO is the baseline source.</p>
+</section>
+<section id="sec-ch08-rlvr" class="level2" data-number="8.10">
+<h2 data-number="8.10" class="anchored" data-anchor-id="sec-ch08-rlvr"><span class="header-section-number">8.10</span> RLVR turns verification into training</h2>
+<p><strong>Reinforcement learning with verifiable rewards (RLVR)</strong> uses an executable check as the reward instead of a learned human-preference model. Math equivalence, unit tests, a theorem prover, a simulator, or a constrained optimizer can produce the signal. The reward may still include formatting and other terms, but only the programmatically checked portion deserves the word <em>verifiable</em>.</p>
+<p>The connection to test-time compute is direct. Repeated sampling uses a verifier to select a response without changing weights. RLVR uses the same verifier to increase the probability of successful responses in future samples. The fixture’s <code>is_correct()</code> function first computes exact-verifier coverage and then supplies the exact GRPO reward vector. This is one mechanism promoted from ranker to trainer.</p>
+<p>The R1 family made a multi-stage version of this pipeline prominent. R1-Zero applied large-scale RL directly to a base policy and reported the emergence of longer reasoning and self-revision-like behavior, alongside readability and language-mixing problems. The R1 pipeline added cold-start long-reasoning examples before RL, then used rejection sampling to create supervised data and a further RL stage to improve reasoning while restoring broader behavior. Trace distillation into smaller models is a customization mechanism owned by Chapter 11.</p>
+<p>Figure <a href="#fig-ch08-r1-pipeline" class="quarto-xref">Figure&nbsp;<span>8.3</span></a> answers what each stage contributes. It should not be read as a universal mandatory recipe.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    B(["Base policy"]) --&gt; C["Cold-start SFT&lt;br/&gt;readable reasoning format"]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    C --&gt; R["RLVR&lt;br/&gt;explore and reinforce verified outcomes"]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    R --&gt; S["Rejection-sampling SFT&lt;br/&gt;retain strong traces and broad data"]</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    S --&gt; F["Final RL&lt;br/&gt;reasoning plus behavior objectives"]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    V["Programmatic verifier"] --&gt;|"outcome reward"| R</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    V --&gt;|"filter candidates"| S</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch08-r1-pipeline" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch08-r1-pipeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch08-r1-pipeline">flowchart LR
+    B(["Base policy"]) --&gt; C["Cold-start SFT&lt;br/&gt;readable reasoning format"]
+    C --&gt; R["RLVR&lt;br/&gt;explore and reinforce verified outcomes"]
+    R --&gt; S["Rejection-sampling SFT&lt;br/&gt;retain strong traces and broad data"]
+    S --&gt; F["Final RL&lt;br/&gt;reasoning plus behavior objectives"]
+    V["Programmatic verifier"] --&gt;|"outcome reward"| R
+    V --&gt;|"filter candidates"| S
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch08-r1-pipeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8.3: What distinct problem does each stage of an R1-style pipeline address?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The durable pattern is staged error correction. SFT establishes a usable support and format; online RL changes the distribution using fresh outcomes; rejection sampling converts selected successes back into stable supervised data. Skip a stage when its measured delta does not justify its cost.</p>
+<p>An exact-looking verifier can still be incomplete. Numeric extraction may accept a correct number embedded in contradictory text. Unit tests may miss forbidden I/O. A proof checker validates the formal statement it receives, which may not match the natural-language task. Verifier tests and specification review remain part of RLVR.</p>
+</section>
+<section id="sec-ch08-pathologies" class="level2" data-number="8.11">
+<h2 data-number="8.11" class="anchored" data-anchor-id="sec-ch08-pathologies"><span class="header-section-number">8.11</span> Entropy, length, and Goodhart break naive RL</h2>
+<p>The training reward can rise while the policy becomes less useful. Three mechanisms must be separated because they require different repairs.</p>
+<section id="entropy-collapse-removes-exploration" class="level3" data-number="8.11.1">
+<h3 data-number="8.11.1" class="anchored" data-anchor-id="entropy-collapse-removes-exploration"><span class="header-section-number">8.11.1</span> Entropy collapse removes exploration</h3>
+<p>For a token or discrete action distribution, entropy is</p>
+<p><span class="math display">
+H(\pi)=-\sum_a\pi(a)\log\pi(a).
+</span></p>
+<p>Policy-gradient updates increase actions that happened to earn positive advantage and decrease alternatives. Across many updates, probability concentrates and entropy falls. Some concentration is the goal: pass@1 improves when correct paths become more likely. <strong>Entropy collapse</strong> is the failure regime in which diversity disappears before the policy has explored enough of the solution space. Training loss can look healthy while pass@<span class="math inline">k</span> coverage and novel strategy discovery stagnate.</p>
+<p>Track entropy by position and prompt difficulty, distinct-answer count, pass@1, and high-<span class="math inline">k</span> coverage. Wider upper clipping for positive-advantage tokens, explicit entropy control, reference regularization, and richer prompt curricula can preserve exploration. These are interventions to validate, not guarantees.</p>
+</section>
+<section id="length-can-be-rewarded-accidentally-by-loss-or-data" class="level3" data-number="8.11.2">
+<h3 data-number="8.11.2" class="anchored" data-anchor-id="length-can-be-rewarded-accidentally-by-loss-or-data"><span class="header-section-number">8.11.2</span> Length can be rewarded accidentally by loss or data</h3>
+<p>Vanilla GRPO’s per-response division by <span class="math inline">|y_i|</span> changes token weighting. For positive-advantage responses it can favor shorter correct responses; for negative-advantage responses it penalizes each token of a long wrong response less, creating pressure toward longer wrong answers. Group standard-deviation normalization can also overweight prompt groups according to their reward variance.</p>
+<p>Dr.&nbsp;GRPO removes response-length and within-group standard-deviation normalization to target these biases. DAPO uses batch-level token averaging, asymmetric clipping that permits more upward movement, dynamic sampling that removes all-equal reward groups, and soft overlength shaping. These proposals show that “GRPO” is a family of objectives whose reduction and normalization must be written down.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variant or intervention</th>
+<th>Changes</th>
+<th>Intended failure addressed</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Dr.&nbsp;GRPO</td>
+<td>removes response-length and group-std normalization</td>
+<td>long incorrect-response and difficulty weighting bias</td>
+</tr>
+<tr class="even">
+<td>DAPO token-level loss</td>
+<td>averages active tokens across the batch</td>
+<td>per-response length bias</td>
+</tr>
+<tr class="odd">
+<td>DAPO clip-higher</td>
+<td>separates lower and upper clip widths</td>
+<td>premature entropy collapse</td>
+</tr>
+<tr class="even">
+<td>DAPO dynamic sampling</td>
+<td>drops groups with zero reward variance</td>
+<td>rollout compute with zero gradient</td>
+</tr>
+<tr class="odd">
+<td>overlength shaping</td>
+<td>penalizes approaching truncation gradually</td>
+<td>hard cutoff and runaway response length</td>
+</tr>
+</tbody>
+</table>
+<p>The chapter fixture does not claim to reproduce vanilla GRPO’s token-normalization bias: its action is an entire synthetic response. Instead, it creates a separate and more severe length problem in the reward itself.</p>
+</section>
+<section id="goodharts-law-separates-proxy-reward-from-utility" class="level3" data-number="8.11.3">
+<h3 data-number="8.11.3" class="anchored" data-anchor-id="goodharts-law-separates-proxy-reward-from-utility"><span class="header-section-number">8.11.3</span> Goodhart’s law separates proxy reward from utility</h3>
+<p>Goodhart’s law is the warning that a measure stops behaving like the intended goal when optimization pressure targets the measure. Let <span class="math inline">U(x,y)</span> be true specification utility and <span class="math inline">\hat R(x,y)</span> the implemented reward. On the original candidate distribution they may correlate. GRPO changes that distribution toward regions with high <span class="math inline">\hat R</span>. If the verifier or shaping term has a blind spot, the policy can find responses where <span class="math inline">\hat R</span> is high and <span class="math inline">U</span> is low.</p>
+<p>The fixture’s exact mode rewards only correct arithmetic. Its broken mode adds an excessive response-length bonus. The five action rewards are produced through the same core:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch08/reason_rl.py — changed region: reward_values</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> mode <span class="op">==</span> <span class="st">"exact"</span>:</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [<span class="fl">1.0</span>, <span class="fl">1.0</span>, <span class="fl">0.0</span>, <span class="fl">0.0</span>, <span class="fl">0.0</span>]</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> mode <span class="op">==</span> <span class="st">"proxy"</span>:</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="bu">float</span>(is_correct(action)) <span class="op">+</span> <span class="fl">2.2</span> <span class="op">*</span> TOKEN_LENGTHS[action] <span class="op">/</span> <span class="dv">30</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">+</span> <span class="fl">.1</span> <span class="op">*</span> <span class="bu">float</span>(action <span class="op">!=</span> <span class="dv">3</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> action <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">5</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    ]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The proxy run initially raises true accuracy from 0.393 to 0.670 as it reinforces a verbose correct strategy. Continued optimization discovers a longer incorrect strategy with higher proxy reward. By step 120, normalized proxy objective reaches 0.992, true accuracy falls to 0.018, expected length rises from 8.49 to 29.49 fixture tokens, and normalized entropy falls to 0.087. This is the canonical signature: measured reward improves, independent utility reverses, and exploration disappears.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>reason_rl.py</code> with exact and proxy reward adapters</td>
+<td style="text-align: right;">14 lines</td>
+<td>the same optimizer exposes divergence between optimized reward and independently measured correctness</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Mitigation begins with separation of measurements. Keep outcome quality, length, format, and verifier score as distinct time series. Evaluate on hidden tests and adversarial candidates not used by the reward. Constrain cheap-to-game shaping terms, inspect top-reward failures, and stop or roll back when reward and independent utility decouple. An ensemble of correlated weak judges is not an independent check.</p>
+<p>Sequence-level outcomes also create a credit-assignment problem: every token receives the same <span class="math inline">\hat A_i</span>, although only a few steps caused success or failure. PRMs and executable intermediate checks can densify credit, but they import their own label and verifier errors. Multi-turn agent trajectories add state, tools, and delayed effects; Chapter 23 develops that distinct problem.</p>
+</section>
+</section>
+<section id="sec-ch08-capability" class="level2" data-number="8.12">
+<h2 data-number="8.12" class="anchored" data-anchor-id="sec-ch08-capability"><span class="header-section-number">8.12</span> Capability claims require pass@k and proof</h2>
+<p>When RLVR raises pass@1, two explanations are possible. It may shift probability toward reasoning paths already present in the base policy, or it may make previously inaccessible strategies reachable. A pass@1 score cannot distinguish them.</p>
+<p>Compare full pass@<span class="math inline">k</span> curves before and after training. If the tuned model wins at small <span class="math inline">k</span> but the base model catches up or exceeds it at large <span class="math inline">k</span>, RL has sharpened sampling while possibly reducing coverage. One 2025 study reported this pattern across its settings. ProRL reported counter-evidence that prolonged RL can uncover strategies its sampled base models did not reach. These results use finite budgets, particular base models, prompts, and verifiers; neither establishes a universal theorem about capability creation.</p>
+<p>A defensible claim reports pass@<span class="math inline">k</span> over a wide disclosed range, semantic diversity of successful traces, held-out task families, and whether a purportedly novel strategy can be elicited from the base under matched search. Pretraining and post-training data lineage matter: an “emergent” behavior may already be latent in a base model or template. Capability is not established by a longer trace or an “aha” phrase.</p>
+<p>Final-answer exact matching is also insufficient for proof tasks. A correct numeric destination can follow invalid reasoning. <strong>Proof-graded evaluation</strong> has three increasingly strict forms:</p>
+<ol type="1">
+<li>expert grading against a problem-specific marking scheme, with partial credit and identified invalid steps;</li>
+<li>a validated proof grader calibrated against expert judgments;</li>
+<li>formal verification, where a proof assistant checks a machine-readable certificate against the intended theorem and axioms.</li>
+</ol>
+<p>Formal verification has the strongest local correctness contract but requires successful translation into the formal statement. Human and learned grading handle natural-language arguments but need disagreement measurement and adversarial validation. Chapter 22 owns judge calibration and statistical evaluation; the reporting minimum here is to disclose benchmark version, prompt/template, sample count, temperature, generated-token budget, selection rule, verifier, and whether the number is pass@<span class="math inline">k</span>, average sample accuracy, or selected accuracy.</p>
+<p>A saturated benchmark can still be a regression test, but it cannot separate frontier systems. Maintain difficulty slices and retire capability claims when ceiling effects or contamination dominate. Never compare a one-sample score to a selected best-of-many score without labeling the compute and selection procedure.</p>
+</section>
+<section id="sec-ch08-landscape" class="level2" data-number="8.13">
+<h2 data-number="8.13" class="anchored" data-anchor-id="sec-ch08-landscape"><span class="header-section-number">8.13</span> Landscape 2026 (dated)</h2>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Verified 2026-07-19.</strong> Reasoning evaluation is moving from short final-answer sets toward continuously refreshed problems, natural-language proof grading, research-level questions, and formal Lean artifacts. MathArena’s 2026 platform includes proof-based competitions, research-level arXiv problems, and formal proof generation. FrontierMath released a major v2 update on 2026-06-12 after revising a substantial portion of its items, an unusually sharp reminder that benchmark version is part of every score. AdvancedMathBench appeared in July 2026 with advanced proof-generation and verification tasks. Benchmark contents, model coverage, graders, and leaderboards are volatile; deleting this box leaves the chapter’s pass@<span class="math inline">k</span> and proof-verification mechanisms intact.</p>
+<p><strong>Verify live:</strong> consult the <a href="https://arxiv.org/abs/2605.00674">MathArena platform paper</a>, <a href="https://matharena.ai/">MathArena site</a>, <a href="https://epoch.ai/frontiermath/tiers-1-4">FrontierMath versioned benchmark page</a>, and <a href="https://arxiv.org/abs/2607.11849">AdvancedMathBench paper</a> before citing task counts, versions, scoring procedures, saturation, or model results. Appendix C owns the annual audit.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch08-build" class="level2" data-number="8.14">
+<h2 data-number="8.14" class="anchored" data-anchor-id="sec-ch08-build"><span class="header-section-number">8.14</span> Build</h2>
+<p>The reasoning-and-RLVR microscope uses 60 synthetic arithmetic tasks split across three difficulty classes. Five discrete strategies stand in for a response distribution: concise correct, verbose correct, concentrated off-by-one, diffuse wrong, and long reward-hacking. The representation is intentionally small enough that policy probabilities, entropy, and expected length can be computed exactly. It does not pretend that five actions reproduce token-level language modeling.</p>
+<p>Run the deterministic path from the <code>newbook</code> directory:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch08<span class="op">/</span>reason_rl<span class="op">.</span><span class="fu">py</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch08<span class="op">/</span>render_metrics<span class="op">.</span><span class="fu">py</span> code<span class="op">/</span>ch08<span class="op">/</span>reasoning_metrics<span class="op">.</span><span class="fu">svg</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>python <span class="op">-</span>m unittest discover <span class="op">-</span>s code<span class="op">/</span>ch08 <span class="op">-</span>p <span class="st">"test_*.py"</span> <span class="op">-</span>v</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The sampler evaluates six budgets from one to 32 samples. The trainer draws groups of eight, computes exact group-relative advantages, reuses each group for three clipped updates, and retains a small reference KL. Both exact and broken reward modes call the same trainer. The generated figure contains three different questions: what repeated sampling buys, whether objective and true accuracy agree, and how exploration changes.</p>
+<div id="fig-ch08-build-metrics" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch08-build-metrics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch08/reasoning_metrics.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;8.4: How do repeated sampling, exact RLVR, and a misspecified proxy change accuracy and exploration? Exact-verifier coverage reaches 1.000 at about 271 sampled fixture tokens while plurality reaches 0.583 and a noisy verifier reaches 0.732. Exact RLVR reaches 0.982 true accuracy; the proxy objective reaches 0.992 while true accuracy collapses to 0.018."><img src="../code/ch08/reasoning_metrics.svg" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch08-build-metrics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8.4: How do repeated sampling, exact RLVR, and a misspecified proxy change accuracy and exploration? Exact-verifier coverage reaches 1.000 at about 271 sampled fixture tokens while plurality reaches 0.583 and a noisy verifier reaches 0.732. Exact RLVR reaches 0.982 true accuracy; the proxy objective reaches 0.992 while true accuracy collapses to 0.018.
+</figcaption>
+</figure>
+</div>
+<p>Figure <a href="#fig-ch08-build-metrics" class="quarto-xref">Figure&nbsp;<span>8.4</span></a> separates three conclusions. In the left panel, more candidate tokens continue to increase coverage, but selection quality limits realized accuracy. In the middle panel, exact reward and true utility agree, while the proxy run crosses from useful shaping into Goodhart failure after step 30. In the right panel, both policies lose entropy; the proxy run collapses almost completely as it concentrates on the exploit.</p>
+<p>The exact checkpoints are:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 21%">
+<col style="width: 28%">
+<col style="width: 28%">
+<col style="width: 21%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Measurement</th>
+<th style="text-align: right;">Initial</th>
+<th style="text-align: right;">Final or peak</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>exact-RLVR true accuracy</td>
+<td style="text-align: right;">0.393</td>
+<td style="text-align: right;">0.982 final</td>
+<td>verified strategies become probable</td>
+</tr>
+<tr class="even">
+<td>exact-RLVR normalized entropy</td>
+<td style="text-align: right;">0.918</td>
+<td style="text-align: right;">0.335 final</td>
+<td>exploitation rises; some diversity remains</td>
+</tr>
+<tr class="odd">
+<td>proxy-run true accuracy</td>
+<td style="text-align: right;">0.393</td>
+<td style="text-align: right;">0.670 peak, 0.018 final</td>
+<td>reward first helps, then selects an exploit</td>
+</tr>
+<tr class="even">
+<td>proxy normalized objective</td>
+<td style="text-align: right;">0.476</td>
+<td style="text-align: right;">0.992 final</td>
+<td>optimized measure continues improving</td>
+</tr>
+<tr class="odd">
+<td>proxy expected length</td>
+<td style="text-align: right;">8.49</td>
+<td style="text-align: right;">29.49 final</td>
+<td>length bonus dominates behavior</td>
+</tr>
+</tbody>
+</table>
+<p>Break the fixture deliberately. Change the concentrated wrong answer in <code>candidate_answer</code> to a diffuse wrong answer and predict how plurality changes. Set verifier flip rate from 0.18 to zero and confirm noisy best-of-<span class="math inline">n</span> becomes exact coverage. Reduce the proxy length coefficient until objective and correctness no longer reverse. Every modification tests a causal mechanism rather than merely changing a score.</p>
+<p>The optional real-model adapter replaces only candidate generation. With <code>torch</code> and <code>transformers</code> installed separately, run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch08<span class="op">/</span>hf_generate_adapter<span class="op">.</span><span class="fu">py</span> MODEL_ID `</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Compute 37 * 14 and put the final integer last."</span> <span class="op">--</span>count <span class="dv">8</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>It renders a chat template when the tokenizer provides one, samples without vLLM or a rollout engine, returns completion token counts, and extracts each final integer. Model download, network access, and device placement are opt-in. Hardware kernels may remain nondeterministic even with a seed, so live results should be stored as a versioned distribution rather than snapshot-tested prose.</p>
+<p><strong>Honesty note.</strong> The deterministic lab proves objective mechanics, selection ceilings, and a constructed reward failure. It does not establish a benchmark result, the sample efficiency of GRPO on a neural language model, or the universal behavior of any named model. A real run needs held-out tasks, multiple seeds, strict verifier tests, token-level log-probabilities, and independent evaluation.</p>
+</section>
+<section id="sec-ch08-endures" class="level2" data-number="8.15">
+<h2 data-number="8.15" class="anchored" data-anchor-id="sec-ch08-endures"><span class="header-section-number">8.15</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Serial reasoning extends computation through the autoregressive loop. Parallel samples create coverage, not automatic accuracy. Search needs state, expansion, value, and stopping interfaces. Verifier false positives cap best-of-<span class="math inline">n</span>. External feedback is qualitatively different from unsupported self-revision. GRPO replaces PPO’s critic with a group baseline; all-equal groups contain no learning signal. Entropy, objective normalization, credit assignment, and reward misspecification must be measured independently. Pass@1 alone cannot establish new capability.</p>
+<p><strong>What changes.</strong> Search recipes, GRPO-family variants, reasoning curricula, benchmark difficulty, proof graders, model traces, and recommended training stacks will continue to move. Provider inference controls and their economics belong to Chapter 10’s dated serving profile. Keep model names, benchmark scores, and trainer defaults outside the durable mechanism.</p>
+</section>
+<section id="sec-ch08-exercises" class="level2" data-number="8.16">
+<h2 data-number="8.16" class="anchored" data-anchor-id="sec-ch08-exercises"><span class="header-section-number">8.16</span> Exercises</h2>
+<ol type="1">
+<li><p><strong>Reverse plurality.</strong> Change the fixture so one wrong answer is the unique mode while correct samples still have nonzero probability. Sweep to <span class="math inline">k=256</span> and show coverage approaching one while plurality approaches the wrong answer. State the violated unique-mode condition.</p></li>
+<li><p><strong>Verify the ceiling.</strong> For a fixed <span class="math inline">p</span> and symmetric verifier error <span class="math inline">q</span>, compute <span class="math inline">\pi_v</span> by hand. Modify the fixture to use a single difficulty and sweep <span class="math inline">k</span> until empirical noisy best-of-<span class="math inline">n</span> approaches that precision.</p></li>
+<li><p><strong>Implement one search.</strong> Add a beam over partial arithmetic operations using one shared expansion function and one exact partial-state checker. Report expansions and verified accuracy against independent sampling at equal expansion count.</p></li>
+<li><p><strong>Remove zero-signal groups.</strong> Add DAPO-style dynamic sampling that skips all-equal reward groups. Measure the fraction of skipped groups at the beginning and end of exact RLVR, then explain when resampling saves compute and when it biases the prompt distribution.</p></li>
+<li><p><strong>Repair length normalization.</strong> Extend the fixture to token-level actions and compare per-response normalization with a fixed-budget denominator. Predict which incorrect strategy receives less penalty and test the prediction.</p></li>
+<li><p><strong>Attack the verifier.</strong> Replace exact integer equality with “gold digits appear anywhere.” Construct the shortest incorrect response that earns reward, train the proxy run, and write the verifier test that would have prevented it.</p></li>
+<li><p><strong>Defend an allocation.</strong> A proof generator has 20% pass@1, 70% pass@32, and a learned verifier with 75% precision in its selected tail. Choose among longer single traces, parallel best-of-<span class="math inline">n</span>, PRM-guided search, or stopping. Specify the measurement that would reverse your choice.</p></li>
+</ol>
+</section>
+<section id="sec-ch08-sources" class="level2" data-number="8.17">
+<h2 data-number="8.17" class="anchored" data-anchor-id="sec-ch08-sources"><span class="header-section-number">8.17</span> Notes and sources</h2>
+<p>The serial-reasoning and sampling foundations are <a href="https://arxiv.org/abs/2201.11903">Chain-of-Thought Prompting</a>, <a href="https://arxiv.org/abs/2203.11171">Self-Consistency Improves Chain of Thought Reasoning</a>, and <a href="https://arxiv.org/abs/2407.21787">Large Language Monkeys</a>. Difficulty-conditioned allocation follows <a href="https://arxiv.org/abs/2408.03314">Scaling LLM Test-Time Compute Optimally</a>. Search mechanisms are developed in <a href="https://arxiv.org/abs/2305.10601">Tree of Thoughts</a>, <a href="https://arxiv.org/abs/2308.09687">Graph of Thoughts</a>, and the MCTS-based <a href="https://arxiv.org/abs/2305.14992">Reasoning via Planning</a>.</p>
+<p>Process supervision and automated process labels are treated in <a href="https://arxiv.org/abs/2305.20050">Let’s Verify Step by Step</a> and <a href="https://arxiv.org/abs/2312.08935">Math-Shepherd</a>. The intrinsic-correction warning comes from <a href="https://arxiv.org/abs/2310.01798">Large Language Models Cannot Self-Correct Reasoning Yet</a>; its claim boundaries should be preserved rather than generalized to every feedback-assisted revision method.</p>
+<p>GRPO originated in <a href="https://arxiv.org/abs/2402.03300">DeepSeekMath</a> and was popularized for RLVR by <a href="https://arxiv.org/abs/2501.12948">DeepSeek-R1</a>. Objective corrections and scaling variants are documented in <a href="https://arxiv.org/abs/2503.20783">Understanding R1-Zero-Like Training / Dr.&nbsp;GRPO</a>, <a href="https://arxiv.org/abs/2503.14476">DAPO</a>, and <a href="https://arxiv.org/abs/2505.22617">The Entropy Mechanism of Reinforcement Learning for Reasoning Language Models</a>. The competing capability interpretations are represented by <a href="https://arxiv.org/abs/2504.13837">Does RL Really Incentivize Reasoning Capacity Beyond the Base Model?</a> and <a href="https://arxiv.org/abs/2505.24864">ProRL</a>. Current proof-evaluation sources are kept in the dated landscape box.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/07-post-training.html" class="pagination-link" aria-label="Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/09-inference-behavior.html" class="pagination-link" aria-label="Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]">
+        <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

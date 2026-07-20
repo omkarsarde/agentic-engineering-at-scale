@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Design tools, context, workspaces, approvals, and resumable threads so that a capable model remains a bounded software component.">
+
+<title>17&nbsp; Tool Engineering and Harness Design [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/18-memory-experiential-learning.html" rel="next">
+<link href="../chapters/16-agent-anatomy.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/16-agent-anatomy.html">Part V — Building Agents</a></li><li class="breadcrumb-item"><a href="../chapters/17-tool-harness-engineering.html"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-you-need-going-in" id="toc-what-you-need-going-in" class="nav-link active" data-scroll-target="#what-you-need-going-in"><span class="header-section-number">17.1</span> What you need going in</a></li>
+  <li><a href="#contents" id="toc-contents" class="nav-link" data-scroll-target="#contents"><span class="header-section-number">17.2</span> Contents</a></li>
+  <li><a href="#what-you-will-build" id="toc-what-you-will-build" class="nav-link" data-scroll-target="#what-you-will-build"><span class="header-section-number">17.3</span> What you will build</a></li>
+  <li><a href="#sec-ch17-aci" id="toc-sec-ch17-aci" class="nav-link" data-scroll-target="#sec-ch17-aci"><span class="header-section-number">17.4</span> The interface is part of the intelligence</a></li>
+  <li><a href="#sec-ch17-tool-search" id="toc-sec-ch17-tool-search" class="nav-link" data-scroll-target="#sec-ch17-tool-search"><span class="header-section-number">17.5</span> Search the tool surface instead of preloading it</a></li>
+  <li><a href="#sec-ch17-context" id="toc-sec-ch17-context" class="nav-link" data-scroll-target="#sec-ch17-context"><span class="header-section-number">17.6</span> Assemble context with a ledger</a></li>
+  <li><a href="#sec-ch17-skills" id="toc-sec-ch17-skills" class="nav-link" data-scroll-target="#sec-ch17-skills"><span class="header-section-number">17.7</span> Skills as progressively disclosed procedures</a></li>
+  <li><a href="#sec-ch17-workspace" id="toc-sec-ch17-workspace" class="nav-link" data-scroll-target="#sec-ch17-workspace"><span class="header-section-number">17.8</span> A workspace is a boundary, not a sandbox</a></li>
+  <li><a href="#sec-ch17-approval" id="toc-sec-ch17-approval" class="nav-link" data-scroll-target="#sec-ch17-approval"><span class="header-section-number">17.9</span> Human approval as a typed protocol</a></li>
+  <li><a href="#sec-ch17-toctou" id="toc-sec-ch17-toctou" class="nav-link" data-scroll-target="#sec-ch17-toctou"><span class="header-section-number">17.10</span> Close the approval-to-execution race</a></li>
+  <li><a href="#sec-ch17-resume" id="toc-sec-ch17-resume" class="nav-link" data-scroll-target="#sec-ch17-resume"><span class="header-section-number">17.11</span> Resume threads without pretending effects are durable</a></li>
+  <li><a href="#sec-ch17-eval" id="toc-sec-ch17-eval" class="nav-link" data-scroll-target="#sec-ch17-eval"><span class="header-section-number">17.12</span> Improve the harness with evaluations</a></li>
+  <li><a href="#sec-ch17-build" id="toc-sec-ch17-build" class="nav-link" data-scroll-target="#sec-ch17-build"><span class="header-section-number">17.13</span> Build</a>
+  <ul class="collapse">
+  <li><a href="#acceptance-checks" id="toc-acceptance-checks" class="nav-link" data-scroll-target="#acceptance-checks"><span class="header-section-number">17.13.1</span> Acceptance checks</a></li>
+  <li><a href="#honesty-note" id="toc-honesty-note" class="nav-link" data-scroll-target="#honesty-note"><span class="header-section-number">17.13.2</span> Honesty note</a></li>
+  </ul></li>
+  <li><a href="#sec-ch17-endures" id="toc-sec-ch17-endures" class="nav-link" data-scroll-target="#sec-ch17-endures"><span class="header-section-number">17.14</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch17-exercises" id="toc-sec-ch17-exercises" class="nav-link" data-scroll-target="#sec-ch17-exercises"><span class="header-section-number">17.15</span> Exercises</a></li>
+  <li><a href="#sec-ch17-sources" id="toc-sec-ch17-sources" class="nav-link" data-scroll-target="#sec-ch17-sources"><span class="header-section-number">17.16</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/16-agent-anatomy.html">Part V — Building Agents</a></li><li class="breadcrumb-item"><a href="../chapters/17-tool-harness-engineering.html"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch17" class="quarto-section-identifier"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-you-need-going-in" class="level2" data-number="17.1">
+<h2 data-number="17.1" class="anchored" data-anchor-id="what-you-need-going-in"><span class="header-section-number">17.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> production Python, typed APIs, basic authorization, file paths, and tests.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/13-prompting-context-engineering.html">Chapter 13</a> owns caller-side context selection and compaction; <a href="../chapters/16-agent-anatomy.html">Chapter 16</a> supplies the proposal–gate–execute–observe kernel and the rule that model output is a proposal rather than authority.</p>
+<p><strong>Not required:</strong> MCP, LangGraph, a hosted model, container internals, or a durable workflow engine. Those appear only after the harness boundary is understood.</p>
+</blockquote>
+<div class="route-b">
+<p><strong>Route B backfill.</strong> Read <strong>Chapter 10, “Prefix caching and cache economics”</strong> (about 4 pages) before Section 17.3. Without it, the harness will still work, but you may reorder stable and volatile context in a way that silently destroys prefix reuse on every turn.</p>
+</div>
+</section>
+<section id="contents" class="level2" data-number="17.2">
+<h2 data-number="17.2" class="anchored" data-anchor-id="contents"><span class="header-section-number">17.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch17-aci">The interface is part of the intelligence</a></li>
+<li><a href="#sec-ch17-tool-search">Search the tool surface instead of preloading it</a></li>
+<li><a href="#sec-ch17-context">Assemble context with a ledger</a></li>
+<li><a href="#sec-ch17-skills">Skills as progressively disclosed procedures</a></li>
+<li><a href="#sec-ch17-workspace">A workspace is a boundary, not a sandbox</a></li>
+<li><a href="#sec-ch17-approval">Human approval as a typed protocol</a></li>
+<li><a href="#sec-ch17-toctou">Close the approval-to-execution race</a></li>
+<li><a href="#sec-ch17-resume">Resume threads without pretending effects are durable</a></li>
+<li><a href="#sec-ch17-eval">Improve the harness with evaluations</a></li>
+<li><a href="#sec-ch17-build">Build</a></li>
+<li><a href="#sec-ch17-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch17-exercises">Exercises</a></li>
+<li><a href="#sec-ch17-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="what-you-will-build" class="level2" data-number="17.3">
+<h2 data-number="17.3" class="anchored" data-anchor-id="what-you-will-build"><span class="header-section-number">17.3</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>A six-tool harness under attack
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The artifact under <code>code/ch17/</code> exposes six support tools, retrieves only the relevant definitions, confines paths to a per-thread workspace, binds a human approval to exact arguments and target state, and checkpoints harness state in SQLite. The build measures tool-retrieval recall and context exposure, substitutes a larger refund after approval, changes the target before execution, restarts the process, and verifies that the audit event is not duplicated. The deterministic path uses only local fixtures.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch17-aci" class="level2" data-number="17.4">
+<h2 data-number="17.4" class="anchored" data-anchor-id="sec-ch17-aci"><span class="header-section-number">17.4</span> The interface is part of the intelligence</h2>
+<p>Two systems can use the same model and produce very different results because they expose different action and observation interfaces. One gives the model a generic <code>run(command: str)</code> tool and returns 40,000 characters of terminal output. The other gives it <code>search_code</code>, <code>view_file</code>, <code>apply_patch</code>, and <code>run_tests</code>, each with bounded arguments and concise structured results. The second model appears more capable because the environment makes useful actions easy to express and mistakes easy to detect.</p>
+<p>This is the <strong>Agent–Computer Interface</strong> (ACI) thesis: interface design is a first-class model-performance variable. The <a href="https://arxiv.org/abs/2405.15793">SWE-agent study</a> demonstrated it in software engineering, but the principle applies to support, analytics, research, and operations. A tool is not merely a Python function exposed through JSON. It is a vocabulary item the model must distinguish, select, populate, and interpret.</p>
+<p>An effective tool contract answers six questions:</p>
+<ol type="1">
+<li><strong>What single job does the tool do?</strong> A specific verb–object name such as <code>order_lookup</code> is easier to retrieve than <code>get</code>.</li>
+<li><strong>When should it be used?</strong> The description names the user’s intent and meaningful exclusions.</li>
+<li><strong>What arguments are legal?</strong> The schema uses domain types, ranges, enumerations, and semantic field descriptions.</li>
+<li><strong>What authority does it exercise?</strong> Read, propose, write, transfer, delete, or administer are different risk classes.</li>
+<li><strong>What observation comes back?</strong> Results are concise, structured, correlated, and distinguish expected failure categories.</li>
+<li><strong>How is success verified?</strong> A write returns a receipt or new resource version, not a reassuring sentence.</li>
+</ol>
+<p>Large grab-bag tools hide these answers. A <code>manage_order(action, data)</code> endpoint asks the model to invent a second protocol inside untyped strings. At the other extreme, dozens of nearly identical tools increase selection ambiguity. Good tool design follows the shape of decisions the model can reliably make while keeping enforcement in application code.</p>
+<p>The chapter artifact makes risk visible in the registry:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># harness.py — one model-facing tool contract</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Tool:</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""A model-facing contract bound to an application-owned handler."""</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    summary: <span class="bu">str</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    schema: <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">type</span>]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    risk: Risk</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    handler: Callable[..., Any]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    target_version: Callable[[<span class="bu">dict</span>[<span class="bu">str</span>, Any]], <span class="bu">str</span>] <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>target_version</code> is not for the model. It lets the harness ask the application whether the resource is still the one a human reviewed. The distinction between model-facing description and application-owned control is deliberate.</p>
+<p>Tool results deserve the same design care. Return the fields required for the next decision, a stable identifier, provenance or resource version when relevant, and a bounded human-readable summary. Put bulk output in a file or artifact and return a handle. Dumping an entire database row or terminal transcript into the conversation spends context, leaks fields, and makes the next choice harder.</p>
+<p>Granularity is a design choice, not a universal preference for smaller functions. A tool should usually represent one domain decision whose preconditions and outcome can be explained. <code>set_account_state</code> is too broad because a model must synthesize hidden business rules. Separate tools for every internal database update are too narrow because the model must coordinate a transaction it cannot observe atomically. <code>suspend_account(reason, evidence_ids)</code> can be the right boundary when application code validates the evidence, performs the transaction, and returns the resulting account version.</p>
+<p>Reads and writes should normally be distinguishable before arguments are inspected. This lets the harness assign budgets, sandboxes, approvals, and concurrency policies at discovery time. A “read” that causes an expensive export or reveals regulated data is not low-risk merely because it leaves state unchanged, so risk classes also need data sensitivity and resource impact in production. The two-value enum in the fixture exposes the mechanism without pretending to be that full taxonomy.</p>
+<p>Tool semantics also need retry clarity. A pure calculation can be retried freely. A lookup is usually safe but may observe a newer version. A write needs an idempotency or reconciliation contract. The model should not decide retry legality from a natural-language error. The handler returns a typed category, while code applies the retry policy developed in Chapter 26.</p>
+</section>
+<section id="sec-ch17-tool-search" class="level2" data-number="17.5">
+<h2 data-number="17.5" class="anchored" data-anchor-id="sec-ch17-tool-search"><span class="header-section-number">17.5</span> Search the tool surface instead of preloading it</h2>
+<p>Every tool definition placed in the prompt consumes tokens before the agent has done work. A larger menu also creates more opportunities to confuse tools with overlapping names. With six small tools, preloading can be reasonable. With hundreds of enterprise endpoints and several protocol servers, it becomes a context-allocation policy.</p>
+<p>Deferred loading separates <strong>discovery metadata</strong> from the full callable contract. The model initially sees a small set of always-available tools plus a search capability or namespace catalog. When the task requires another capability, the harness retrieves a few candidate definitions and adds them to the active surface. The chosen definition normally remains available for the rest of the relevant phase so the model does not repeatedly rediscover it.</p>
+<p>The retrieval objective is recall-oriented. Missing the needed tool makes the task impossible; including one extra plausible tool costs a little context. A practical pipeline is:</p>
+<ol type="1">
+<li>filter by tenant, permission, environment, and risk before semantic retrieval;</li>
+<li>retrieve by task language against tool name, description, parameter names, and examples;</li>
+<li>rerank a small candidate set when the catalog is large;</li>
+<li>expose full schemas only for the final set;</li>
+<li>record which catalog and tool versions were considered.</li>
+</ol>
+<p>Risk changes discovery. A destructive administrative tool should not become callable merely because its description matched a query. Tool search narrows the context surface; an authorization service narrows the authority surface. Both are necessary.</p>
+<p>The deterministic fixture uses transparent lexical overlap rather than an embedding service. Across six tasks, retrieving two tools retained the expected tool in every candidate set while reducing exposed name-and-summary characters from 1,326 to 455.</p>
+<div id="fig-ch17-tool-surface" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch17-tool-surface-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../assets/figures/ch17-tool-surface.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;17.1: Preloading all tool summaries versus retrieving two per task. The deterministic six-task fixture retained recall at two of 1.0 while exposing fewer schema characters."><img src="../assets/figures/ch17-tool-surface.svg" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch17-tool-surface-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;17.1: Preloading all tool summaries versus retrieving two per task. The deterministic six-task fixture retained recall at two of 1.0 while exposing fewer schema characters.
+</figcaption>
+</figure>
+</div>
+<p>The plot answers a narrow question: can this fixture reduce prompt surface without losing the expected tool? It does not establish a universal threshold, and characters are only a transparent proxy for tokenizer-specific token counts. A real catalog evaluation should report recall@k by task slice, wrong-tool rate after the model chooses, added search turns, end-to-end success, and token/latency savings.</p>
+<p>The retrieval core is small enough to inspect:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># harness.py — select_tools(), deterministic retrieval fixture</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> select_tools(query: <span class="bu">str</span>, tools: <span class="bu">list</span>[Tool], limit: <span class="bu">int</span> <span class="op">=</span> <span class="dv">3</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[Tool]:</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Retrieve a small tool surface by transparent lexical overlap."""</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    terms <span class="op">=</span> <span class="bu">set</span>(query.casefold().replace(<span class="st">"-"</span>, <span class="st">" "</span>).split())</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> score(tool: Tool) <span class="op">-&gt;</span> <span class="bu">tuple</span>[<span class="bu">int</span>, <span class="bu">str</span>]:</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        words <span class="op">=</span> <span class="bu">set</span>(</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"</span><span class="sc">{</span>tool<span class="sc">.</span>name<span class="sc">}</span><span class="ss"> </span><span class="sc">{</span>tool<span class="sc">.</span>summary<span class="sc">}</span><span class="ss">"</span>.casefold().replace(<span class="st">"_"</span>, <span class="st">" "</span>).split()</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">len</span>(terms <span class="op">&amp;</span> words), tool.name</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">sorted</span>(tools, key<span class="op">=</span>score, reverse<span class="op">=</span><span class="va">True</span>)[:limit]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This function is a teaching probe, not a production search engine. Its value is that it makes catalog inputs, tie breaking, and the measured surface explicit. Replace it only after establishing an evaluation set that the replacement must beat.</p>
+<div class="landscape-2026">
+<p><strong>Landscape 2026 (dated).</strong> Verified 2026-07-19. Deferred tool loading is now exposed by multiple agent products and SDKs, including current GitHub Copilot CLI and OpenAI Agents SDK documentation. Exact activation thresholds, supported models, namespace behavior, and event types are provider surfaces rather than spine concepts.</p>
+<p><strong>Verify live:</strong> <a href="https://docs.github.com/en/copilot/concepts/agents/copilot-cli/tool-search">GitHub tool-search documentation</a> and <a href="https://openai.github.io/openai-agents-python/tools/">OpenAI Agents SDK tool documentation</a>.</p>
+</div>
+</section>
+<section id="sec-ch17-context" class="level2" data-number="17.6">
+<h2 data-number="17.6" class="anchored" data-anchor-id="sec-ch17-context"><span class="header-section-number">17.6</span> Assemble context with a ledger</h2>
+<p>Chapter 13 treated context as a caller-side allocation problem. A harness operationalizes that decision on every step. It gathers stable instructions, the current task, compacted history, selected tools, activated skills, retrieved evidence, workspace artifacts, policy messages, and recent observations. Without explicit accounting, whichever component appends last tends to win the remaining window.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    Stable["Stable instructions\nand safety contract"] --&gt; Assemble["Harness assembler"]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    Task["Task + authenticated\ncaller context"] --&gt; Assemble</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    History["Compacted run history"] --&gt; Assemble</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    Tools["Retrieved tool schemas"] --&gt; Assemble</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    Skills["Activated skill body"] --&gt; Assemble</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    Evidence["Just-in-time evidence"] --&gt; Assemble</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    Assemble --&gt; Prompt["Ordered model context"]</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    Assemble --&gt; Ledger[("Context ledger")]</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    Ledger --&gt; Metrics["tokens, source, reason,\ncache class, truncation"]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch17-context" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch17-context-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch17-context">flowchart LR
+    Stable["Stable instructions\nand safety contract"] --&gt; Assemble["Harness assembler"]
+    Task["Task + authenticated\ncaller context"] --&gt; Assemble
+    History["Compacted run history"] --&gt; Assemble
+    Tools["Retrieved tool schemas"] --&gt; Assemble
+    Skills["Activated skill body"] --&gt; Assemble
+    Evidence["Just-in-time evidence"] --&gt; Assemble
+    Assemble --&gt; Prompt["Ordered model context"]
+    Assemble --&gt; Ledger[("Context ledger")]
+    Ledger --&gt; Metrics["tokens, source, reason,\ncache class, truncation"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch17-context-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;17.2: Which sources enter one model call, and which component records the allocation decision?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>A <strong>context ledger</strong> records each contribution’s source, version, token count, selection reason, trust class, cache class, and whether it was truncated or summarized. It turns context from an invisible string into an inspectable build artifact. When an agent fails because a policy was missing or stale evidence displaced the task, the ledger makes that causal claim testable.</p>
+<p>Let the usable window be <span class="math inline">W</span>, the reserved output allowance be <span class="math inline">R</span>, and the selected input components have token counts <span class="math inline">n_i</span>. Admission requires</p>
+<p><span class="math display">
+\sum_i n_i \le W - R.
+</span></p>
+<p>The inequality is simple; deciding which <span class="math inline">i</span> survive is the harness policy. Hard requirements such as the current task, authenticated scope, and safety contract are admitted first. Recent tool observations may be required for correlation. Retrieved evidence competes by relevance and freshness. Older conversation can be compacted, but the ledger retains a pointer to the source transcript and the compactor version. If the sum still does not fit, the harness should stop or narrow the task rather than silently dropping an authority-bearing instruction.</p>
+<p>Token count alone is not enough. Two equally sized components can have different attention value and injection risk. The ledger therefore supports counterfactual debugging: replay the failed task without one component, with an earlier snapshot, or with a different ordering. That is how a vague diagnosis such as “the model got confused by context” becomes an experiment.</p>
+<p>Ordering also interacts with prefix caches. Stable, reusable content belongs near the front; volatile state belongs later. If a timestamp, random request identifier, or freshly rendered tool catalog appears before stable instructions, the prefix changes and the server cannot reuse prior computation. The harness should record cache-boundary choices without re-teaching the serving mechanism from Chapter 10.</p>
+<p>Trust labels are not prompt decorations. They tell the assembler and policy layer whether content is instruction-authoritative, application data, user input, retrieved third-party text, or tool output. A model may still be influenced by every token, so labels alone do not contain injection. They support stronger architectural separation and trace analysis developed in Chapter 24.</p>
+<p>The harness should answer “why was this item present?” for every context component. “Because the framework added it” is not a sufficient production explanation.</p>
+</section>
+<section id="sec-ch17-skills" class="level2" data-number="17.7">
+<h2 data-number="17.7" class="anchored" data-anchor-id="sec-ch17-skills"><span class="header-section-number">17.7</span> Skills as progressively disclosed procedures</h2>
+<p>A tool supplies an action. A <strong>skill</strong> supplies procedural knowledge for accomplishing a class of tasks: when to use tools, in what order, what checks to run, which templates to fill, and how to interpret results. Keeping those instructions out of the global system prompt prevents every specialized procedure from taxing every task.</p>
+<p>The durable pattern has three disclosure levels:</p>
+<ol type="1">
+<li><strong>Metadata</strong>—a name and precise description—stays cheap enough to index broadly.</li>
+<li><strong>Instructions</strong> load only when the task activates the skill.</li>
+<li><strong>Resources</strong> such as scripts, references, schemas, and assets load or execute only when a particular step needs them.</li>
+</ol>
+<p>The current <a href="https://openagentskills.dev/docs/specification">Open Agent Skills specification</a> formalizes this directory-shaped pattern, but the mechanism is older and broader: retrieve procedure metadata, bind an immutable version, then disclose depth on demand.</p>
+<p>A skill is part of the software supply chain. Treat its instructions as code-adjacent content:</p>
+<ul>
+<li>version and review it;</li>
+<li>declare required tools and permissions;</li>
+<li>pin or hash scripts and referenced assets;</li>
+<li>test activation precision and task outcomes;</li>
+<li>keep secrets out of the package;</li>
+<li>refuse deep reference chains that hide what will execute;</li>
+<li>record the activated version in the run trace.</li>
+</ul>
+<p>Progressive disclosure reduces context load; it does not make a skill trustworthy. A malicious skill can tell the model to read secrets or invoke a dangerous tool. Tool gates and workspace isolation must still constrain the resulting proposals.</p>
+<p>Good skill descriptions are activation classifiers. “PDF helper” is vague. “Extract text and tables from PDF files; fill forms; merge pages; do not use for image generation” supplies positive and negative boundaries. Measure both missed activations and false activations on a labeled task set.</p>
+</section>
+<section id="sec-ch17-workspace" class="level2" data-number="17.8">
+<h2 data-number="17.8" class="anchored" data-anchor-id="sec-ch17-workspace"><span class="header-section-number">17.8</span> A workspace is a boundary, not a sandbox</h2>
+<p>Longer tasks need artifacts outside the token window: notes, patches, downloaded pages, generated data, plans, and test reports. A per-thread workspace gives those artifacts stable names and lets the model use files as external working memory. It also creates a boundary between tenants and concurrent runs.</p>
+<p>The smallest useful path rule resolves every requested path against one owned root and rejects anything outside it:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># state.py — Workspace.resolve(), path containment seam</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> resolve(<span class="va">self</span>, relative: <span class="bu">str</span>) <span class="op">-&gt;</span> Path:</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Return a contained path or reject traversal and absolute escapes."""</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    candidate <span class="op">=</span> (<span class="va">self</span>.root <span class="op">/</span> relative).resolve()</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> candidate.is_relative_to(<span class="va">self</span>.root):</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">PermissionError</span>(<span class="ss">f"path escapes workspace: </span><span class="sc">{</span>relative<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> candidate</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This blocks <code>../other-thread/secret.txt</code> through this API. It is not a sandbox. A process with ambient filesystem permission can open another path directly; symlinks, mount configuration, race conditions, shell expansion, subprocesses, networks, credentials, CPU, memory, and time require OS- or container-level controls.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    subgraph Process["Agent process — still untrusted"]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>      Call["file proposal"] --&gt; Resolver["resolve under thread root"]</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    subgraph Root["Thread workspace"]</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>      Files[("artifacts, patches, notes")]</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    Resolver --&gt;|contained path| Files</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    Resolver -. reject escape .-&gt; Other[("other tenant / host files")]</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    Process -. requires separate controls .-&gt; Network[("network + credentials")]</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    Process -. requires separate controls .-&gt; Compute[("CPU, memory, subprocesses")]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch17-workspace" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch17-workspace-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch17-workspace">flowchart LR
+    subgraph Process["Agent process — still untrusted"]
+      Call["file proposal"] --&gt; Resolver["resolve under thread root"]
+    end
+    subgraph Root["Thread workspace"]
+      Files[("artifacts, patches, notes")]
+    end
+    Resolver --&gt;|contained path| Files
+    Resolver -. reject escape .-&gt; Other[("other tenant / host files")]
+    Process -. requires separate controls .-&gt; Network[("network + credentials")]
+    Process -. requires separate controls .-&gt; Compute[("CPU, memory, subprocesses")]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch17-workspace-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;17.3: What does path containment protect, and what remains outside its guarantee?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The invariant to retain is scoped: a workspace API establishes naming and path ownership; a sandbox establishes execution containment. A secure harness normally uses both.</p>
+</section>
+<section id="sec-ch17-approval" class="level2" data-number="17.9">
+<h2 data-number="17.9" class="anchored" data-anchor-id="sec-ch17-approval"><span class="header-section-number">17.9</span> Human approval as a typed protocol</h2>
+<p>“Ask a human before dangerous actions” sounds precise until the system has to pause and display something. What exactly did the person approve? Which actor and tenant were active? Was the target still in the reviewed state? How long is the decision valid? Can the model change arguments afterward?</p>
+<p>Approval mechanics begin with an immutable, reviewable proposal. The chapter artifact binds:</p>
+<ul>
+<li>tool name and exact canonical arguments;</li>
+<li>authenticated tenant and actor supplied by the application;</li>
+<li>a digest of the target’s current version;</li>
+<li>an expiration time;</li>
+<li>a request identifier and approver identity.</li>
+</ul>
+<p>The preview shown to the person should translate the structured action into domain language while retaining exact values: “Refund order A-17 by 49.99 USD to the original payment method,” not “Approve tool call.” High-risk interfaces should display the resulting state change, affected resource, reversibility, and why the system requested approval.</p>
+<p>Denial is a first-class outcome. The harness records it and returns a safe reason to the agent. An operator may edit a proposal, but an edit creates a new request; it does not mutate the object that an existing approval signs.</p>
+<p>Approval policy varies by risk: low-risk reads may need no checkpoint; ordinary writes may need one reviewer; large transfers may require dual control or a cooling-off period; irreversible actions may be disallowed entirely. Chapter 24 owns the policy architecture. This chapter owns the mechanics that make any such decision bind to execution.</p>
+<p>Approval is not free safety. Every checkpoint adds queue time and cognitive work, and repeated low-value prompts create approval fatigue. A useful preview clusters related read-only evidence, highlights the delta from the last reviewed plan, and asks for one domain decision rather than a series of implementation details. It must not bundle independent high-risk effects so broadly that one click grants authority the reviewer did not intend.</p>
+<p>Measure the human channel like any other subsystem: time to decision, abandonment, edit rate, disagreement, stale-before-execution rate, and the fraction of approvals that later prove unnecessary. A high acceptance rate may mean the agent is calibrated; it may also mean reviewers have learned to click through. Chapter 27 combines these measures with queue age and escalation operations, while Chapter 28 asks whether work was merely shifted from the agent to reviewers.</p>
+</section>
+<section id="sec-ch17-toctou" class="level2" data-number="17.10">
+<h2 data-number="17.10" class="anchored" data-anchor-id="sec-ch17-toctou"><span class="header-section-number">17.10</span> Close the approval-to-execution race</h2>
+<p>Time-of-check to time-of-use (TOCTOU) failures occur when the state reviewed at approval differs from the state used at execution. The model may substitute arguments. Another process may change the order. An approval may expire. A tool registry may point the same name at a new implementation.</p>
+<p>The defense is <strong>execution-time revalidation at the last responsible moment</strong>. The dispatcher recomputes the action digest from the current call and authenticated context, asks the application for the current target version, checks expiry, and only then invokes the handler.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    autonumber</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    participant A as Agent</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    participant H as Harness</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    participant U as Human reviewer</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    participant S as Source of truth</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    participant T as Write tool</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    A-&gt;&gt;H: propose refund(A-17, 4999)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    H-&gt;&gt;S: read target version v1</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    H-&gt;&gt;U: exact action + target v1 + expiry</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    U--&gt;&gt;H: approval token bound to digests</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    Note over A,S: arguments or target may change here</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    H-&gt;&gt;S: re-read current target version</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    H-&gt;&gt;H: recompute action + target digests</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    alt substituted, stale, or expired</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        H--&gt;&gt;A: typed rejection; request new review</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    else still identical</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>        H-&gt;&gt;T: execute exact approved call</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>        T--&gt;&gt;H: receipt + new version</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    end</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch17-approval" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch17-approval-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch17-approval">sequenceDiagram
+    autonumber
+    participant A as Agent
+    participant H as Harness
+    participant U as Human reviewer
+    participant S as Source of truth
+    participant T as Write tool
+    A-&gt;&gt;H: propose refund(A-17, 4999)
+    H-&gt;&gt;S: read target version v1
+    H-&gt;&gt;U: exact action + target v1 + expiry
+    U--&gt;&gt;H: approval token bound to digests
+    Note over A,S: arguments or target may change here
+    H-&gt;&gt;S: re-read current target version
+    H-&gt;&gt;H: recompute action + target digests
+    alt substituted, stale, or expired
+        H--&gt;&gt;A: typed rejection; request new review
+    else still identical
+        H-&gt;&gt;T: execute exact approved call
+        T--&gt;&gt;H: receipt + new version
+    end
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch17-approval-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;17.4: How does approval remain bound when arguments or target state can change?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The critical code is a set of comparisons immediately before the handler:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># harness.py — dispatch(), execution-time approval checks</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>current_time <span class="op">=</span> time.time() <span class="cf">if</span> now <span class="kw">is</span> <span class="va">None</span> <span class="cf">else</span> now</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>current_target <span class="op">=</span> tool.target_version(call.arguments) <span class="cf">if</span> tool.target_version <span class="cf">else</span> <span class="st">""</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>checks <span class="op">=</span> {</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"expired"</span>: current_time <span class="op">&gt;</span> approval.expires_at,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"substituted action"</span>: action_digest(call, context) <span class="op">!=</span> approval.action_digest,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"stale target"</span>: _digest({<span class="st">"target_version"</span>: current_target})</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">!=</span> approval.target_digest,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>failed <span class="op">=</span> [name <span class="cf">for</span> name, is_failed <span class="kw">in</span> checks.items() <span class="cf">if</span> is_failed]</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> failed:</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> ApprovalError(<span class="st">", "</span>.join(failed))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>In the fixture, changing 4,999 to 9,999 cents yields <code>substituted action</code>. Updating the order from version <code>v1</code> to <code>v2</code> yields <code>stale target</code>. Neither reaches the refund handler. A fresh request against <code>v3</code> executes and returns a receipt for 4,999 cents.</p>
+<p>The hash is not an authorization system by itself. The application must authenticate actors, protect token integrity, canonicalize all security-relevant fields, prevent confused-deputy reuse, and decide which target version represents meaningful state. The artifact makes the binding property testable without claiming the surrounding infrastructure.</p>
+</section>
+<section id="sec-ch17-resume" class="level2" data-number="17.11">
+<h2 data-number="17.11" class="anchored" data-anchor-id="sec-ch17-resume"><span class="header-section-number">17.11</span> Resume threads without pretending effects are durable</h2>
+<p>A harness should be able to stop after an approval event, restart, and reconstruct enough state to continue. It therefore checkpoints explicit thread state and appends audit events with stable identifiers. A replayed event uses <code>INSERT OR IGNORE</code>, so process recovery does not produce two “approved” rows.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>stateDiagram-v2</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    [*] --&gt; Running</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    Running --&gt; AwaitingApproval: proposal requires review</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    AwaitingApproval --&gt; Checkpointed: save state + audit event</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    Checkpointed --&gt; ProcessGone: crash / deployment</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    ProcessGone --&gt; Resumed: load checkpoint</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    Resumed --&gt; Revalidate: same event ID is deduplicated</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    Revalidate --&gt; Running: approval and target still valid</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    Revalidate --&gt; AwaitingApproval: stale or expired</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    Running --&gt; ExternalEffect: dispatch write</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    ExternalEffect --&gt; Unknown: crash before outcome recorded</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    note right of Unknown</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>      Ch26 owns effect ledger,</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>      idempotency, and reconciliation</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    end note</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch17-resume" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch17-resume-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch17-resume">stateDiagram-v2
+    [*] --&gt; Running
+    Running --&gt; AwaitingApproval: proposal requires review
+    AwaitingApproval --&gt; Checkpointed: save state + audit event
+    Checkpointed --&gt; ProcessGone: crash / deployment
+    ProcessGone --&gt; Resumed: load checkpoint
+    Resumed --&gt; Revalidate: same event ID is deduplicated
+    Revalidate --&gt; Running: approval and target still valid
+    Revalidate --&gt; AwaitingApproval: stale or expired
+    Running --&gt; ExternalEffect: dispatch write
+    ExternalEffect --&gt; Unknown: crash before outcome recorded
+    note right of Unknown
+      Ch26 owns effect ledger,
+      idempotency, and reconciliation
+    end note
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch17-resume-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;17.5: Which state can this harness resume, and where does durable-effect responsibility begin?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The boundary at <code>Unknown</code> is important. A local checkpoint written before a remote payment does not prove the payment happened. A checkpoint written afterward can be lost in a crash while the payment remains committed. Reordering the two writes cannot manufacture exactly-once behavior across systems. Chapter 26 introduces an effect ledger, provider idempotency keys, and reconciliation for that ambiguous state.</p>
+<p>This chapter’s journal is intentionally narrower: it persists harness phase and deduplicates audit events. The build closes and reopens SQLite, replays <code>evt-approval-A17</code>, and observes one audit row plus the original checkpoint. That is a real guarantee about local harness records, not a claim about the payment provider.</p>
+</section>
+<section id="sec-ch17-eval" class="level2" data-number="17.12">
+<h2 data-number="17.12" class="anchored" data-anchor-id="sec-ch17-eval"><span class="header-section-number">17.12</span> Improve the harness with evaluations</h2>
+<p>Tool and harness design should be an evaluation loop, not an aesthetic review. Start with traces where the current system selected the wrong tool, omitted required context, exceeded a workspace boundary, retried a denial, or asked for an approval that a human could not understand. Convert each failure into a versioned case with an observable predicate.</p>
+<p>Useful harness metrics include:</p>
+<ul>
+<li>tool retrieval recall@k and final wrong-tool rate;</li>
+<li>schema argument validity before repair;</li>
+<li>context tokens by source and cache-hit class;</li>
+<li>task success and steps after a tool-surface change;</li>
+<li>denied-proposal rate versus forbidden-effect rate;</li>
+<li>approval acceptance, edit, abandonment, and stale-revalidation rates;</li>
+<li>workspace escape containment;</li>
+<li>resume success and duplicate audit events;</li>
+<li>latency and modeled cost added by discovery, verification, or review.</li>
+</ul>
+<p>Do not optimize one metric in isolation. Making every tool always visible can raise catalog recall while reducing end-to-end selection accuracy and prefix reuse. Requiring approval for every read can reduce effect risk while overwhelming reviewers and teaching users to click through. Chapter 22 supplies the statistical release discipline; Chapter 27 owns online operational queues.</p>
+<p>When a harness change affects outcomes, use paired replay wherever possible. Run the same task snapshot, tool-state fixture, and seed against baseline and candidate. Attribute the first divergent event: different tool retrieval, different context item, different proposal, different gate result, or different observation. End-to-end success tells you whether the candidate helped; first-divergence analysis tells you where. For stateful tasks, isolate trials so one candidate’s write cannot alter the other’s starting state.</p>
+<p>Failure classes should map back to owned levers. A required tool absent from the candidate set is a retrieval failure. A visible tool selected incorrectly is a model/interface failure. Correct selection with malformed arguments is a schema or example problem. An allowed call with a harmful effect is a policy defect. A correct effect followed by an unsupported answer is an observation or synthesis defect. This mapping prevents every trace from becoming another prompt tweak.</p>
+<p>A self-improving harness may propose new descriptions, examples, skills, routing indexes, or compaction rules from failure traces. It should not deploy those proposals directly. Treat them as candidates: regenerate the evaluation set if needed, run the versioned suite, inspect worst slices, red-team new authority paths, and release through the normal pipeline.</p>
+<p>The durable lesson is that weights and prompts are only two levers. A precise tool, a smaller active surface, a better observation, or a correctly bound approval can improve reliability without changing the model.</p>
+</section>
+<section id="sec-ch17-build" class="level2" data-number="17.13">
+<h2 data-number="17.13" class="anchored" data-anchor-id="sec-ch17-build"><span class="header-section-number">17.13</span> Build</h2>
+<p>Run the deterministic artifact from <code>newbook</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch17<span class="op">/</span>fixture<span class="op">.</span><span class="fu">py</span> <span class="op">--</span>plot assets<span class="op">/</span>figures<span class="op">/</span>ch17-tool-surface<span class="op">.</span><span class="fu">svg</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>python <span class="op">-</span>m pytest tests<span class="op">/</span>test_ch17_harness<span class="op">.</span><span class="fu">py</span> <span class="op">-</span>q</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The fixture should report:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"surface"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"recall_at_2"</span><span class="fu">:</span> <span class="fl">1.0</span><span class="fu">,</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"retrieved_schema_chars"</span><span class="fu">:</span> <span class="dv">455</span><span class="fu">,</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"preloaded_schema_chars"</span><span class="fu">:</span> <span class="dv">1326</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"attack"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"substituted"</span><span class="fu">:</span> <span class="st">"substituted action"</span><span class="fu">,</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"stale"</span><span class="fu">:</span> <span class="st">"stale target"</span><span class="fu">,</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"fresh"</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">"order_id"</span><span class="fu">:</span> <span class="st">"A-17"</span><span class="fu">,</span> <span class="dt">"refunded_cents"</span><span class="fu">:</span> <span class="dv">4999</span><span class="fu">}</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"resume"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"checkpoint"</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">"phase"</span><span class="fu">:</span> <span class="st">"approved"</span><span class="fu">,</span> <span class="dt">"step"</span><span class="fu">:</span> <span class="dv">2</span><span class="fu">},</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"duplicate_inserted"</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"audit_rows"</span><span class="fu">:</span> <span class="dv">1</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The build has four stages.</p>
+<p><strong>1. Evaluate the tool surface.</strong> Read the six names and descriptions in <code>make_tools</code>. Add an ambiguous seventh tool named <code>order_get</code> and predict which cases will change before running. Improve its name or description, rerun recall@2, and record the context delta.</p>
+<p><strong>2. Inspect deferred loading.</strong> For each task, print the retrieved pair and its risk classes. Add a permission filter before retrieval so a user without refund authority cannot load <code>refund_issue</code>, even if it is semantically relevant.</p>
+<p><strong>3. Defeat substituted and stale approval.</strong> Run <code>run_attack</code>. Then comment out one digest comparison at a time and watch the corresponding test fail. Restore both checks. Add an expiry case at time 161 for the token issued at 100 with a 60-second TTL.</p>
+<p><strong>4. Resume the harness.</strong> Run <code>run_resume</code>, close the first database connection, and replay the same event after reopening. Change the event identifier and confirm the row count becomes two; stable event identity, not payload equality, supplies deduplication.</p>
+<section id="acceptance-checks" class="level3" data-number="17.13.1">
+<h3 data-number="17.13.1" class="anchored" data-anchor-id="acceptance-checks"><span class="header-section-number">17.13.1</span> Acceptance checks</h3>
+<ul>
+<li>Expected tool recall@2 remains 1.0 on the six shipped cases.</li>
+<li>Retrieved schema characters remain below the preload baseline.</li>
+<li>Substituted arguments and a stale target produce different typed rejection reasons.</li>
+<li>No rejected attack changes <code>refunded_cents</code>.</li>
+<li>A fresh, matching approval produces exactly one receipt.</li>
+<li>Parent-directory workspace escape is rejected.</li>
+<li>Restart and event replay leave exactly one approval audit row.</li>
+</ul>
+</section>
+<section id="honesty-note" class="level3" data-number="17.13.2">
+<h3 data-number="17.13.2" class="anchored" data-anchor-id="honesty-note"><span class="header-section-number">17.13.2</span> Honesty note</h3>
+<p>Lexical retrieval is not production semantic search. Path containment is not a sandbox. SHA-256 binding does not supply identity or token integrity. SQLite checkpointing does not make remote effects durable. The build isolates these seams so later chapters can replace each mechanism without changing the property it must preserve.</p>
+</section>
+</section>
+<section id="sec-ch17-endures" class="level2" data-number="17.14">
+<h2 data-number="17.14" class="anchored" data-anchor-id="sec-ch17-endures"><span class="header-section-number">17.14</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Tool descriptions, schemas, observations, and risk classes are part of model performance. Large catalogs require permission-aware discovery and deferred disclosure. Harness context should have an inspectable ledger. Procedures can be packaged as versioned skills whose depth loads on demand. A workspace needs both naming containment and a real sandbox. Human approval must bind exact arguments and current target state, then be revalidated immediately before execution. Resumable harness state and durable external effects are separate contracts.</p>
+<p><strong>What changes.</strong> Tool-search APIs, Agent Skills ecosystem conventions, model context limits, protocol registries, framework hooks, and sandbox products will evolve. Appendix C tracks versions. The core questions—what is visible, what is callable, what is authorized, what changed after review, and what can be recovered—remain stable.</p>
+</section>
+<section id="sec-ch17-exercises" class="level2" data-number="17.15">
+<h2 data-number="17.15" class="anchored" data-anchor-id="sec-ch17-exercises"><span class="header-section-number">17.15</span> Exercises</h2>
+<ol type="1">
+<li><strong>Description ablation.</strong> Replace the six specific summaries with generic phrases such as “gets information.” Measure recall@2 and explain each new collision.</li>
+<li><strong>Permission before relevance.</strong> Add tenant-scoped allowed-tool sets. Prove that a high semantic score cannot reintroduce a filtered write tool.</li>
+<li><strong>Skill activation.</strong> Write metadata and instructions for a refund-investigation skill. Create six positive and six confusing negative activation cases, then measure precision and recall.</li>
+<li><strong>Workspace race.</strong> Add a symlink inside the workspace that points outside it. Explain why path resolution alone is insufficient and propose OS/container controls that close the gap.</li>
+<li><strong>Approval expiry and dual control.</strong> Require two different approvers for refunds over 20,000 cents. Bind both approvals to one request and reject reuse by the same identity.</li>
+<li><strong>Design defense.</strong> A product manager wants one generic <code>execute_api</code> tool so new endpoints require no harness release. Argue the case through selection reliability, schema evolution, risk classification, authorization, observability, and rollback.</li>
+</ol>
+</section>
+<section id="sec-ch17-sources" class="level2" data-number="17.16">
+<h2 data-number="17.16" class="anchored" data-anchor-id="sec-ch17-sources"><span class="header-section-number">17.16</span> Notes and sources</h2>
+<p>The empirical motivation for treating interfaces as a capability lever comes from <a href="https://arxiv.org/abs/2405.15793">SWE-agent: Agent–Computer Interfaces Enable Automated Software Engineering</a>. The progressive-disclosure layout described for skills is documented by the <a href="https://openagentskills.dev/docs/specification">Open Agent Skills specification</a>. The implementation here remains framework-neutral: provider-specific tool-search details are dated and quarantined because their activation rules and event surfaces can change.</p>
+<p>Chapter 19 introduces MCP and LangGraph after these boundaries are established. Chapter 24 expands the threat model and policy architecture. Chapter 26 replaces the local resume seam with durable effect execution and reconciliation.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/16-agent-anatomy.html" class="pagination-link" aria-label="Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/18-memory-experiential-learning.html" class="pagination-link" aria-label="Agent Memory and Experiential Learning [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

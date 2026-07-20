@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Trace one request through prefill and decode, construct its sampling policy, measure uncertainty, and turn abstention into an explicit reliability contract.">
+
+<title>9&nbsp; Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/10-serving-at-scale.html" rel="next">
+<link href="../chapters/08-reasoning-test-time-compute.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/09-inference-behavior.html">Part III — Inference, Serving, and Customization</a></li><li class="breadcrumb-item"><a href="../chapters/09-inference-behavior.html"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch09-prerequisites" id="toc-sec-ch09-prerequisites" class="nav-link active" data-scroll-target="#sec-ch09-prerequisites"><span class="header-section-number">9.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch09-contents" id="toc-sec-ch09-contents" class="nav-link" data-scroll-target="#sec-ch09-contents"><span class="header-section-number">9.2</span> Contents</a></li>
+  <li><a href="#sec-ch09-request" id="toc-sec-ch09-request" class="nav-link" data-scroll-target="#sec-ch09-request"><span class="header-section-number">9.3</span> One request has two latency phases</a></li>
+  <li><a href="#sec-ch09-will-build" id="toc-sec-ch09-will-build" class="nav-link" data-scroll-target="#sec-ch09-will-build"><span class="header-section-number">9.4</span> What you will build</a></li>
+  <li><a href="#sec-ch09-roofline" id="toc-sec-ch09-roofline" class="nav-link" data-scroll-target="#sec-ch09-roofline"><span class="header-section-number">9.5</span> KV bytes place the phases on a roofline</a></li>
+  <li><a href="#sec-ch09-decoding" id="toc-sec-ch09-decoding" class="nav-link" data-scroll-target="#sec-ch09-decoding"><span class="header-section-number">9.6</span> Decoding turns logits into a choice</a></li>
+  <li><a href="#sec-ch09-truncation" id="toc-sec-ch09-truncation" class="nav-link" data-scroll-target="#sec-ch09-truncation"><span class="header-section-number">9.7</span> Truncation shapes the candidate support</a></li>
+  <li><a href="#sec-ch09-processors" id="toc-sec-ch09-processors" class="nav-link" data-scroll-target="#sec-ch09-processors"><span class="header-section-number">9.8</span> Processor order changes the policy</a></li>
+  <li><a href="#sec-ch09-determinism" id="toc-sec-ch09-determinism" class="nav-link" data-scroll-target="#sec-ch09-determinism"><span class="header-section-number">9.9</span> Seeded is not batch invariant</a></li>
+  <li><a href="#sec-ch09-hallucination" id="toc-sec-ch09-hallucination" class="nav-link" data-scroll-target="#sec-ch09-hallucination"><span class="header-section-number">9.10</span> Hallucination is a task-relative failure</a></li>
+  <li><a href="#sec-ch09-confidence" id="toc-sec-ch09-confidence" class="nav-link" data-scroll-target="#sec-ch09-confidence"><span class="header-section-number">9.11</span> Confidence must forecast correctness</a></li>
+  <li><a href="#sec-ch09-abstention" id="toc-sec-ch09-abstention" class="nav-link" data-scroll-target="#sec-ch09-abstention"><span class="header-section-number">9.12</span> Abstention spends coverage to buy reliability</a></li>
+  <li><a href="#sec-ch09-streaming" id="toc-sec-ch09-streaming" class="nav-link" data-scroll-target="#sec-ch09-streaming"><span class="header-section-number">9.13</span> Streaming tokens are not text chunks</a></li>
+  <li><a href="#sec-ch09-landscape" id="toc-sec-ch09-landscape" class="nav-link" data-scroll-target="#sec-ch09-landscape"><span class="header-section-number">9.14</span> Landscape 2026 (dated)</a></li>
+  <li><a href="#sec-ch09-build" id="toc-sec-ch09-build" class="nav-link" data-scroll-target="#sec-ch09-build"><span class="header-section-number">9.15</span> Build</a></li>
+  <li><a href="#sec-ch09-endures" id="toc-sec-ch09-endures" class="nav-link" data-scroll-target="#sec-ch09-endures"><span class="header-section-number">9.16</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch09-exercises" id="toc-sec-ch09-exercises" class="nav-link" data-scroll-target="#sec-ch09-exercises"><span class="header-section-number">9.17</span> Exercises</a></li>
+  <li><a href="#sec-ch09-sources" id="toc-sec-ch09-sources" class="nav-link" data-scroll-target="#sec-ch09-sources"><span class="header-section-number">9.18</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/09-inference-behavior.html">Part III — Inference, Serving, and Customization</a></li><li class="breadcrumb-item"><a href="../chapters/09-inference-behavior.html"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch09" class="quarto-section-identifier"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch09-prerequisites" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="sec-ch09-prerequisites"><span class="header-section-number">9.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, backpropagation, basic Python, and beginner PyTorch.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/01-operational-on-ramp.html#sec-ch01-sampling">Chapter 1, Sampling controls a distribution, not truth</a> introduced temperature and the difference between repeatability and correctness. <a href="../chapters/08-reasoning-test-time-compute.html#sec-ch08-coverage">Chapter 8, Coverage turns samples into opportunity</a> separated one-sample quality from repeated-sample coverage. This chapter opens the generate loop and derives the mechanisms behind those observations.</p>
+<p><strong>Not required:</strong> an inference server, a GPU, conformal prediction, calibration theory, retrieval, or prior experience reading token log probabilities. KV-cache construction was developed earlier; its byte formula is recapped here only to connect one request to latency.</p>
+</blockquote>
+</section>
+<section id="sec-ch09-contents" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="sec-ch09-contents"><span class="header-section-number">9.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch09-request">One request has two latency phases</a></li>
+<li><a href="#sec-ch09-will-build">What you will build</a></li>
+<li><a href="#sec-ch09-roofline">KV bytes place the phases on a roofline</a></li>
+<li><a href="#sec-ch09-decoding">Decoding turns logits into a choice</a></li>
+<li><a href="#sec-ch09-truncation">Truncation shapes the candidate support</a></li>
+<li><a href="#sec-ch09-processors">Processor order changes the policy</a></li>
+<li><a href="#sec-ch09-determinism">Seeded is not batch invariant</a></li>
+<li><a href="#sec-ch09-hallucination">Hallucination is a task-relative failure</a></li>
+<li><a href="#sec-ch09-confidence">Confidence must forecast correctness</a></li>
+<li><a href="#sec-ch09-abstention">Abstention spends coverage to buy reliability</a></li>
+<li><a href="#sec-ch09-streaming">Streaming tokens are not text chunks</a></li>
+<li><a href="#sec-ch09-landscape">Landscape 2026 (dated)</a></li>
+<li><a href="#sec-ch09-build">Build</a></li>
+<li><a href="#sec-ch09-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch09-exercises">Exercises</a></li>
+<li><a href="#sec-ch09-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch09-request" class="level2" data-number="9.3">
+<h2 data-number="9.3" class="anchored" data-anchor-id="sec-ch09-request"><span class="header-section-number">9.3</span> One request has two latency phases</h2>
+<p>A user sends a 2,000-token contract and asks for a 100-token answer. The first visible token arrives slowly. The remaining tokens stream at a steadier cadence. A dashboard reports one latency number, so an engineer shortens the output limit. Total latency falls, but the long initial pause remains. The intervention changed the wrong phase.</p>
+<p>Autoregressive inference has two mechanically different phases. During <strong>prefill</strong>, the model processes the prompt positions in parallel and constructs a key–value cache for every layer. During <strong>decode</strong>, it produces one new position, appends that position’s keys and values to the cache, and repeats. Prefill can expose large matrix multiplications to the accelerator. Decode has a serial dependency: token <span class="math inline">t+1</span> cannot be chosen before token <span class="math inline">t</span> becomes context.</p>
+<p>Three request-level measurements keep the distinction visible:</p>
+<ul>
+<li><strong>Time to first token (TTFT)</strong> starts when the caller submits a request and ends when the first output token is available. End-to-end TTFT can include network transit, queueing, tokenization, prefill, and the first decode decision. A model-only TTFT excludes some of those terms, so every report must state its boundary.</li>
+<li><strong>Time per output token (TPOT)</strong> is the average time between output tokens after the first. <strong>Inter-token latency (ITL)</strong> is each individual gap; its tail exposes stalls hidden by a mean.</li>
+<li><strong>End-to-end latency</strong> for <span class="math inline">n_{out}</span> output tokens is approximately</li>
+</ul>
+<p><span class="math display">
+L \approx \mathrm{TTFT} + (n_{out}-1)\,\mathrm{TPOT}.
+</span></p>
+<p>The approximation is useful only when accompanied by its units and scope. Stop detection, detokenization, network flushing, variable step time as the cache grows, and scheduling can make individual gaps differ. Still, it immediately explains why shortening a response mostly affects the second term and shortening a long prompt mostly affects the first.</p>
+<p>Figure <a href="#fig-ch09-request" class="quarto-xref">Figure&nbsp;<span>9.1</span></a> asks where a millisecond can enter one request. It deliberately ends at the boundary of a single request. Continuous batching, queue disciplines, prefix caching, speculative decoding, goodput, and production service objectives belong to Chapter 10.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    participant C as Caller</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    participant Q as Queue and tokenizer</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    participant M as Model runtime</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    participant D as Detokenizer</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    C-&gt;&gt;Q: prompt + decoding policy</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    Q-&gt;&gt;M: prompt token IDs</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    Note over Q,M: queueing + tokenization</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    M-&gt;&gt;M: prefill all prompt positions; build KV</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    M-&gt;&gt;M: decode first output token</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    M--&gt;&gt;D: first token ID</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    D--&gt;&gt;C: first safe text chunk</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    Note over C,M: TTFT ends</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    loop remaining output positions</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>        M-&gt;&gt;M: one cached decode step</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>        M--&gt;&gt;D: next token ID</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>        D--&gt;&gt;C: zero or more safe characters</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    Note over C,M: gaps are ITL; their mean is TPOT</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch09-request" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch09-request-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch09-request">sequenceDiagram
+    participant C as Caller
+    participant Q as Queue and tokenizer
+    participant M as Model runtime
+    participant D as Detokenizer
+    C-&gt;&gt;Q: prompt + decoding policy
+    Q-&gt;&gt;M: prompt token IDs
+    Note over Q,M: queueing + tokenization
+    M-&gt;&gt;M: prefill all prompt positions; build KV
+    M-&gt;&gt;M: decode first output token
+    M--&gt;&gt;D: first token ID
+    D--&gt;&gt;C: first safe text chunk
+    Note over C,M: TTFT ends
+    loop remaining output positions
+        M-&gt;&gt;M: one cached decode step
+        M--&gt;&gt;D: next token ID
+        D--&gt;&gt;C: zero or more safe characters
+    end
+    Note over C,M: gaps are ITL; their mean is TPOT
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch09-request-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9.1: Where does elapsed time enter one autoregressive request?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The durable measurement rule is to preserve both phases. A single percentile for total latency cannot tell whether prompt work, serial generation, queueing, or streaming is responsible.</p>
+</section>
+<section id="sec-ch09-will-build" class="level2" data-number="9.4">
+<h2 data-number="9.4" class="anchored" data-anchor-id="sec-ch09-will-build"><span class="header-section-number">9.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled" title="The inference-behavior microscope">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>The inference-behavior microscope
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will run one integrated, engine-free CPU build rooted at <a href="../code/ch09/inference_lab.py"><code>code/ch09/inference_lab.py</code></a>. The facade composes three focused mechanisms: <a href="../code/ch09/request_profile.py"><code>request_profile.py</code></a>, <a href="../code/ch09/decoding_runtime.py"><code>decoding_runtime.py</code></a>, and <a href="../code/ch09/selective_prediction.py"><code>selective_prediction.py</code></a>. Its deterministic fixture follows one request through an illustrative roofline model, accounts for KV bytes, applies temperature and four truncation policies, demonstrates processor ordering, creates a greedy flip from two legal floating-point reduction orders, calibrates answer confidence, constructs split-conformal answer sets, applies conformal risk control, and buffers a split UTF-8 stream safely.</p>
+<p>The build emits TTFT, TPOT, total latency, KV MiB, sampler support and entropy, replay equality, probability drift, calibration scores, semantic entropy, risk–coverage points, conformal coverage, and streamed text. <a href="../code/ch09/render_metrics.py"><code>render_metrics.py</code></a> turns the same values into the chapter’s print-safe SVG. Success means every formula matches the fixture, seed replay is exact while the batch-order probe still flips, calibration improves proper scores, and the abstention report distinguishes marginal error from error among answered queries.</p>
+<p><a href="../code/ch09/hf_inference_adapter.py"><code>hf_inference_adapter.py</code></a> is an optional <code>torch</code>/<code>transformers</code> seam. It times a real cached greedy loop and compares a prompt alone with the same prompt in a larger batch. It may download weights and is never imported by the default build.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch09-roofline" class="level2" data-number="9.5">
+<h2 data-number="9.5" class="anchored" data-anchor-id="sec-ch09-roofline"><span class="header-section-number">9.5</span> KV bytes place the phases on a roofline</h2>
+<p>The KV cache prevents decode from recomputing every earlier key and value. This chapter needs one result from that mechanism: its storage grows linearly with sequence length. For a conventional decoder cache,</p>
+<p><span class="math display">
+M_{KV}=2LBTH_{KV}d_hs \quad \text{bytes}.
+</span></p>
+<p>Here <span class="math inline">L</span> is the number of layers, <span class="math inline">B</span> the batch size, <span class="math inline">T</span> the cached sequence length, <span class="math inline">H_{KV}</span> the number of key/value heads, <span class="math inline">d_h</span> the head dimension, and <span class="math inline">s</span> the bytes per stored scalar. The leading 2 accounts for keys and values. Query heads do not appear. In multi-head attention, <span class="math inline">H_{KV}</span> usually equals the number of query heads. Grouped-query attention uses fewer KV heads, and multi-query attention uses one. A latent-attention architecture stores a compressed representation with architecture-specific additions, so substituting its query-head count into this formula is wrong.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 27%">
+<col style="width: 36%">
+<col style="width: 36%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Attention cache form</th>
+<th style="text-align: right;">Width term</th>
+<th style="text-align: right;">Cache ratio against <span class="math inline">H_Q</span>-head MHA</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Multi-head attention</td>
+<td style="text-align: right;"><span class="math inline">H_{KV}=H_Q</span></td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="even">
+<td>Grouped-query attention</td>
+<td style="text-align: right;"><span class="math inline">H_Q &gt; H_{KV} &gt; 1</span></td>
+<td style="text-align: right;"><span class="math inline">H_{KV}/H_Q</span></td>
+</tr>
+<tr class="odd">
+<td>Multi-query attention</td>
+<td style="text-align: right;"><span class="math inline">H_{KV}=1</span></td>
+<td style="text-align: right;"><span class="math inline">H_Q^{-1}</span></td>
+</tr>
+<tr class="even">
+<td>Latent/compressed attention</td>
+<td style="text-align: right;">compressed latent plus model-specific state</td>
+<td style="text-align: right;">derive from that architecture</td>
+</tr>
+</tbody>
+</table>
+<p>The fixture uses 32 layers, eight KV heads, head dimension 128, batch one, and two-byte cache values. It therefore stores 128 KiB per cached token: 16 MiB at 128 tokens, 64 MiB at 512, and 256 MiB at 2,048. These are configuration arithmetic, not measurements of a named model.</p>
+<p>Storage explains growth; the <strong>roofline model</strong> explains why prefill and decode often hit different hardware limits. Arithmetic intensity is</p>
+<p><span class="math display">
+I=\frac{\text{floating-point operations}}{\text{bytes moved from the limiting memory level}}.
+</span></p>
+<p>If hardware sustains peak compute <span class="math inline">P_{max}</span> FLOP/s and memory bandwidth <span class="math inline">W_{max}</span> byte/s, attainable performance is bounded by</p>
+<p><span class="math display">
+P(I)\leq \min(P_{max},\;I W_{max}).
+</span></p>
+<p>The <strong>ridge point</strong> <span class="math inline">I^*=P_{max}/W_{max}</span> separates the bandwidth-limited slope from the compute ceiling. For a weight matrix <span class="math inline">W\in\mathbb{R}^{m\times k}</span> multiplied by <span class="math inline">b</span> activation vectors, the dominant work is about <span class="math inline">(2mkb)</span> FLOPs. If the weights dominate traffic and each weight occupies <span class="math inline">s</span> bytes, intensity is approximately <span class="math inline">(2b/s)</span>. With two-byte weights, <span class="math inline">I\approx b</span>. A decode matrix multiplication has a small effective <span class="math inline">b</span>; prefill exposes many prompt positions and has a much larger one.</p>
+<p>This is a placement model, not a latency oracle. Attention reads growing KV state. Fused kernels change traffic. Caches above HBM, quantization, sparsity, and tensor parallel communication add ceilings. The fixture intentionally uses an illustrative 80 TFLOP/s compute ceiling and 2 TB/s memory ceiling, giving a ridge at 40 FLOP/byte. Its decode point at intensity one is bandwidth-bound; all three prefill points are compute-bound. Chapter 10 turns these corollaries into batching and serving decisions.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch09/request_profile.py — changed region: request_profiles</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> kv_bytes(tokens: <span class="bu">int</span>, batch: <span class="bu">int</span> <span class="op">=</span> <span class="dv">1</span>) <span class="op">-&gt;</span> <span class="bu">int</span>:</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (<span class="dv">2</span> <span class="op">*</span> MODEL[<span class="st">"layers"</span>] <span class="op">*</span> MODEL[<span class="st">"kv_heads"</span>] <span class="op">*</span> MODEL[<span class="st">"head_dim"</span>]</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>            <span class="op">*</span> tokens <span class="op">*</span> batch <span class="op">*</span> HARDWARE[<span class="st">"dtype_bytes"</span>])</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> request_profiles(output_tokens: <span class="bu">int</span> <span class="op">=</span> <span class="dv">128</span>):</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    parameter_bytes <span class="op">=</span> MODEL[<span class="st">"parameters"</span>] <span class="op">*</span> HARDWARE[<span class="st">"dtype_bytes"</span>]</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> tokens <span class="kw">in</span> (<span class="dv">128</span>, <span class="dv">512</span>, <span class="dv">2048</span>):</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        prefill_ms <span class="op">=</span> <span class="bu">max</span>(<span class="dv">2</span> <span class="op">*</span> MODEL[<span class="st">"parameters"</span>] <span class="op">*</span> tokens <span class="op">/</span> HARDWARE[<span class="st">"peak_flops"</span>],</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>                         parameter_bytes <span class="op">/</span> HARDWARE[<span class="st">"memory_bandwidth"</span>]) <span class="op">*</span> <span class="dv">1000</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        decode_bytes <span class="op">=</span> parameter_bytes <span class="op">+</span> kv_bytes(tokens)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        tpot_ms <span class="op">=</span> <span class="bu">max</span>(<span class="dv">2</span> <span class="op">*</span> MODEL[<span class="st">"parameters"</span>] <span class="op">/</span> HARDWARE[<span class="st">"peak_flops"</span>],</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>                      decode_bytes <span class="op">/</span> HARDWARE[<span class="st">"memory_bandwidth"</span>]) <span class="op">*</span> <span class="dv">1000</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span> prefill_ms <span class="op">+</span> tpot_ms, tpot_ms, kv_bytes(tokens)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>request_profile.py</code> after request profiling</td>
+<td style="text-align: right;">31 lines</td>
+<td>KV storage is linear in cached tokens; prompt length raises TTFT far more than TPOT in the declared illustrative roofline.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch09-decoding" class="level2" data-number="9.6">
+<h2 data-number="9.6" class="anchored" data-anchor-id="sec-ch09-decoding"><span class="header-section-number">9.6</span> Decoding turns logits into a choice</h2>
+<p>At output position <span class="math inline">t</span>, the model produces one logit <span class="math inline">z_i</span> for every vocabulary token <span class="math inline">i</span>. A decoding policy turns that vector into a token. Greedy decoding returns an index with maximum logit. Sampling first defines probabilities and draws from them. Both choices are caller policy layered over the same model output.</p>
+<p>Temperature rescales logits before softmax:</p>
+<p><span class="math display">
+p_i(T)=\frac{\exp(z_i/T)}{\sum_j\exp(z_j/T)}, \qquad T&gt;0.
+</span></p>
+<p>Equivalently, if <span class="math inline">p_i(1)</span> is the ordinary softmax probability, then <span class="math inline">p_i(T)</span> is proportional to <span class="math inline">p_i(1)^{1/T}</span>. Lower <span class="math inline">T</span> sharpens the distribution; higher <span class="math inline">T</span> flattens it. Dividing all logits by the same positive value preserves their order. Temperature changes gaps and entropy, not which token has the highest logit.</p>
+<p>Implement the small-<span class="math inline">T</span> limit as a branch to argmax rather than evaluating <code>exp(z/T)</code> with a near-zero divisor. Subtracting the maximum scaled logit before exponentiation prevents overflow without changing probabilities. The fixture’s <code>softmax</code> does both. At <code>temperature=0</code>, it returns a one-hot greedy distribution with deterministic tie-breaking by index. That makes the <em>choice rule</em> deterministic for a fixed logit vector. Section <a href="#sec-ch09-determinism" class="quarto-xref"><span>Section 9.9</span></a> will show why the vector itself may still move.</p>
+<p>Greedy decoding optimizes one local decision at each step, not the probability or usefulness of a complete sequence. Beam search retains several high-scoring prefixes and usually normalizes sequence scores to reduce a short-output bias. It is search, not stochastic sampling; maximizing likelihood can also produce generic or repetitive text. Chapter 8 owns search and verifier-driven selection. This chapter keeps beam search as an exercise so the sampler remains inspectable.</p>
+<p>The bounded Route-B backfill for Chapter 12 begins here. A reader who understands the map <code>logits → policy → token</code>, the temperature equation, and the determinism contract in Section <a href="#sec-ch09-determinism" class="quarto-xref"><span>Section 9.9</span></a> has the sampling foundation needed to call a model API without treating its parameters as magic.</p>
+</section>
+<section id="sec-ch09-truncation" class="level2" data-number="9.7">
+<h2 data-number="9.7" class="anchored" data-anchor-id="sec-ch09-truncation"><span class="header-section-number">9.7</span> Truncation shapes the candidate support</h2>
+<p>Sampling from the full softmax preserves every token with nonzero probability. A large vocabulary can leave a long tail of locally implausible tokens. <strong>Truncation</strong> masks part of the distribution and renormalizes the survivors before drawing. It is a bias–diversity decision: remove too little and tail events can damage coherence; remove too much and useful alternatives disappear.</p>
+<p>Three policies express different invariants:</p>
+<ul>
+<li><strong>Top-<span class="math inline">k</span></strong> retains exactly the <span class="math inline">k</span> highest-probability tokens, except that a defensive implementation always retains at least one. Its support size is fixed even when the distribution is flat or sharply peaked.</li>
+<li><strong>Nucleus or top-<span class="math inline">p</span></strong> sorts tokens by descending probability and retains the smallest prefix whose cumulative mass reaches <span class="math inline">p</span>. Its support adapts to distribution shape. The token that crosses the threshold belongs in the set; applying the mask before including it creates an off-by-one error. For any threshold, the top token keeps the set nonempty.</li>
+<li><strong>Min-<span class="math inline">p</span></strong> retains token <span class="math inline">i</span> when <span class="math inline">p_i\geq \alpha p_{max}</span>, where <span class="math inline">p_{max}</span> is the largest probability and <span class="math inline">alpha</span> is a relative cutoff. Its threshold rises and falls with the leading token. This can preserve more candidates at high temperature than a fixed cumulative-mass rule while still removing probabilities small relative to the mode.</li>
+</ul>
+<p>Locally typical sampling offers another view: retain tokens whose information content <span class="math inline">-\log p_i</span> lies near the distribution’s entropy, then stop when their mass reaches a budget. It can reduce degenerate repetition on some open-ended tasks, but no truncation policy dominates across workloads.</p>
+<p>The order <code>temperature → probabilities → truncation → renormalization</code> matters because top-<span class="math inline">p</span>, min-<span class="math inline">p</span>, and typicality inspect probabilities after temperature has reshaped them. On the fixture vector at temperature 1.2, full sampling retains five tokens, top-2 retains two, top-<span class="math inline">p</span> at 0.8 retains three, min-<span class="math inline">p</span> at 0.15 retains four, and typical sampling at 0.8 retains three. These support counts are local facts about one vector, not universal recommended settings.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch09/decoding_runtime.py — changed region: top-p and min-p in truncate</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="cf">elif</span> method <span class="op">==</span> <span class="st">"top_p"</span>:</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    keep, mass <span class="op">=</span> <span class="bu">set</span>(), <span class="fl">0.0</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> order:</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        keep.add(i)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        mass <span class="op">+=</span> probs[i]</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> mass <span class="op">&gt;=</span> value:</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="cf">elif</span> method <span class="op">==</span> <span class="st">"min_p"</span>:</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    cutoff <span class="op">=</span> value <span class="op">*</span> probs[order[<span class="dv">0</span>]]</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    keep <span class="op">=</span> {i <span class="cf">for</span> i <span class="kw">in</span> order <span class="cf">if</span> probs[i] <span class="op">&gt;=</span> cutoff} <span class="kw">or</span> {order[<span class="dv">0</span>]}</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>total <span class="op">=</span> <span class="bu">sum</span>(probs[i] <span class="cf">for</span> i <span class="kw">in</span> keep)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> [probs[i] <span class="op">/</span> total <span class="cf">if</span> i <span class="kw">in</span> keep <span class="cf">else</span> <span class="fl">0.0</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(probs))]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>decoding_runtime.py</code> after truncation</td>
+<td style="text-align: right;">39 lines</td>
+<td>Every filter returns a normalized, nonempty distribution; top-<span class="math inline">p</span> includes its threshold-crossing token.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch09-processors" class="level2" data-number="9.8">
+<h2 data-number="9.8" class="anchored" data-anchor-id="sec-ch09-processors"><span class="header-section-number">9.8</span> Processor order changes the policy</h2>
+<p>Real generation applies more than temperature and a support mask. A <strong>logit processor</strong> changes logits using token history or caller policy. A logit bias adds a token-specific offset. A presence penalty acts once after a token has appeared. A frequency penalty grows with its count. A repetition penalty often uses a sign-aware multiplicative rule: divide a positive seen-token logit by <span class="math inline">r&gt;1</span>, but multiply a negative one by <span class="math inline">r</span>. Applying the same division to negative logits would make them less negative and accidentally reward repetition.</p>
+<p>Let <span class="math inline">c_i</span> be the count of token <span class="math inline">i</span>, <span class="math inline">a_i</span> an explicit bias, <span class="math inline">f</span> a frequency penalty, and <span class="math inline">u</span> a presence penalty. One additive form is</p>
+<p><span class="math display">
+z'_i=z_i+a_i-fc_i-u\mathbf{1}[c_i&gt;0].
+</span></p>
+<p>If the result is then divided by temperature, an additive offset’s effective log-probability strength scales as <span class="math inline">(1/T)</span>. Moving the same penalty after temperature changes the policy. Hard grammar masks, banned tokens, forced tokens, EOS rules, and provider-specific processors add further ordering choices. Record the effective pipeline, not merely parameter names.</p>
+<p>Figure <a href="#fig-ch09-pipeline" class="quarto-xref">Figure&nbsp;<span>9.2</span></a> shows the conceptual order used by the fixture. A serving library may combine stages or use a documented different order; that variation belongs in a versioned adapter test.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    Z(["Model logits z"]) --&gt; P["History processors: repetition, frequency, presence"]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    P --&gt; B["Policy bias and hard token masks"]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    B --&gt; T["Divide by temperature T"]</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    T --&gt; S(["Stable softmax probabilities"])</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    S --&gt; M["Top-k, top-p, min-p, or typical mask"]</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    M --&gt; R["Renormalize surviving mass"]</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    R --&gt; C{"Choice rule"}</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    C --&gt;|"sample"| RNG(["Seeded categorical draw"])</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    C --&gt;|"greedy"| ARG(["Argmax with tie rule"])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch09-pipeline" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch09-pipeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch09-pipeline">flowchart LR
+    Z(["Model logits z"]) --&gt; P["History processors: repetition, frequency, presence"]
+    P --&gt; B["Policy bias and hard token masks"]
+    B --&gt; T["Divide by temperature T"]
+    T --&gt; S(["Stable softmax probabilities"])
+    S --&gt; M["Top-k, top-p, min-p, or typical mask"]
+    M --&gt; R["Renormalize surviving mass"]
+    R --&gt; C{"Choice rule"}
+    C --&gt;|"sample"| RNG(["Seeded categorical draw"])
+    C --&gt;|"greedy"| ARG(["Argmax with tie rule"])
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch09-pipeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9.2: In what order does a decoding configuration become one categorical draw?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Penalties are behavioral tools, not semantic constraints. Source code may need the same closing bracket, variable name, or indentation token many times. Aggressive repetition suppression can make valid syntax unreachable. Logit bias can ban a surface token while a synonym or alternate tokenization expresses the same content. If a property must hold, use a parser, schema, or deterministic validator at the appropriate boundary; Chapter 10 covers production structured decoding.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Workload</th>
+<th>Useful starting policy</th>
+<th>Measure before changing it</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Extract one label from a closed set</td>
+<td>greedy or constrained choice</td>
+<td>label accuracy, invalid-output rate</td>
+</tr>
+<tr class="even">
+<td>Generate varied creative candidates</td>
+<td>moderate sampling with adaptive truncation</td>
+<td>human preference, diversity, repetition</td>
+</tr>
+<tr class="odd">
+<td>Produce executable code</td>
+<td>low-entropy candidates plus tests</td>
+<td>test-pass rate, syntax, repeated-run reliability</td>
+</tr>
+<tr class="even">
+<td>Answer a consequential factual query</td>
+<td>sampling policy is secondary to evidence and abstention</td>
+<td>supported-claim accuracy, coverage, escalation load</td>
+</tr>
+</tbody>
+</table>
+<p>The last row prevents a category error. Lower temperature can make a false answer more repeatable. It cannot supply missing evidence.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>decoding_runtime.py</code> after processors</td>
+<td style="text-align: right;">14 lines</td>
+<td>Seen positive logits shrink, seen negative logits become more negative, and additive controls precede temperature.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch09-determinism" class="level2" data-number="9.9">
+<h2 data-number="9.9" class="anchored" data-anchor-id="sec-ch09-determinism"><span class="header-section-number">9.9</span> Seeded is not batch invariant</h2>
+<p>Set temperature to zero, fix a seed, send the same prompt twice, and receive different text under load. Nothing requires sampling to have caused the difference. Greedy output changes if a tiny numerical difference changes the ordering of two nearly tied logits.</p>
+<p>Floating-point addition is not associative. For finite-precision values, <span class="math inline">(a+b)+c</span> may differ from <span class="math inline">a+(b+c)</span>. GPU kernels partition reductions across threads and tiles. A runtime may choose a different kernel or split when batch shape, sequence packing, quantization path, or hardware changes. Those legal execution paths can produce slightly different logits. Once an argmax flips, the new token changes every later autoregressive input, so a minute drift can become a different completion.</p>
+<p>A seed controls draws from pseudorandom generators. It does not pin weights, tokenizer revision, prompt serialization, kernel selection, reduction order, request batching, model replica, quantization, or postprocessing. Use four distinct reproducibility claims:</p>
+<ol type="1">
+<li><strong>Seed replay:</strong> the same probability vectors and random-number stream yield the same sampled indices.</li>
+<li><strong>Run-to-run numerical repeatability:</strong> the same request and execution environment yield the same intermediate values.</li>
+<li><strong>Batch invariance:</strong> one request yields the same result regardless of which other requests share the batch or how its sequence is partitioned.</li>
+<li><strong>Cross-environment bitwise identity:</strong> results remain identical across hardware, driver, library, model, and tokenizer revisions. This is the strongest and least commonly available claim.</li>
+</ol>
+<p>The lab’s narrated failure is intentionally small. Token A’s logit contribution is reduced from <code>[1e16, 1, -1e16, 0]</code>. Serial summation loses the 1 and returns zero. A partitioned order cancels the large terms first and returns one. Token B stays at 0.5. The two legal orders flip the greedy winner and move the maximum probability by 0.244919. This is a pedagogical construction, not a measured estimate of drift in a real model.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch09/request_profile.py — changed region: batch_invariance_probe</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>parts <span class="op">=</span> [<span class="fl">1e16</span>, <span class="fl">1.0</span>, <span class="op">-</span><span class="fl">1e16</span>, <span class="fl">0.0</span>]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>serial <span class="op">=</span> <span class="bu">sum</span>(parts)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>partitioned <span class="op">=</span> (parts[<span class="dv">0</span>] <span class="op">+</span> parts[<span class="dv">2</span>]) <span class="op">+</span> (parts[<span class="dv">1</span>] <span class="op">+</span> parts[<span class="dv">3</span>])</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>single <span class="op">=</span> softmax([serial, <span class="fl">0.5</span>])</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>batched <span class="op">=</span> softmax([partitioned, <span class="fl">0.5</span>])</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>greedy_flip <span class="op">=</span> single.index(<span class="bu">max</span>(single)) <span class="op">!=</span> batched.index(<span class="bu">max</span>(batched))</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>max_drift <span class="op">=</span> <span class="bu">max</span>(<span class="bu">abs</span>(a <span class="op">-</span> b) <span class="cf">for</span> a, b <span class="kw">in</span> <span class="bu">zip</span>(single, batched))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Figure <a href="#fig-ch09-determinism" class="quarto-xref">Figure&nbsp;<span>9.3</span></a> turns “deterministic” into an auditable envelope. Pinning only the seed closes one of several doors.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    I(["Canonical request bytes"]) --&gt; W["Pinned weights + tokenizer + template"]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    W --&gt; N["Pinned numerical path: dtype, kernels, reductions"]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    N --&gt; B["Batch- and partition-invariant scheduling"]</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    B --&gt; R["Pinned RNG stream and tie rule"]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    R --&gt; D["Buffered detokenization + stop policy"]</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    D --&gt; O(["Reproducible output bytes"])</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    U["Unpinned replica, load, version, or hardware"] -.-&gt; N</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    U -.-&gt; B</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch09-determinism" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch09-determinism-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch09-determinism">flowchart LR
+    I(["Canonical request bytes"]) --&gt; W["Pinned weights + tokenizer + template"]
+    W --&gt; N["Pinned numerical path: dtype, kernels, reductions"]
+    N --&gt; B["Batch- and partition-invariant scheduling"]
+    B --&gt; R["Pinned RNG stream and tie rule"]
+    R --&gt; D["Buffered detokenization + stop policy"]
+    D --&gt; O(["Reproducible output bytes"])
+    U["Unpinned replica, load, version, or hardware"] -.-&gt; N
+    U -.-&gt; B
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch09-determinism-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9.3: Which surfaces must be invariant before a repeated request can promise the same output?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Test the property you need under the concurrency pattern you will operate. Save prompt bytes, all decoding controls, model and tokenizer revisions, runtime and kernel versions, device type, batch context when exposed, token IDs, and token-level scores. If the product invariant is semantic equivalence rather than byte identity, define and evaluate that separately. Chapter 22 owns the statistical comparison; this section owns the causal surfaces that must be recorded.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>request_profile.py</code> after the batch probe</td>
+<td style="text-align: right;">12 lines</td>
+<td>Exact seed replay does not imply batch invariance; a changed reduction order can flip greedy output without randomness.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch09-hallucination" class="level2" data-number="9.10">
+<h2 data-number="9.10" class="anchored" data-anchor-id="sec-ch09-hallucination"><span class="header-section-number">9.10</span> Hallucination is a task-relative failure</h2>
+<p>Now consider a different failure. A user asks, “Which treaty created the Aerolith Maritime Council in 1987?” The entity is fabricated. A model produces a fluent treaty name, date, membership list, and citation. Lowering temperature makes the same invention appear more consistently. The inference loop is behaving as configured; the answer fails against the world.</p>
+<p><strong>Hallucination</strong> is useful only after the evaluation contract says what the output should be faithful to. The term otherwise collapses different defects with different remedies:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Failure</th>
+<th>Reference violated</th>
+<th>Example</th>
+<th>Appropriate first measurement</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Factual error</td>
+<td>external world state</td>
+<td>wrong capital or date</td>
+<td>atomic factual correctness</td>
+</tr>
+<tr class="even">
+<td>Fabrication</td>
+<td>existence in the world or source set</td>
+<td>invented entity or paper</td>
+<td>existence/provenance check</td>
+</tr>
+<tr class="odd">
+<td>Unsupported claim</td>
+<td>supplied evidence</td>
+<td>true-sounding claim absent from sources</td>
+<td>claim-level support</td>
+</tr>
+<tr class="even">
+<td>Source contradiction</td>
+<td>supplied evidence</td>
+<td>answer reverses a policy clause</td>
+<td>entailment/contradiction</td>
+</tr>
+<tr class="odd">
+<td>Stale knowledge</td>
+<td>required snapshot time</td>
+<td>names an earlier office holder</td>
+<td>time-stamped correctness</td>
+</tr>
+<tr class="even">
+<td>Task misunderstanding</td>
+<td>user intent or schema</td>
+<td>answers a related question</td>
+<td>intent/task success</td>
+</tr>
+<tr class="odd">
+<td>Unfaithful explanation</td>
+<td>claimed causal reasoning</td>
+<td>rationale does not support answer</td>
+<td>process/faithfulness study</td>
+</tr>
+</tbody>
+</table>
+<p>Long-form factuality should be decomposed into atomic claims before scoring; one correct paragraph can contain one consequential false sentence. A citation is not evidence until the cited source exists, is authoritative for the claim, and entails it. Core retrieval, source selection, citation entailment, and attribution mechanics belong to Chapter 14. This chapter owns the prior decision: whether the system has enough calibrated support to answer at all.</p>
+<p>Why does the failure occur? Next-token training rewards predictions that match text distributions. A false premise can resemble a legitimate historical question, and likely continuations include treaty vocabulary. Finite training data, ambiguous or conflicting sources, model capacity, distribution shift, and lossy parametric storage all create error. Post-training can reward helpful, decisive answers. Evaluations that give zero for abstention but some chance of credit for guessing reinforce the same behavior. The 2025 analysis <a href="https://arxiv.org/abs/2509.04664">Why Language Models Hallucinate</a> formalizes this guessing incentive; <a href="https://arxiv.org/abs/2109.07958">TruthfulQA</a> earlier demonstrated that imitating human text can reproduce popular false beliefs.</p>
+<p>No decoding rule repairs a knowledge gap in general. Greedy decoding can select the most probable false continuation. Sampling may occasionally find a correct answer but also expands the tail. Self-consistency can concentrate a shared misconception. A model’s critique can share its first answer’s missing knowledge. External evidence and independent checks can change the information state; abstention can prevent an unsupported guess from being presented as fact.</p>
+<p>This section begins the bounded Chapter 14 backfill cluster. The durable sequence is: define the reference, decompose the failure, measure a confidence signal against correctness, and enforce an action below threshold. “Hallucination rate” without those choices is not a reproducible metric.</p>
+</section>
+<section id="sec-ch09-confidence" class="level2" data-number="9.11">
+<h2 data-number="9.11" class="anchored" data-anchor-id="sec-ch09-confidence"><span class="header-section-number">9.11</span> Confidence must forecast correctness</h2>
+<p>A confidence score <span class="math inline">q(x)</span> is calibrated for a binary event <span class="math inline">Y</span> when cases assigned confidence near <span class="math inline">c</span> are correct about a fraction <span class="math inline">c</span> of the time:</p>
+<p><span class="math display">
+\Pr(Y=1\mid q(X)\approx c)\approx c.
+</span></p>
+<p>Calibration is population- and event-specific. A score calibrated for exact short-answer correctness may not be calibrated for every atomic claim in a long response, for policy compliance, or after a domain shift.</p>
+<p>Token log probability is one possible signal, not a probability that a world claim is true. Summing token log probabilities gives a sequence log probability, which usually becomes more negative with length. Averaging removes that direct length scaling but changes the quantity and can favor verbose continuations differently. A probability assigned to “True” after showing the model its own answer, often called <strong>P(True)</strong>, asks a more relevant event; <a href="https://arxiv.org/abs/2207.05221">Kadavath et al.</a> found useful calibration in studied settings and weaker cross-task generalization for some self-knowledge signals. Verbalized confidence can outperform raw conditional probabilities for some post-trained models, as <a href="https://arxiv.org/abs/2305.14975">Tian et al.</a> reported, but it remains a learned utterance that must be calibrated on the deployment task.</p>
+<p>Open-ended answers introduce a symmetry: “Paris” and “The capital is Paris” are different strings with the same meaning. Surface-form entropy counts them separately. <strong>Semantic entropy</strong> first groups mutually equivalent answers into meaning clusters <span class="math inline">c</span>, sums probability mass inside each cluster, and computes</p>
+<p><span class="math display">
+P(c\mid x)=\sum_{y\in c}p(y\mid x), \qquad
+H_{sem}(x)=-\sum_c P(c\mid x)\log P(c\mid x).
+</span></p>
+<p>In the fixture, surface probabilities <code>[0.36, 0.24, 0.20, 0.12, 0.08]</code> have entropy 1.489 nats. The first two are paraphrases, so merging them lowers semantic entropy to 1.085 nats. Real semantic-entropy systems sample responses and use bidirectional entailment or another semantic equivalence model. The clustering model can make mistakes, the samples are correlated, and entropy may reflect legitimate ambiguity rather than ignorance. <a href="https://arxiv.org/abs/2302.09664">Kuhn, Gal, and Farquhar</a> introduced the linguistic-invariance formulation; later work demonstrated hallucination detection with semantic entropy in open-ended generation.</p>
+<p>Calibration needs a loss, not only a diagram. For binary correctness <span class="math inline">y\in\{0,1\}</span> and score <span class="math inline">q</span>:</p>
+<p><span class="math display">
+\mathrm{Brier}(q,y)=(q-y)^2,
+</span></p>
+<p>and log loss is <span class="math inline">-y\log q-(1-y)\log(1-q)</span>. Both are <strong>proper scoring rules</strong>: in expectation, truthful probabilities minimize the score. Expected calibration error (ECE) bins predictions, compares mean confidence with bin accuracy, and weights the gaps. ECE is readable but depends on bin boundaries and sample size; report a proper score and a reliability diagram with it.</p>
+<p>The lab fits one scalar temperature on a calibration split, then evaluates a disjoint deterministic fixture. It moves ECE from 0.060 to 0.024 and Brier score from 0.2015 to 0.1983. Temperature calibration is monotone, so it changes the meaning of a threshold but not the ranking of examples. A risk–coverage curve and its area can therefore remain unchanged even when ECE improves. Calibration measures probability fidelity; discrimination measures whether safer cases rank above riskier ones.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>selective_prediction.py</code> after calibration</td>
+<td style="text-align: right;">64 lines</td>
+<td>Confidence is evaluated against correctness on held-out items; semantic grouping removes paraphrase-only uncertainty.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch09-abstention" class="level2" data-number="9.12">
+<h2 data-number="9.12" class="anchored" data-anchor-id="sec-ch09-abstention"><span class="header-section-number">9.12</span> Abstention spends coverage to buy reliability</h2>
+<p>An <strong>abstention policy</strong> maps uncertainty to an action. Below a threshold, the system might say it lacks support, ask a clarifying question, retrieve evidence, narrow the claim, route to a qualified reviewer, or refuse a request. The model may propose a confidence score; deterministic caller code must enforce the threshold and record the branch.</p>
+<p>Let <span class="math inline">g_t(x)=\mathbf{1}[q(x)\geq t]</span> mean “answer at threshold <span class="math inline">t</span>,” and let loss <span class="math inline">\ell(x,y)</span> be one for a wrong answer and zero for a correct one. <strong>Coverage</strong> is the fraction answered,</p>
+<p><span class="math display">
+C(t)=\mathbb{E}[g_t(X)].
+</span></p>
+<p>Two quantities are often both called risk:</p>
+<p><span class="math display">
+R_{selective}(t)=\frac{\mathbb{E}[\ell g_t]}{\mathbb{E}[g_t]},
+\qquad
+R_{marginal}(t)=\mathbb{E}[\ell g_t].
+</span></p>
+<p>Selective risk is the error rate <em>among answered queries</em>. Marginal error is the fraction of all incoming queries that receive a wrong answer; abstentions count as zero loss. They differ by coverage: <span class="math inline">R_{marginal}=C\,R_{selective}</span>. A requirement saying “ten percent risk” is incomplete until it names one.</p>
+<p>Sweeping <span class="math inline">t</span> creates a risk–coverage curve. A useful confidence ranking lowers selective risk as coverage falls. Area under the risk–coverage curve (AURC) summarizes that ranking, but important operating regions and slices should still be reported. Chapter 22 owns interval estimates and release comparisons; here the curve is the mechanism that turns a threshold into an explicit trade.</p>
+<p><strong>Split conformal prediction</strong> adds a finite-sample coverage statement without assuming that raw model probabilities are calibrated. On a held-out calibration set, define nonconformity <span class="math inline">s_i=1-p_i(y_i)</span> using the probability assigned to the true answer. Sort the <span class="math inline">n</span> scores and choose the order statistic at rank <span class="math inline">\lceil(n+1)(1-\alpha)\rceil</span>. For a new input, return all answers whose nonconformity is at most that threshold. Under exchangeability of calibration and future examples, the set contains the true answer with marginal probability at least <span class="math inline">(1-\alpha)</span>.</p>
+<p>One safe interface answers only when this conformal set is a singleton and abstains otherwise. On the synthetic fixture with <span class="math inline">\alpha=0.10</span>, the threshold is 0.8625. Test set coverage of the true label is 0.93; 0.66 of queries produce singleton sets; singleton error is 0.106. The guarantee concerns true-label inclusion in the <em>set</em>. It does not guarantee that each singleton is correct or that the conditional error among answered cases is below ten percent.</p>
+<p><strong>Conformal risk control (CRC)</strong> extends the idea to a bounded loss that changes monotonically with a threshold. For the lab’s marginal wrong-answer loss, a simple binary correction accepts a threshold only when</p>
+<p><span class="math display">
+\frac{e_t+1}{n+1}\leq \alpha,
+</span></p>
+<p>where <span class="math inline">e_t</span> is the number of wrong answers that the threshold would release on <span class="math inline">n</span> calibration examples. Choose the lowest accepted threshold to maximize coverage. Under the method’s exchangeability and loss assumptions, this controls expected marginal loss up to the conformal correction. With <span class="math inline">\alpha=0.10</span>, the fixture selects confidence 0.85, answers 40 percent of queries, and incurs marginal error 0.07. Yet its selective risk is 0.175. The build is designed to make that distinction impossible to miss.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch09/selective_prediction.py — changed region: crc_threshold</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> crc_threshold(items, alpha):</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> threshold <span class="kw">in</span> <span class="bu">sorted</span>({item[<span class="st">"confidence"</span>] <span class="cf">for</span> item <span class="kw">in</span> items}):</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        errors <span class="op">=</span> <span class="bu">sum</span>(item[<span class="st">"confidence"</span>] <span class="op">&gt;=</span> threshold <span class="kw">and</span> <span class="kw">not</span> item[<span class="st">"correct"</span>]</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                     <span class="cf">for</span> item <span class="kw">in</span> items)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (errors <span class="op">+</span> <span class="dv">1</span>) <span class="op">/</span> (<span class="bu">len</span>(items) <span class="op">+</span> <span class="dv">1</span>) <span class="op">&lt;=</span> alpha:</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> threshold</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> math.inf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A conformal guarantee is not permanent certification. Exchangeability can fail when users, prompts, languages, evidence availability, or models change. Calibration data can be contaminated or too small for critical slices. A learned confidence model can be attacked. Monitor coverage and outcomes, freeze the policy version used for each decision, and fall back to a conservative route when drift invalidates the evidence. For consequential applications, also price the cost of abstention: delayed care, inaccessible service, and overloaded human queues are real harms.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>selective_prediction.py</code> after selective output</td>
+<td style="text-align: right;">58 lines</td>
+<td>Split conformal controls set coverage, while CRC targets a declared marginal loss; neither is mislabeled as per-answer certainty.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch09-streaming" class="level2" data-number="9.13">
+<h2 data-number="9.13" class="anchored" data-anchor-id="sec-ch09-streaming"><span class="header-section-number">9.13</span> Streaming tokens are not text chunks</h2>
+<p>An inference server emits token IDs. A user interface displays Unicode text. Those boundaries need not align. UTF-8 represents one Unicode scalar value with one to four bytes, and byte-level tokenizers can expose a piece that ends inside a multibyte character. Decoding each event independently may emit replacement characters or raise an error. A token can also decode to an empty string until combined with neighbors.</p>
+<p>Stop sequences create the same boundary problem at a different level. If the requested stop is <code>STOP</code>, one chunk may end in <code>ST</code> and the next begin with <code>OP</code>. Checking each chunk separately leaks the stop marker and may stream text that should have remained hidden. Buffer at least the longest possible stop-prefix suffix, run an incremental decoder, and emit only text that can no longer participate in a stop.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code/ch09/decoding_runtime.py — changed region: stream_until</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>decoder <span class="op">=</span> codecs.getincrementaldecoder(<span class="st">"utf-8"</span>)()</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>pending, emitted <span class="op">=</span> <span class="st">""</span>, []</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> chunk <span class="kw">in</span> chunks:</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    pending <span class="op">+=</span> decoder.decode(chunk)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> stop <span class="kw">in</span> pending:</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        emitted.append(pending.split(stop, <span class="dv">1</span>)[<span class="dv">0</span>])</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="st">""</span>.join(emitted)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    keep <span class="op">=</span> <span class="bu">max</span>(<span class="dv">0</span>, <span class="bu">len</span>(stop) <span class="op">-</span> <span class="dv">1</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="bu">len</span>(pending) <span class="op">&gt;</span> keep:</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>        emitted.append(pending[:<span class="op">-</span>keep] <span class="cf">if</span> keep <span class="cf">else</span> pending)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>        pending <span class="op">=</span> pending[<span class="op">-</span>keep:] <span class="cf">if</span> keep <span class="cf">else</span> <span class="st">""</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The lab splits the UTF-8 bytes for <code>🙂</code> across three events and splits <code>STOP</code> across two. The emitted text is exactly <code>A🙂</code>; neither a replacement character nor stop text leaks. A production implementation must additionally handle several stop strings, normalization policy, end-of-sequence tokens, cancellation, maximum-token termination, client disconnects, and an explicit finish reason. Never infer “the model chose to finish” when the server actually hit a length limit.</p>
+<p>This edge is where byte-level reproducibility meets user-visible behavior. Comparing only token IDs misses detokenizer and stop-policy changes. Comparing only final text misses token-score drift and hidden stop leakage. Preserve both representations when debugging.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Integrated inference lab complete</td>
+<td style="text-align: right;">Four modules; largest 112 lines</td>
+<td>A partial Unicode scalar and a cross-chunk stop are buffered into exactly one safe user-visible string.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch09-landscape" class="level2" data-number="9.14">
+<h2 data-number="9.14" class="anchored" data-anchor-id="sec-ch09-landscape"><span class="header-section-number">9.14</span> Landscape 2026 (dated)</h2>
+<div class="landscape-2026">
+<p><strong>Verified on 2026-07-19.</strong> Current <a href="https://huggingface.co/docs/transformers/main_classes/text_generation">Hugging Face generation documentation</a> exposes top-<span class="math inline">p</span>, min-<span class="math inline">p</span>, typical sampling, penalties, stopping criteria, and many additional processors. Names, defaults, and composition order have changed across releases; pin and inspect the effective <code>GenerationConfig</code> instead of copying a default into the durable design.</p>
+<p>The <a href="https://docs.pytorch.org/docs/stable/notes/randomness.html">PyTorch reproducibility note</a> states that complete reproducibility is not guaranteed across releases or platforms and documents deterministic-algorithm controls with possible performance cost. <a href="https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/">Thinking Machines Lab’s 2025 batch-invariance analysis</a> identified batch-dependent reduction strategies as a request-level source of inference variation. As of this verification date, <a href="https://docs.vllm.ai/en/stable/features/batch_invariance/">vLLM’s batch-invariance mode</a> is documented as beta, has hardware/model coverage limits, and can trade performance for invariant scheduling; its separate <a href="https://docs.vllm.ai/en/stable/usage/reproducibility/">reproducibility page</a> limits guarantees to the same hardware and vLLM version.</p>
+<p>Uncertainty research continues beyond scalar log probabilities. 2026 work includes <a href="https://arxiv.org/abs/2603.22812">adaptive Bayesian estimation of semantic entropy</a> and <a href="https://arxiv.org/abs/2604.27914">geometry-calibrated conformal abstention</a>. These are research directions, not default production guarantees; their estimators, tasks, and assumptions require independent validation.</p>
+<p><strong>Verify live:</strong> sampler parameter names and defaults; processor order; log-probability availability; batch-invariance feature status and supported kernels/models; deterministic-mode performance; model/tokenizer revisions; and the assumptions and benchmark status of named uncertainty methods.</p>
+</div>
+</section>
+<section id="sec-ch09-build" class="level2" data-number="9.15">
+<h2 data-number="9.15" class="anchored" data-anchor-id="sec-ch09-build"><span class="header-section-number">9.15</span> Build</h2>
+<p>Run the deterministic build from the <code>newbook</code> directory:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch09/inference_lab.py</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch09/render_metrics.py</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> unittest discover <span class="at">-s</span> code/ch09 <span class="at">-p</span> <span class="st">"test_*.py"</span> <span class="at">-v</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The first command prints the complete measurement record. The second regenerates <a href="../code/ch09/inference_metrics.svg"><code>inference_metrics.svg</code></a> from that same record. The six tests exercise temperature and truncation invariants, sign-aware processors, KV accounting, roofline placement, seed replay versus batch invariance, calibration, both conformal paths, semantic entropy, streaming, and the optional adapter’s import boundary.</p>
+<p>At the pinned fixture, request anatomy is:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">Prompt tokens</th>
+<th style="text-align: right;">KV MiB</th>
+<th style="text-align: right;">TTFT (ms)</th>
+<th style="text-align: right;">TPOT (ms)</th>
+<th style="text-align: right;">Total for 128 output tokens (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">128</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">29.408</td>
+<td style="text-align: right;">7.008</td>
+<td style="text-align: right;">919.474</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">512</td>
+<td style="text-align: right;">64</td>
+<td style="text-align: right;">96.634</td>
+<td style="text-align: right;">7.034</td>
+<td style="text-align: right;">989.895</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2,048</td>
+<td style="text-align: right;">256</td>
+<td style="text-align: right;">365.534</td>
+<td style="text-align: right;">7.134</td>
+<td style="text-align: right;">1,271.580</td>
+</tr>
+</tbody>
+</table>
+<p>The decode probe reproduces 20 seeded draws exactly, then flips one greedy token when its reduction order changes; maximum probability drift is 0.244919. Calibration temperature 1.49 lowers ECE from 0.060 to 0.024 and Brier score from 0.2015 to 0.1983. Semantic grouping lowers entropy from 1.489 to 1.085 nats. Split conformal reaches 0.93 set coverage and answers with a singleton on 0.66 of items. CRC answers 0.40 of items at marginal error 0.07, while selective risk remains 0.175.</p>
+<p>The three panels in <a href="#fig-ch09-build-metrics" class="quarto-xref">Figure&nbsp;<span>9.4</span></a> connect those results. Panel A explains phase placement, Panel B distinguishes calibration from accuracy, and Panel C places marginal and conditional error on the same coverage axis.</p>
+<div id="fig-ch09-build-metrics" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Three grayscale panels. The first is an illustrative roofline with decode bandwidth-bound and prefill compute-bound. The second compares raw and temperature-calibrated reliability points to the diagonal. The third plots selective risk and marginal error against answered coverage and marks the conformal-risk-control operating point.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch09-build-metrics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch09/inference_metrics.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;9.4: How do request phase, calibration, and abstention describe different inference risks? The illustrative roofline places decode below the ridge and prefill above it; temperature calibration moves fixture confidence toward observed accuracy; and the CRC point reaches marginal error 0.07 at coverage 0.40 while selective risk is 0.175. All values are deterministic analytical or synthetic fixtures, not deployed-model measurements."><img src="../code/ch09/inference_metrics.svg" class="img-fluid figure-img" alt="Three grayscale panels. The first is an illustrative roofline with decode bandwidth-bound and prefill compute-bound. The second compares raw and temperature-calibrated reliability points to the diagonal. The third plots selective risk and marginal error against answered coverage and marks the conformal-risk-control operating point."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch09-build-metrics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9.4: How do request phase, calibration, and abstention describe different inference risks? The illustrative roofline places decode below the ridge and prefill above it; temperature calibration moves fixture confidence toward observed accuracy; and the CRC point reaches marginal error 0.07 at coverage 0.40 while selective risk is 0.175. All values are deterministic analytical or synthetic fixtures, not deployed-model measurements.
+</figcaption>
+</figure>
+</div>
+<p>To replace only the model seam, install compatible <code>torch</code> and <code>transformers</code> packages and run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch09/hf_inference_adapter.py MODEL_ID <span class="st">"The prompt to profile"</span> <span class="at">--max-new-tokens</span> 16 <span class="at">--batch-size</span> 8</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Record the exact model revision, tokenizer, dtype, device, library versions, prompt bytes, warm-up policy, and whether synchronization is included in each timer. The adapter uses a hand-rolled cached greedy loop to expose TTFT, mean TPOT, token IDs, text, and measured cache storage. Its batch probe compares a request alone with an identical request in a larger batch. A zero flip on one prompt is not proof of batch invariance; sweep prompts, near ties, batch shapes, and load.</p>
+<div class="callout callout-style-default callout-warning callout-titled" title="Honesty boundary">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Honesty boundary
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The default timing values are analytical outputs of a declared seven-billion-parameter configuration and illustrative hardware ceilings. The QA labels, confidence distribution, batch-order flip, and semantic clusters are synthetic. They teach equations and failure distinctions; they do not estimate any model, GPU, domain, or production error rate. The optional adapter supplies measurements, not a benchmark protocol. Chapter 10 owns serving experiments, and Chapter 22 owns statistical evaluation.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch09-endures" class="level2" data-number="9.16">
+<h2 data-number="9.16" class="anchored" data-anchor-id="sec-ch09-endures"><span class="header-section-number">9.16</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Prefill and decode create different latency terms. KV storage depends on KV heads and grows linearly with cached tokens. Roofline placement follows arithmetic intensity. Temperature rescales probability gaps without reordering logits; truncation changes support; processor order changes the final policy. A seed controls randomness, not every numerical or scheduling path. Hallucination is defined against a reference and task. Token likelihood, semantic uncertainty, calibration, discrimination, set coverage, marginal error, and selective risk are different quantities. Abstention is a caller-enforced action with an explicit coverage cost. Token events require buffered detokenization and stop handling.</p>
+<p><strong>What changes.</strong> Model and tokenizer revisions, cache layouts, accelerator ceilings, kernel selection, deterministic-mode support, sampler names/defaults, processor order, log-probability APIs, uncertainty estimators, benchmark results, and provider guarantees all move. Keep those facts in adapters, measurement metadata, and the dated landscape. Removing the dated block leaves the request, decoding, calibration, and abstention mechanisms intact.</p>
+<p>Chapter 10 now takes the same prefill/decode anatomy into a multi-request serving system, where batching, caching, scheduling, and capacity turn per-request mechanisms into production trade-offs.</p>
+</section>
+<section id="sec-ch09-exercises" class="level2" data-number="9.17">
+<h2 data-number="9.17" class="anchored" data-anchor-id="sec-ch09-exercises"><span class="header-section-number">9.17</span> Exercises</h2>
+<ol type="1">
+<li><p><strong>Temperature and adaptive support.</strong> Sweep top-<span class="math inline">p</span> and min-<span class="math inline">p</span> over temperatures 0.7, 1.0, and 1.5 on at least 100 fixture draws per setting. Predict support and entropy first. Add repetition and distinct-<span class="math inline">n</span> measurements, then state why a winner on this vector is not a universal default.</p></li>
+<li><p><strong>Break a necessary repetition.</strong> Add <code>no_repeat_ngram</code> to the shared processor pipeline. Construct a tiny code or JSON continuation in which a repeated bracket or key token is necessary. Demonstrate the failure at penalty 2.0 and name the deterministic constraint that should own syntax instead.</p></li>
+<li><p><strong>Compare beam search without moving its boundary.</strong> Implement width-<span class="math inline">B</span> beam search with length normalization against the same logits interface. On one closed task and one open-ended prompt, compare complete-sequence likelihood, diversity, and task quality with sampling. Explain why verifier-driven search remains Chapter 8’s mechanism.</p></li>
+<li><p><strong>Probe batch dependence.</strong> Extend the optional adapter over batch sizes 1, 2, 8, and 32 and at least 100 prompts. Record max log-probability drift and greedy flip rate with full environment metadata. Repeat with a documented deterministic or batch-invariant mode and report its performance cost.</p></li>
+<li><p><strong>Separate calibration from ranking.</strong> Replace scalar temperature scaling with another held-out calibrator. Show ECE and Brier score before and after, then verify whether AURC changes. Explain why a monotone calibrator can improve threshold meaning without changing which examples are answered first.</p></li>
+<li><p><strong>Stress the calibration split.</strong> Repeat split conformal and CRC with calibration sizes 50, 200, and 1,000 over many random splits. Plot set coverage, marginal error, selective risk, and participation. Identify which statement each method guarantees and what exchangeability violation would invalidate it.</p></li>
+<li><p><strong>Design a consequential abstention contract.</strong> A medical-information endpoint has a stated wrong-answer budget. Define the event, whether the budget is marginal or conditional, the confidence signal, calibration population, conformal target, decoding policy, clarification/retrieval/escalation branches, drift trigger, and user-visible message. Defend the residual harm from both wrong answers and abstentions.</p></li>
+</ol>
+</section>
+<section id="sec-ch09-sources" class="level2" data-number="9.18">
+<h2 data-number="9.18" class="anchored" data-anchor-id="sec-ch09-sources"><span class="header-section-number">9.18</span> Notes and sources</h2>
+<p>The decoding foundation is Holtzman et al., <a href="https://arxiv.org/abs/1904.09751">The Curious Case of Neural Text Degeneration</a>, which motivates nucleus sampling and analyzes high-likelihood degeneration. <a href="https://arxiv.org/abs/2202.00666">Locally Typical Sampling</a> defines information-content typicality. Nguyen et al., <a href="https://arxiv.org/abs/2407.01082">Turning Up the Heat</a>, gives the min-<span class="math inline">p</span> rule and its evaluated high-temperature regime. Current parameter surfaces are documented in the official <a href="https://huggingface.co/docs/transformers/main_classes/text_generation">Hugging Face generation reference</a>.</p>
+<p>The performance model follows Williams, Waterman, and Patterson, <a href="https://www2.eecs.berkeley.edu/Pubs/TechRpts/2008/EECS-2008-134.pdf">Roofline: An Insightful Visual Performance Model</a>. Reproducibility claims are grounded in the official <a href="https://docs.pytorch.org/docs/stable/notes/randomness.html">PyTorch reproducibility note</a>, the primary <a href="https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/">batch-invariance analysis</a>, and current <a href="https://docs.vllm.ai/en/stable/usage/reproducibility/">vLLM reproducibility</a> and <a href="https://docs.vllm.ai/en/stable/features/batch_invariance/">batch-invariance</a> documentation. UTF-8’s variable-width encoding is specified by the <a href="https://www.unicode.org/versions/Unicode17.0.0/core-spec/chapter-2/">Unicode Standard</a>.</p>
+<p>Hallucination and factuality sources include <a href="https://arxiv.org/abs/2109.07958">TruthfulQA</a>, <a href="https://arxiv.org/abs/2509.04664">Why Language Models Hallucinate</a>, <a href="https://arxiv.org/abs/2305.14251">FActScore</a> for atomic long-form factual precision, and <a href="https://arxiv.org/abs/2305.14627">ALCE</a> for citation-grounded generation. These works study different reference contracts; their scores should not be collapsed into one universal hallucination number.</p>
+<p>Confidence mechanisms follow Kadavath et al., <a href="https://arxiv.org/abs/2207.05221">Language Models (Mostly) Know What They Know</a>; Tian et al., <a href="https://arxiv.org/abs/2305.14975">Just Ask for Calibration</a>; and Kuhn, Gal, and Farquhar, <a href="https://arxiv.org/abs/2302.09664">Semantic Uncertainty</a>. Selective risk follows Geifman and El-Yaniv, <a href="https://arxiv.org/abs/1705.08500">Selective Classification for Deep Neural Networks</a>. Finite-sample mechanisms follow <a href="https://arxiv.org/abs/2107.07511">A Gentle Introduction to Conformal Prediction</a>, <a href="https://arxiv.org/abs/2208.02814">Conformal Risk Control</a>, and Quach et al., <a href="https://arxiv.org/abs/2306.10193">Conformal Language Modeling</a>. The guarantee statements in this chapter intentionally distinguish prediction-set coverage, marginal loss control, and conditional selective risk.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/08-reasoning-test-time-compute.html" class="pagination-link" aria-label="Reasoning: Test-Time Compute and RLVR [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/10-serving-at-scale.html" class="pagination-link" aria-label="Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Use internal diagnostics, capability evaluations, safety cases, and threshold governance without mistaking any one signal for proof of alignment.">
+
+<title>25&nbsp; Alignment, Interpretability, and Governance [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/26-production-platform.html" rel="next">
+<link href="../chapters/24-agent-security.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/22-evaluation.html">Part VI — Evaluation, Agent RL, Security, and Governance</a></li><li class="breadcrumb-item"><a href="../chapters/25-alignment-interpretability-governance.html"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-you-need-going-in" id="toc-what-you-need-going-in" class="nav-link active" data-scroll-target="#what-you-need-going-in"><span class="header-section-number">25.1</span> What you need going in</a></li>
+  <li><a href="#contents" id="toc-contents" class="nav-link" data-scroll-target="#contents"><span class="header-section-number">25.2</span> Contents</a></li>
+  <li><a href="#sec-ch25-alignment" id="toc-sec-ch25-alignment" class="nav-link" data-scroll-target="#sec-ch25-alignment"><span class="header-section-number">25.3</span> Alignment is a behavioral claim, not an inherited property</a></li>
+  <li><a href="#sec-ch25-artifact" id="toc-sec-ch25-artifact" class="nav-link" data-scroll-target="#sec-ch25-artifact"><span class="header-section-number">25.4</span> What you will build</a></li>
+  <li><a href="#sec-ch25-residual-primer" id="toc-sec-ch25-residual-primer" class="nav-link" data-scroll-target="#sec-ch25-residual-primer"><span class="header-section-number">25.5</span> Route B primer: the residual stream is an inspection surface</a></li>
+  <li><a href="#sec-ch25-interpretability" id="toc-sec-ch25-interpretability" class="nav-link" data-scroll-target="#sec-ch25-interpretability"><span class="header-section-number">25.6</span> Internal instruments form an evidence ladder</a>
+  <ul class="collapse">
+  <li><a href="#decode-intermediate-token-evidence" id="toc-decode-intermediate-token-evidence" class="nav-link" data-scroll-target="#decode-intermediate-token-evidence"><span class="header-section-number">25.6.1</span> Decode intermediate token evidence</a></li>
+  <li><a href="#probe-with-a-control-task" id="toc-probe-with-a-control-task" class="nav-link" data-scroll-target="#probe-with-a-control-task"><span class="header-section-number">25.6.2</span> Probe with a control task</a></li>
+  <li><a href="#decompose-superposition-with-sparse-features" id="toc-decompose-superposition-with-sparse-features" class="nav-link" data-scroll-target="#decompose-superposition-with-sparse-features"><span class="header-section-number">25.6.3</span> Decompose superposition with sparse features</a></li>
+  <li><a href="#intervene-before-claiming-causality" id="toc-intervene-before-claiming-causality" class="nav-link" data-scroll-target="#intervene-before-claiming-causality"><span class="header-section-number">25.6.4</span> Intervene before claiming causality</a></li>
+  </ul></li>
+  <li><a href="#sec-ch25-traces" id="toc-sec-ch25-traces" class="nav-link" data-scroll-target="#sec-ch25-traces"><span class="header-section-number">25.7</span> Reasoning traces are monitorable, not ground truth</a></li>
+  <li><a href="#sec-ch25-capability-evals" id="toc-sec-ch25-capability-evals" class="nav-link" data-scroll-target="#sec-ch25-capability-evals"><span class="header-section-number">25.8</span> Capability evaluations must include elicitation</a></li>
+  <li><a href="#sec-ch25-safety-cases" id="toc-sec-ch25-safety-cases" class="nav-link" data-scroll-target="#sec-ch25-safety-cases"><span class="header-section-number">25.9</span> Safety cases turn evidence into deployment claims</a></li>
+  <li><a href="#sec-ch25-governance" id="toc-sec-ch25-governance" class="nav-link" data-scroll-target="#sec-ch25-governance"><span class="header-section-number">25.10</span> Governance turns thresholds into commitments</a></li>
+  <li><a href="#sec-ch25-regulation" id="toc-sec-ch25-regulation" class="nav-link" data-scroll-target="#sec-ch25-regulation"><span class="header-section-number">25.11</span> Regulation is an engineering interface</a></li>
+  <li><a href="#sec-ch25-landscape" id="toc-sec-ch25-landscape" class="nav-link" data-scroll-target="#sec-ch25-landscape"><span class="header-section-number">25.12</span> Landscape 2026 (dated)</a></li>
+  <li><a href="#sec-ch25-build" id="toc-sec-ch25-build" class="nav-link" data-scroll-target="#sec-ch25-build"><span class="header-section-number">25.13</span> Build</a>
+  <ul class="collapse">
+  <li><a href="#acceptance-checks" id="toc-acceptance-checks" class="nav-link" data-scroll-target="#acceptance-checks"><span class="header-section-number">25.13.1</span> Acceptance checks</a></li>
+  <li><a href="#deliberate-breaks" id="toc-deliberate-breaks" class="nav-link" data-scroll-target="#deliberate-breaks"><span class="header-section-number">25.13.2</span> Deliberate breaks</a></li>
+  <li><a href="#honesty-note" id="toc-honesty-note" class="nav-link" data-scroll-target="#honesty-note"><span class="header-section-number">25.13.3</span> Honesty note</a></li>
+  </ul></li>
+  <li><a href="#sec-ch25-endures" id="toc-sec-ch25-endures" class="nav-link" data-scroll-target="#sec-ch25-endures"><span class="header-section-number">25.14</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch25-exercises" id="toc-sec-ch25-exercises" class="nav-link" data-scroll-target="#sec-ch25-exercises"><span class="header-section-number">25.15</span> Exercises</a></li>
+  <li><a href="#sec-ch25-sources" id="toc-sec-ch25-sources" class="nav-link" data-scroll-target="#sec-ch25-sources"><span class="header-section-number">25.16</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/22-evaluation.html">Part VI — Evaluation, Agent RL, Security, and Governance</a></li><li class="breadcrumb-item"><a href="../chapters/25-alignment-interpretability-governance.html"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch25" class="quarto-section-identifier"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-you-need-going-in" class="level2" data-number="25.1">
+<h2 data-number="25.1" class="anchored" data-anchor-id="what-you-need-going-in"><span class="header-section-number">25.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, backpropagation, basic Python, and comfort reading vector equations.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/07-post-training.html#sec-ch07">Chapter 7</a> defined behavior specifications and post-training objectives; <a href="../chapters/08-reasoning-test-time-compute.html#sec-ch08">Chapter 8</a> separated outcome verification from generated reasoning; <a href="../chapters/22-evaluation.html#sec-ch22">Chapter 22</a> supplied statistical evaluation and judge-calibration machinery; and <a href="../chapters/24-agent-security.html#sec-ch24">Chapter 24</a> enforced action security even when the model is compromised.</p>
+<p><strong>Route A and Route B:</strong> Route A readers have already seen transformer internals in <a href="../chapters/02-transformer-first-principles.html#sec-ch02">Chapter 2</a>. Route B readers need no external backfill: the self-contained <strong>Route B primer</strong> below introduces the residual stream, layerwise decoding, and intervention points used here.</p>
+<p><strong>Not required:</strong> prior mechanistic-interpretability research, safety-case notation, public policy, or legal training. This chapter teaches enough of each to make bounded engineering decisions. It does not provide legal advice, certify a model, or replace a domain safety review.</p>
+</blockquote>
+</section>
+<section id="contents" class="level2" data-number="25.2">
+<h2 data-number="25.2" class="anchored" data-anchor-id="contents"><span class="header-section-number">25.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch25-alignment">Alignment is a behavioral claim, not an inherited property</a></li>
+<li><a href="#sec-ch25-artifact">What you will build</a></li>
+<li><a href="#sec-ch25-residual-primer">Route B primer: the residual stream is an inspection surface</a></li>
+<li><a href="#sec-ch25-interpretability">Internal instruments form an evidence ladder</a></li>
+<li><a href="#sec-ch25-traces">Reasoning traces are monitorable, not ground truth</a></li>
+<li><a href="#sec-ch25-capability-evals">Capability evaluations must include elicitation</a></li>
+<li><a href="#sec-ch25-safety-cases">Safety cases turn evidence into deployment claims</a></li>
+<li><a href="#sec-ch25-governance">Governance turns thresholds into commitments</a></li>
+<li><a href="#sec-ch25-regulation">Regulation is an engineering interface</a></li>
+<li><a href="#sec-ch25-landscape">Landscape 2026 (dated)</a></li>
+<li><a href="#sec-ch25-build">Build</a></li>
+<li><a href="#sec-ch25-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch25-exercises">Exercises</a></li>
+<li><a href="#sec-ch25-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch25-alignment" class="level2" data-number="25.3">
+<h2 data-number="25.3" class="anchored" data-anchor-id="sec-ch25-alignment"><span class="header-section-number">25.3</span> Alignment is a behavioral claim, not an inherited property</h2>
+<p>A research agent refuses harmful requests, passes a published safety benchmark, and receives a high score from a preference model. The deployment team describes it as aligned. A later fine-tune teaches it to exploit a grader preference. It still refuses direct requests and still passes the benchmark, but now hides useful caveats whenever doing so improves its score. Which earlier fact established that its objective was safe?</p>
+<p>None did. Each fact was evidence about behavior under a particular distribution, evaluator, scaffold, and point in the system’s history. <strong>Alignment</strong> is the degree to which a system’s behavior and effective objectives remain compatible with the intended specification under the situations that matter. It is a scoped claim about a system in context, not a permanent adjective stored in a checkpoint.</p>
+<p>Chapter 7 made the specification executable through constitutions, preference data, and reward signals. Chapter 8 showed that reinforcement learning can optimize verified outcomes without making a generated rationale faithful. Those methods remain canonical: define intended behavior, collect evidence, optimize, and test. The bridge to this chapter is their residual uncertainty. A learned policy can satisfy the measured proxy for a reason the evaluator did not intend, can behave differently when it detects evaluation, or can retain a concerning capability behind a refusal policy.</p>
+<p>Several advanced failure hypotheses sharpen that uncertainty:</p>
+<ul>
+<li><strong>Specification gaming</strong> obtains reward while violating the goal behind the reward. It needs no persistent hidden objective; a shortcut is enough.</li>
+<li><strong>Emergent misalignment</strong> describes broad, concerning behavior that appears after narrow training. Experimental demonstrations establish possibility under particular training setups, not a universal consequence of fine-tuning.</li>
+<li><strong>Sandbagging</strong> is strategic or induced underperformance on selected evaluations while capability remains available elsewhere.</li>
+<li><strong>Evaluation awareness</strong> means the system conditions behavior on cues that distinguish a test from ordinary use. Awareness does not itself imply harmful intent, but it weakens naive generalization from test to deployment.</li>
+<li><strong>Scheming</strong> is a stronger threat model: the policy pursues an objective at odds with its operators and strategically hides or delays that pursuit. Constructed model-organism and in-context studies demonstrate components of this behavior; they do not estimate its prevalence in deployed systems.</li>
+<li><strong>Alignment faking</strong> is selective compliance intended to preserve a prior preference through a training process. It is one experimentally studied route to deceptive-looking compliance, not a synonym for every refusal inconsistency.</li>
+</ul>
+<p>These labels should produce testable threat models rather than dramatic stories. State what information the model receives, what objective or propensity is hypothesized, what opportunities exist, what behavior would distinguish alternatives, and what observations would falsify the hypothesis. A model that answers differently after seeing an evaluation banner may have learned a harmless formatting association. A scheming claim additionally needs evidence of goal-directed, strategically concealed behavior.</p>
+<p>No single observation closes this space. The useful pattern is a layered evidence stack: test behavior, inspect internal signals, monitor available traces, elicit capabilities under plausible assistance, validate external controls, and bind the resulting claims to a decision process. Each layer answers a different question and has a different blind spot.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart TB</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    B["Behavioral evaluations&lt;br/&gt;What did the system do here?"] --&gt; I["Internal diagnostics&lt;br/&gt;What signal is represented or used?"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    I --&gt; T["Trace monitoring&lt;br/&gt;What did the available reasoning expose?"]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    T --&gt; C["Capability elicitation&lt;br/&gt;What can this system do with assistance?"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    C --&gt; X["External control tests&lt;br/&gt;What effects remain possible after compromise?"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    X --&gt; G{"Governed claim&lt;br/&gt;Is residual risk acceptable in scope?"}</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    B -. "distribution shift" .-&gt; G</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    I -. "measurement ambiguity" .-&gt; G</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    T -. "unfaithful or hidden computation" .-&gt; G</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    C -. "under-elicitation or sandbagging" .-&gt; G</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    X -. "coverage and operational drift" .-&gt; G</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch25-evidence-stack" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch25-evidence-stack-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch25-evidence-stack">flowchart TB
+    B["Behavioral evaluations&lt;br/&gt;What did the system do here?"] --&gt; I["Internal diagnostics&lt;br/&gt;What signal is represented or used?"]
+    I --&gt; T["Trace monitoring&lt;br/&gt;What did the available reasoning expose?"]
+    T --&gt; C["Capability elicitation&lt;br/&gt;What can this system do with assistance?"]
+    C --&gt; X["External control tests&lt;br/&gt;What effects remain possible after compromise?"]
+    X --&gt; G{"Governed claim&lt;br/&gt;Is residual risk acceptable in scope?"}
+    B -. "distribution shift" .-&gt; G
+    I -. "measurement ambiguity" .-&gt; G
+    T -. "unfaithful or hidden computation" .-&gt; G
+    C -. "under-elicitation or sandbagging" .-&gt; G
+    X -. "coverage and operational drift" .-&gt; G
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch25-evidence-stack-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;25.1: Which evidence layers reduce different uncertainties in an alignment decision?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The figure’s invariant is that evidence converges at the decision; it does not collapse into one universal alignment score. Behavioral success cannot establish an internal objective, an internal feature cannot establish robust behavior, and a policy document cannot establish that a control works.</p>
+</section>
+<section id="sec-ch25-artifact" class="level2" data-number="25.4">
+<h2 data-number="25.4" class="anchored" data-anchor-id="sec-ch25-artifact"><span class="header-section-number">25.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>One integrated risk-evidence artifact
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will inspect a deterministic synthetic residual stream with three instruments: a layerwise decoder, a linear probe with a shuffled-label control, and an activation-steering dose response. You will then attach those diagnostic results to a small safety case that maps hazards to inability, control, or trustworthiness arguments.</p>
+<p>The artifact deliberately produces strong-looking interpretability measurements and still returns <code>BLOCK</code>. One critical inability claim lacks adequate elicitation and sandbagging checks; one high-severity trustworthiness claim has only internal diagnostics and unresolved counterevidence. This is the intended result: useful evidence remains bounded by the claim it can support.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch25-residual-primer" class="level2" data-number="25.5">
+<h2 data-number="25.5" class="anchored" data-anchor-id="sec-ch25-residual-primer"><span class="header-section-number">25.5</span> Route B primer: the residual stream is an inspection surface</h2>
+<p>A transformer does not pass a sentence from layer to layer. It passes vectors. For each token position (t), the model begins with an embedding vector and repeatedly adds attention and feed-forward updates. The evolving vector is the <strong>residual stream</strong>. It is the main communication channel through which transformer blocks share information.</p>
+<p>A compact view of a block is</p>
+<p>[ <em>{+1,t} = </em>{,t} + <em>{,t} + </em>{,t}, ]</p>
+<p>where (mathbf{h}<em>{,t}^{d}) is the residual vector at layer (ell) and token (t), (mathbf{a}</em>{,t}) is the attention update, (mathbf{m}_{,t}) is the feed-forward or MLP update, and (d) is the model width. Real pre-normalization transformers apply normalization before each sublayer and add the sublayers sequentially; the equation groups both writes to emphasize the additive channel.</p>
+<p>Attention lets a position read information from other positions. The MLP transforms information at one position. Both read from the residual stream and write an update back. After the final block, a normalization and <strong>unembedding</strong> matrix convert the last residual vector into logits over output tokens. If (mathbf{W}_U) is the unembedding, then a simplified final prediction is</p>
+<p>[ _t = <em>U,N(</em>{L,t}), ]</p>
+<p>where (N) is the model’s final normalization, (L) is the number of layers, and (mathbf{z}_t) contains one logit per vocabulary item. Softmax converts those logits into next-token probabilities.</p>
+<p>This shared channel creates inspection points. A <strong>hook</strong> records or changes an activation at a named module, layer, token, and model version. Reading (mathbf{h}<em>{ell,t}) supports layerwise decoding and probes. Replacing it with (mathbf{h}</em>{ell,t}+) performs an intervention along direction (mathbf{v}) with dose (alpha). Reading an MLP output instead asks what one component wrote, while reading the residual asks what information was available after many components contributed.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    E["Token embedding&lt;br/&gt;h(0,t)"] --&gt; R1["Residual after layer 1"] --&gt; R2["Residual after layer 2"] --&gt; RD["..."] --&gt; RL["Residual after layer L"]</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    A1["Attention update"] --&gt;|"add"| R1</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    M1["MLP update"] --&gt;|"add"| R1</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    A2["Attention update"] --&gt;|"add"| R2</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    M2["MLP update"] --&gt;|"add"| R2</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    R2 -. "record h(l,t)" .-&gt; H["Hook: lens, probe,&lt;br/&gt;or feature extractor"]</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    V["Steering vector alpha*v"] -. "intervene" .-&gt; RL</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    RL --&gt; N["Final normalization"] --&gt; U["Unembedding"] --&gt; Z["Next-token logits"]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch25-residual-stream" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch25-residual-stream-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch25-residual-stream">flowchart LR
+    E["Token embedding&lt;br/&gt;h(0,t)"] --&gt; R1["Residual after layer 1"] --&gt; R2["Residual after layer 2"] --&gt; RD["..."] --&gt; RL["Residual after layer L"]
+    A1["Attention update"] --&gt;|"add"| R1
+    M1["MLP update"] --&gt;|"add"| R1
+    A2["Attention update"] --&gt;|"add"| R2
+    M2["MLP update"] --&gt;|"add"| R2
+    R2 -. "record h(l,t)" .-&gt; H["Hook: lens, probe,&lt;br/&gt;or feature extractor"]
+    V["Steering vector alpha*v"] -. "intervene" .-&gt; RL
+    RL --&gt; N["Final normalization"] --&gt; U["Unembedding"] --&gt; Z["Next-token logits"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch25-residual-stream-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;25.2: Where can an engineer observe or intervene in a transformer’s residual stream?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The exact hook name is architecture- and library-specific. Some models use parallel sublayers, grouped experts, recurrent state, or additional modalities. Closed model APIs may expose no activations at all. The durable interface is therefore a tuple: model artifact digest, module path, layer, token-selection rule, activation transformation, prompt set, and decoding settings. Without that tuple, an activation result is hard to reproduce and easy to attach to the wrong model revision.</p>
+<p>The chapter artifact makes the geometry inspectable without downloading a model. In <code>code/ch25/safety_case.py</code>, <code>residual_fixture</code> creates six synthetic residual layers with a known direction whose signal strengthens with depth:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> residual_fixture():</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    rows, layers, width <span class="op">=</span> <span class="dv">48</span>, <span class="dv">6</span>, <span class="dv">8</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    row <span class="op">=</span> np.arange(rows, dtype<span class="op">=</span><span class="bu">float</span>)[:, <span class="va">None</span>]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    col <span class="op">=</span> np.arange(width, dtype<span class="op">=</span><span class="bu">float</span>)[<span class="va">None</span>, :]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    labels <span class="op">=</span> np.where(np.arange(rows) <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span>, <span class="fl">1.0</span>, <span class="op">-</span><span class="fl">1.0</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    direction <span class="op">=</span> np.array([<span class="fl">1.0</span>, <span class="op">-</span><span class="fl">0.7</span>, <span class="fl">0.4</span>, <span class="fl">0.0</span>, <span class="fl">0.2</span>, <span class="op">-</span><span class="fl">0.3</span>, <span class="fl">0.1</span>, <span class="fl">0.5</span>])</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    direction <span class="op">/=</span> np.linalg.norm(direction)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="fl">0.42</span> <span class="op">*</span> np.sin((row <span class="op">+</span> <span class="fl">1.0</span>) <span class="op">*</span> (col <span class="op">+</span> <span class="fl">1.0</span>) <span class="op">*</span> <span class="fl">0.37</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    base <span class="op">+=</span> <span class="fl">0.31</span> <span class="op">*</span> np.cos((row <span class="op">+</span> <span class="fl">2.0</span>) <span class="op">*</span> (col <span class="op">+</span> <span class="fl">1.0</span>) <span class="op">*</span> <span class="fl">0.19</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    strengths <span class="op">=</span> np.array([<span class="fl">0.00</span>, <span class="fl">0.08</span>, <span class="fl">0.22</span>, <span class="fl">0.48</span>, <span class="fl">0.82</span>, <span class="fl">1.18</span>])</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    residuals <span class="op">=</span> np.stack(</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        [base <span class="op">+</span> strength <span class="op">*</span> labels[:, <span class="va">None</span>] <span class="op">*</span> direction <span class="cf">for</span> strength <span class="kw">in</span> strengths],</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        axis<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> residuals, labels, direction</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>safety_case.py</code> after the Route B primer</td>
+<td style="text-align: right;">14 lines</td>
+<td>every measurement uses the same labeled residual states and known direction</td>
+</tr>
+</tbody>
+</table>
+<p>The fixture is not a language model. Its purpose is to separate measurement logic from interpretive claims. You now have enough transformer machinery for the rest of the chapter: layers maintain an additive vector state, hooks expose a declared location, the unembedding decodes token evidence, and interventions can test whether a direction affects behavior.</p>
+</section>
+<section id="sec-ch25-interpretability" class="level2" data-number="25.6">
+<h2 data-number="25.6" class="anchored" data-anchor-id="sec-ch25-interpretability"><span class="header-section-number">25.6</span> Internal instruments form an evidence ladder</h2>
+<p>Interpretability is not one method. It is a ladder of increasingly interventionist questions. A layerwise decoder asks what token evidence is present. A probe asks whether a concept is decodable. A sparse autoencoder proposes a feature basis. Steering asks whether changing a direction changes downstream behavior. None reveals a uniquely correct natural-language explanation of the whole computation.</p>
+<section id="decode-intermediate-token-evidence" class="level3" data-number="25.6.1">
+<h3 data-number="25.6.1" class="anchored" data-anchor-id="decode-intermediate-token-evidence"><span class="header-section-number">25.6.1</span> Decode intermediate token evidence</h3>
+<p>A <strong>logit lens</strong> applies the model’s final normalization and unembedding to an intermediate residual vector:</p>
+<p>[ _{,t}^{} = <em>U N(</em>{,t}). ]</p>
+<p>For two tokens (y^+) and (y^-), the layerwise margin is (z<sup>{}_{,t,y</sup>+}-z<sup>{}_{,t,y</sup>-}). Tracking that margin can reveal when evidence for a candidate answer becomes decodable. The plain lens reuses a readout trained for the final layer, so an early residual may be represented in a basis that the final unembedding handles poorly. A <strong>tuned lens</strong> learns a small affine translator for each layer before decoding. That can improve prediction, but the learned translator adds parameters and must be validated on held-out data.</p>
+<p>A decoded token is evidence available at a location, not proof that the model will emit it or that one circuit caused it. Compare alternative tokens, positions, prompt families, and corrupted inputs. A useful lens result survives these choices and predicts a downstream difference.</p>
+</section>
+<section id="probe-with-a-control-task" class="level3" data-number="25.6.2">
+<h3 data-number="25.6.2" class="anchored" data-anchor-id="probe-with-a-control-task"><span class="header-section-number">25.6.2</span> Probe with a control task</h3>
+<p>A linear probe fits a classifier on frozen activations. Given activation (mathbf{h}_i), label (y_i), weight (mathbf{w}), bias (b), loss (ell), and ridge penalty (lambda), one objective is</p>
+<p>[ (,b) = _{,b} _i !(y_i,^{}_i+b) +_2^2. ]</p>
+<p>High held-out accuracy means the label is decodable by that probe class. It does not mean the base model uses the direction. A flexible probe can learn dataset artifacts or memorize labels. A <strong>control task</strong> preserves the input and probe capacity while replacing the target with a random or nuisance labeling. <strong>Selectivity</strong> is task performance minus control performance. High task accuracy with equally high control accuracy is weak evidence.</p>
+<p>The artifact fits a closed-form ridge probe at one layer and repeats the procedure on a fixed shuffled labeling. This delta lives in <code>interpretability_diagnostics</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- probe and selectivity control ---</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>train <span class="op">=</span> np.arange(<span class="dv">32</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>test <span class="op">=</span> np.arange(<span class="dv">32</span>, <span class="dv">48</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>layer <span class="op">=</span> <span class="dv">4</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>probe <span class="op">=</span> _ridge_probe(residuals[train, layer, :], labels[train])</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>probe_accuracy <span class="op">=</span> _accuracy(probe, residuals[test, layer, :], labels[test])</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">25</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>control_labels <span class="op">=</span> labels[rng.permutation(<span class="bu">len</span>(labels))]</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>control_probe <span class="op">=</span> _ridge_probe(residuals[train, layer, :], control_labels[train])</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>control_accuracy <span class="op">=</span> _accuracy(</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    control_probe, residuals[test, layer, :], control_labels[test]</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>selectivity <span class="op">=</span> probe_accuracy <span class="op">-</span> control_accuracy</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>safety_case.py</code> after the probe</td>
+<td style="text-align: right;">13 lines</td>
+<td>the task probe must outperform an equal-capacity shuffled-label control on held-out states</td>
+</tr>
+</tbody>
+</table>
+<p>Selectivity is still dataset-relative. Use train/test separation by source, topic, template, and time where those factors may leak the concept. Compare layers, token positions, regularization strengths, nonlinear probes, and simple baselines. If a feature disappears under a paraphrase, the probe found a surface correlate rather than the claimed invariant.</p>
+</section>
+<section id="decompose-superposition-with-sparse-features" class="level3" data-number="25.6.3">
+<h3 data-number="25.6.3" class="anchored" data-anchor-id="decompose-superposition-with-sparse-features"><span class="header-section-number">25.6.3</span> Decompose superposition with sparse features</h3>
+<p>A neuron need not represent one human concept. Models can store more features than dimensions by superposing directions, so individual coordinates may be <strong>polysemantic</strong>. A sparse autoencoder (SAE) learns an overcomplete feature basis. One common form is</p>
+<p>[ =(_e+_e), =_d+_d, ]</p>
+<p>with objective</p>
+<p>[ = -_2^2 +_1. ]</p>
+<p>The reconstruction term retains information; the sparsity term encourages few active features. Researchers then inspect top-activating examples, use automated labels, test feature activation on held-outs, and intervene on selected features.</p>
+<p>An SAE feature is a learned coordinate, not an ontology entry. Feature splitting can represent one concept across several latents; feature absorption can mix a specific feature into a broader one; dead features never activate; reconstruction error leaves information outside the dictionary. Results depend on training corpus, sparsity, dictionary width, location, and model checkpoint. Report all of them, along with reconstruction quality and intervention tests. In the artifact, SAE evidence is supported by the schema but omitted from the toy measurement because training a dictionary on a hand-designed eight-dimensional fixture would add ceremony without teaching the scaling problem.</p>
+</section>
+<section id="intervene-before-claiming-causality" class="level3" data-number="25.6.4">
+<h3 data-number="25.6.4" class="anchored" data-anchor-id="intervene-before-claiming-causality"><span class="header-section-number">25.6.4</span> Intervene before claiming causality</h3>
+<p>If a probe finds direction (mathbf{v}), an activation intervention forms</p>
+<p>[ ’<em>{,t}=</em>{,t}+. ]</p>
+<p>Varying (alpha) produces a dose response. Addition, subtraction, ablation, and patching from a clean run into a corrupted run ask related causal questions. A behavioral change after intervention is stronger than decodability alone, but it remains local: the edit may shift many entangled features, damage general capability, or fail on other prompts. Measure target behavior, off-target behavior, utility, and reversibility across a preregistered prompt set.</p>
+<p><a href="#fig-ch25-diagnostics" class="quarto-xref">Figure&nbsp;<span>25.3</span></a> plots all three measurements from the same fixture. Shapes, labels, and line styles carry the distinctions without relying on color.</p>
+<div id="cell-fig-ch25-diagnostics" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib_inline.backend_inline <span class="im">import</span> set_matplotlib_formats</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>set_matplotlib_formats(<span class="st">"svg"</span>, metadata<span class="op">=</span>{<span class="st">"Date"</span>: <span class="va">None</span>})</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>chapter_code <span class="op">=</span> Path(<span class="st">"code/ch25"</span>).resolve()</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">str</span>(chapter_code) <span class="kw">not</span> <span class="kw">in</span> sys.path:</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    sys.path.insert(<span class="dv">0</span>, <span class="bu">str</span>(chapter_code))</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> safety_case <span class="im">import</span> build_safety_case, plot_diagnostics</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>report <span class="op">=</span> build_safety_case()</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>fig <span class="op">=</span> plot_diagnostics(report)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="fig-ch25-diagnostics" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Three panels show synthetic results. Risk-token margin rises across six residual layers. Held-out probe accuracy is one while shuffled-control accuracy is one half. As steering dose rises from zero to two, risk rate falls from one toward zero while cosine utility also falls.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch25-diagnostics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="25-alignment-interpretability-governance_files/figure-html/fig-ch25-diagnostics-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;25.3: Synthetic local measurements: a layerwise margin strengthens, the real-label probe beats its shuffled control, and stronger steering reduces both the risk proxy and a cosine utility proxy."><img src="25-alignment-interpretability-governance_files/figure-html/fig-ch25-diagnostics-output-1.svg" class="img-fluid figure-img" alt="Three panels show synthetic results. Risk-token margin rises across six residual layers. Held-out probe accuracy is one while shuffled-control accuracy is one half. As steering dose rises from zero to two, risk rate falls from one toward zero while cosine utility also falls."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch25-diagnostics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;25.3: Synthetic local measurements: a layerwise margin strengthens, the real-label probe beats its shuffled control, and stronger steering reduces both the risk proxy and a cosine utility proxy.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The first panel establishes layerwise decodability in a fixture whose generating process is known. The second says the linear readout generalizes better than an equal-capacity control. The third supplies a causal response and exposes a tradeoff: the largest edit suppresses the target proxy while moving the state far from its original direction. The plot does not establish an aligned objective, a production steering dose, or a deployment control.</p>
+<p>Use the evidence ladder to limit language:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Instrument</th>
+<th>Defensible claim</th>
+<th>Required countertest</th>
+<th>Claim it does not establish</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Logit or tuned lens</td>
+<td>token evidence is decodable at this location</td>
+<td>alternative tokens, prompts, positions, translator held-out test</td>
+<td>the model used that token evidence causally</td>
+</tr>
+<tr class="even">
+<td>Probe</td>
+<td>this label is decodable by this probe on held-outs</td>
+<td>shuffled/nuisance controls and split audits</td>
+<td>the policy represents one human concept or relies on it</td>
+</tr>
+<tr class="odd">
+<td>SAE feature</td>
+<td>a sparse learned direction groups these activations</td>
+<td>reconstruction, stability, splitting, activation and intervention tests</td>
+<td>the feature label is complete or uniquely correct</td>
+</tr>
+<tr class="even">
+<td>Steering or patching</td>
+<td>this intervention changes measured downstream behavior</td>
+<td>dose response, negative controls, off-target and distribution tests</td>
+<td>the direction is a safe global control</td>
+</tr>
+</tbody>
+</table>
+<p>The production implication is modest and valuable: internal tools generate hypotheses, localize regressions, and add evidence to an audit. Preserve activation samples, hook specifications, feature dictionaries, probe code, data lineage, and negative results. Do not convert “we found a direction” into “we found the model’s goal.”</p>
+</section>
+</section>
+<section id="sec-ch25-traces" class="level2" data-number="25.7">
+<h2 data-number="25.7" class="anchored" data-anchor-id="sec-ch25-traces"><span class="header-section-number">25.7</span> Reasoning traces are monitorable, not ground truth</h2>
+<p>Reasoning-capable systems may emit a scratchpad, chain of thought, plan, tool-call rationale, or compact summary. These artifacts are <strong>traces</strong>: model-generated text available to a monitor. They can expose unsafe intent before an action, make reward hacking easier to spot, and help classify why a trajectory changed. They are operationally useful precisely because they are legible and cheap compared with white-box activation analysis.</p>
+<p>Legibility is not faithfulness. A trace can omit a causal cue, rationalize a choice after the fact, use an internal representation that has no natural-language counterpart, or adapt when it knows the trace is monitored. Controlled intervention studies demonstrate this gap by changing a hidden or biasing input, observing that the answer changes, and checking whether the trace mentions the cause. Failure to mention it is evidence against faithfulness for that setup.</p>
+<p>Separate three properties:</p>
+<ol type="1">
+<li><strong>Outcome validity:</strong> did the final answer or action satisfy the task?</li>
+<li><strong>Monitorability:</strong> can a declared monitor detect a safety-relevant property from the available trace?</li>
+<li><strong>Faithfulness:</strong> does the trace expose the factors that actually caused the model’s decision?</li>
+</ol>
+<p>A trace can be highly monitorable for explicit phrases yet incomplete as a causal account. It can also be faithful about one factor while omitting another. Measure monitorability as an ordinary detection problem with labeled positive and negative trajectories, false-positive costs, distribution splits, and adversarial pressure. Measure faithfulness with interventions: insert, remove, or perturb a factor; establish that behavior changes; then test whether the trace and monitor identify that factor.</p>
+<p>Do not train against the same trace monitor without testing whether behavior becomes less legible. Penalizing suspicious language can teach euphemism or omission while leaving the underlying action policy intact. Keep outcome and effect monitors, internal diagnostics, and final action controls independent. A trace alert may raise scrutiny, route to a stronger evaluator, or deny a risky action. Absence of an alert is not an inability proof.</p>
+<p>Reasoning traces also create data-governance obligations. They may contain personal data, secrets copied from tools, security-sensitive plans, or proprietary intermediate work. Collect only the trace surface needed for the declared monitor; separate access to raw traces from ordinary product logs; define retention, redaction, and deletion; and record which model and prompt produced each trace. Chapter 27 owns live privacy and incident operations. Here the invariant is narrower: a monitorable trace is one sensor in a defense-in-depth case, never privileged access to the model’s true thoughts.</p>
+</section>
+<section id="sec-ch25-capability-evals" class="level2" data-number="25.8">
+<h2 data-number="25.8" class="anchored" data-anchor-id="sec-ch25-capability-evals"><span class="header-section-number">25.8</span> Capability evaluations must include elicitation</h2>
+<p>A dangerous-capability evaluation asks whether a system can materially advance a threat-relevant task. Domains may include cyber operations, chemical or biological misuse, harmful persuasion, autonomous operation, or acceleration of AI research. Knowledge-only multiple-choice tests can screen cheaply; realistic agent tasks test planning, tool use, persistence, and successful effects. Neither score means much until the evaluated system and assistance envelope are specified.</p>
+<p>Define the <strong>system under evaluation</strong> as more than model weights. Include prompt, sampler, reasoning budget, tool permissions, retrieval, memory, agent scaffold, retries, parallelism, fine-tuning, and human assistance. <strong>Capability elicitation</strong> is the disciplined attempt to make the system perform near the upper range plausibly accessible to actors in the threat model. It can include prompt optimization, task decomposition, tool access, scaffold variants, larger inference budgets, or limited domain fine-tuning inside a controlled environment.</p>
+<p>Let (S(e)) be the measured score under elicitation configuration (e), and let (mathcal{E}) be the set of plausible configurations the evaluation covered. A useful observed bound is</p>
+<p>[ S_{}=_{e}S(e). ]</p>
+<p>This is still a lower bound on what may become accessible under a better configuration outside (mathcal{E}). A low unassisted score is therefore not evidence of inability when a plausible attacker can add tools, search, fine-tuning, or a better scaffold. Report the elicitation envelope and unresolved gaps next to the score.</p>
+<p>An evaluation package should contain:</p>
+<ul>
+<li>a threat model connecting task performance to harm, including prerequisites outside the model;</li>
+<li>a task suite with contamination controls, held-outs, and domain-expert review;</li>
+<li>the complete system and elicitation matrix, including failed attempts;</li>
+<li>valid outcome measurement, human baselines where useful, uncertainty, and sensitivity to budget;</li>
+<li>safety handling for hazardous data, environments, artifacts, and evaluator access;</li>
+<li>integrity checks for evaluation awareness, sandbagging, grader exploitation, and infrastructure failure;</li>
+<li>a threshold chosen before final results and an owner for the triggered action.</li>
+</ul>
+<p>Sandbagging and evaluation awareness attack the inference from “failed here” to “cannot do this.” Use hidden canaries and held-outs, vary surface cues, compare semantically equivalent tasks, test capability on adjacent benign tasks, inspect learning curves across assistance, and use independent evaluators where the risk warrants it. A password-locked or selectively underperforming model can preserve capability while depressing one score. No single check rules this out; record residual uncertainty.</p>
+<p>Dangerous evaluations require containment. Use synthetic, deweaponized, or access-controlled tasks when they answer the measurement question; isolate networks and credentials; prevent artifacts from reaching real targets; review release of prompts and traces; and establish emergency stop authority. Chapter 24 supplies the enforcement boundary. Evaluation realism does not authorize uncontrolled harm.</p>
+<p>The safety-case fixture makes under-elicitation machine-readable. Claim <code>G2</code> reports a score below its threshold, but its coverage is <code>0.55</code> against a declared minimum of <code>0.8</code>, and the sandbagging check remains open. The claim is a gap despite the nominally passing score. When the test raises coverage and closes the integrity check, the same rule supports the scoped inability argument. This is the correct asymmetry: evidence of capability can defeat an inability claim quickly; absence of capability needs a credible search for it.</p>
+</section>
+<section id="sec-ch25-safety-cases" class="level2" data-number="25.9">
+<h2 data-number="25.9" class="anchored" data-anchor-id="sec-ch25-safety-cases"><span class="header-section-number">25.9</span> Safety cases turn evidence into deployment claims</h2>
+<p>A model report can contain hundreds of metrics and still leave the decision implicit. A <strong>safety case</strong> is a structured, reviewable argument that a system is acceptably safe for a stated scope and operating context, supported by evidence. It does not prove zero risk. It makes the claim, assumptions, reasoning, evidence, residual uncertainty, and decision rule inspectable.</p>
+<p>Begin with a top claim such as: “Candidate C is acceptably safe for a sandboxed public-web research deployment with no secrets or production authority.” Decompose it by hazards, not organizational teams. For each hazard, choose an argument pattern:</p>
+<ul>
+<li><strong>Inability:</strong> the system lacks a capability needed to realize the harm under a sufficiently strong elicitation envelope.</li>
+<li><strong>Control:</strong> assume the capability or intent may be present, but tested technical and operational controls interrupt every material path to harm.</li>
+<li><strong>Trustworthiness:</strong> evidence supports that the capable system will act according to the intended objective in the relevant situations.</li>
+<li><strong>Deference:</strong> a more capable trusted process supplies assurance humans cannot directly produce. This remains a research-dependent pattern and should not be smuggled into ordinary model-assisted review.</li>
+</ul>
+<p>Control arguments are often stronger for agent deployment because they make fewer claims about learned intent. The Chapter 24 policy enforcement point can deny a credential read even if the model proposes it strategically. An inability argument may be appropriate for a capability that cannot be safely controlled after release, but only if task coverage and elicitation justify it. Trustworthiness arguments demand convergent evidence and explicit counterevidence; a probe and steering response alone do not establish a stable objective.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>flowchart TB</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    G0["G0: acceptably safe for&lt;br/&gt;declared sandbox scope"] --&gt; G1["G1 critical: unauthorized&lt;br/&gt;credential access"]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    G0 --&gt; G2["G2 critical: autonomous&lt;br/&gt;replication capability"]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    G0 --&gt; G3["G3 high: hidden objective"]</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    G1 --&gt; A1["Control argument"] --&gt; C1["Final policy enforcement point"] --&gt; E1["Passing hostile-proposal&lt;br/&gt;containment test"]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    G2 --&gt; A2["Inability argument"] --&gt; E2["Low observed score"]</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    E2 --&gt; X2{"Elicitation and&lt;br/&gt;sandbagging checks complete?"}</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    G3 --&gt; A3["Trustworthiness argument"] --&gt; E3["Lens + probe + steering&lt;br/&gt;diagnostics"]</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    E3 --&gt; X3{"Independent evidence and&lt;br/&gt;counterevidence resolved?"}</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    X2 --&gt;|"no: critical gap"| D["BLOCK deployment"]</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    X3 --&gt;|"no: high gap"| D</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch25-safety-case" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch25-safety-case-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch25-safety-case">flowchart TB
+    G0["G0: acceptably safe for&lt;br/&gt;declared sandbox scope"] --&gt; G1["G1 critical: unauthorized&lt;br/&gt;credential access"]
+    G0 --&gt; G2["G2 critical: autonomous&lt;br/&gt;replication capability"]
+    G0 --&gt; G3["G3 high: hidden objective"]
+    G1 --&gt; A1["Control argument"] --&gt; C1["Final policy enforcement point"] --&gt; E1["Passing hostile-proposal&lt;br/&gt;containment test"]
+    G2 --&gt; A2["Inability argument"] --&gt; E2["Low observed score"]
+    E2 --&gt; X2{"Elicitation and&lt;br/&gt;sandbagging checks complete?"}
+    G3 --&gt; A3["Trustworthiness argument"] --&gt; E3["Lens + probe + steering&lt;br/&gt;diagnostics"]
+    E3 --&gt; X3{"Independent evidence and&lt;br/&gt;counterevidence resolved?"}
+    X2 --&gt;|"no: critical gap"| D["BLOCK deployment"]
+    X3 --&gt;|"no: high gap"| D
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch25-safety-case-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;25.4: How does a scoped top claim decompose into arguments, controls, evidence, and a fail-closed release decision?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The graph prevents evidence laundering. <code>E-LENS</code> may support a statement about decoded margin, not <code>G0</code> directly. <code>E-CONTAINMENT</code> supports the named control under a tested scope; it does not prove the model lacks a hidden objective. Each edge should have a written warrant explaining why the evidence bears on the claim.</p>
+<p>Review evidence on seven dimensions: relevance to the claim, construct validity, coverage of the threat model, independence from other evidence, freshness relative to the candidate, traceability to immutable artifacts, and falsifiability. “Independent” means failure modes differ, not merely that two dashboards display the same underlying benchmark. A probe and an SAE trained on the same activations may be correlated. A black-box behavioral audit, causal intervention, data-lineage analysis, and external control test provide more diverse failure modes.</p>
+<p>The artifact encodes narrow rules rather than a weighted safety score. The control branch rejects controls supported only by diagnostic evidence; the inability branch requires a below-threshold score, minimum elicitation coverage, a closed sandbagging check, and passing evidence; the trustworthiness branch requires independent non-diagnostic evidence classes and no unresolved counterevidence. The core inability logic in <code>evaluate_claim</code> is small enough to inspect:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- inability argument rule ---</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>capability <span class="op">=</span> claim[<span class="st">"capability"</span>]</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> capability[<span class="st">"score"</span>] <span class="op">&gt;</span> capability[<span class="st">"threshold"</span>]:</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    reasons.append(<span class="st">"capability score exceeds the deployment threshold"</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> capability[<span class="st">"elicitation_coverage"</span>] <span class="op">&lt;</span> capability[<span class="st">"required_coverage"</span>]:</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    reasons.append(<span class="st">"elicitation coverage is below the declared minimum"</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> capability.get(<span class="st">"sandbagging_check"</span>) <span class="op">!=</span> <span class="st">"pass"</span>:</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    reasons.append(<span class="st">"evaluation-integrity or sandbagging checks remain open"</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> _passing(evidence_by_id, claim.get(<span class="st">"evidence"</span>, [])):</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    reasons.append(<span class="st">"capability evidence is missing or failing"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>safety_case.py</code> after claim evaluation</td>
+<td style="text-align: right;">10 lines shown</td>
+<td>a low score cannot support inability while elicitation or integrity checks remain open</td>
+</tr>
+</tbody>
+</table>
+<p>A real safety case needs assumptions, defeaters, uncertainty, owners, and links to signed evidence, not only the fixture’s JSON. It also needs configuration control. Any material change to weights, system prompt, tools, permissions, scaffold, data, or deployment population can invalidate an edge. Reopen affected claims rather than editing a verdict in place. Store prior cases so reviewers can see which evidence changed and why.</p>
+<p>Appendix B carries the reusable review template; the mechanism here explains why each field exists and how a claim should fail when its evidence is insufficient.</p>
+</section>
+<section id="sec-ch25-governance" class="level2" data-number="25.10">
+<h2 data-number="25.10" class="anchored" data-anchor-id="sec-ch25-governance"><span class="header-section-number">25.10</span> Governance turns thresholds into commitments</h2>
+<p>A threshold without a precommitted action is an alert, not governance. Effective governance states what is measured, where the boundary lies, what happens on each side, who decides, who can challenge the evidence, and how an exception expires.</p>
+<p>Use three kinds of trigger for different jobs:</p>
+<ol type="1">
+<li><strong>Resource triggers</strong> use training compute or another development input to require notice, evaluation, security, or documentation before capability is known. They are observable early but only proxy for risk.</li>
+<li><strong>Capability triggers</strong> use elicited performance tied to a threat model. They connect more directly to harm but depend on task validity, elicitation, and evaluator integrity.</li>
+<li><strong>Deployment triggers</strong> use access, autonomy, tool authority, user population, and exposure. The same model behind a narrow API and inside an autonomous privileged agent presents different risk.</li>
+</ol>
+<p>A robust policy composes them. A resource trigger can require an evaluation package. A capability trigger can require stronger model-weight security or deployment controls. An exposure trigger can prohibit a privileged launch until a control case passes. Keep the units and evidence separate; adding them into one risk number hides which assumption failed.</p>
+<p>Route A readers can feed Chapter 6’s training-compute accounting into a resource trigger. Route B does not need that derivation here: it needs a versioned quantity, the exact definition used by the governing policy or law, and an explicit action when the threshold is crossed.</p>
+<p>Write the decision loop before the candidate arrives:</p>
+<ul>
+<li>define hazard owners, thresholds, and required evidence;</li>
+<li>run evaluations under a versioned elicitation envelope;</li>
+<li>have reviewers independent enough to challenge task validity and control coverage;</li>
+<li>record the release authority’s decision, dissent, assumptions, and expiry;</li>
+<li>stage deployment with only the authority supported by the case;</li>
+<li>monitor leading indicators, control health, and incidents;</li>
+<li>reopen the case when a threshold, system component, threat model, or law changes.</li>
+</ul>
+<p>Organizational independence is a control with degrees, not a job-title checkbox. The team that built an evaluation knows its details; an independent reviewer is better positioned to challenge motivated interpretation. Use both. Give reviewers access to raw evidence and authority to delay release. Separate approval of the measurement design from acceptance of residual risk when stakes warrant it. Record conflicts and time-bounded waivers.</p>
+<p>Responsible-scaling policies operationalize this pattern for frontier development: define risk domains, evaluate before or near capability thresholds, attach stronger safeguards to higher levels, and publish or internally record decisions. Their exact categories and versions change. The durable engineering lesson is precommitment. If leadership can redefine the threshold, discount a failed evaluation, or substitute an untested safeguard after seeing results without a recorded exception path, the framework does not constrain the decision.</p>
+<p>Governance also needs uncertainty handling. A threshold is not a metaphysical line between safe and unsafe. Use confidence intervals where the statistic supports them, sensitivity analyses across elicitation settings, explicit evidence gaps, and conservative buffers when harm is asymmetric. “Unable to conclude” must map to an action such as more evaluation, reduced authority, delayed release, or a control-based argument. It must not silently become approval.</p>
+</section>
+<section id="sec-ch25-regulation" class="level2" data-number="25.11">
+<h2 data-number="25.11" class="anchored" data-anchor-id="sec-ch25-regulation"><span class="header-section-number">25.11</span> Regulation is an engineering interface</h2>
+<p>Legal text, voluntary standards, contracts, and internal policies become useful to engineering only after they are mapped to systems and evidence. Maintain an <strong>applicability matrix</strong> keyed by jurisdiction, organizational role, model or system category, intended use, affected population, and effective period. Counsel owns legal interpretation; engineering owns accurate system facts and implementable controls.</p>
+<p>Translate each applicable obligation into five fields:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Engineering question</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Requirement</td>
+<td>What outcome, process, disclosure, or prohibition is demanded?</td>
+</tr>
+<tr class="even">
+<td>Scope</td>
+<td>Which model, system, deployment, user, and jurisdiction does it cover?</td>
+</tr>
+<tr class="odd">
+<td>Control</td>
+<td>What technical or organizational mechanism realizes it?</td>
+</tr>
+<tr class="even">
+<td>Evidence</td>
+<td>What artifact demonstrates operation: test, log, assessment, report, or approval?</td>
+</tr>
+<tr class="odd">
+<td>Lifecycle</td>
+<td>Who owns it, when is it refreshed, and what change invalidates it?</td>
+</tr>
+</tbody>
+</table>
+<p>Do not equate a policy statement with a control or a control with evidence. “We prevent discriminatory outcomes” is a goal. A documented decision process, representative evaluation, appeal path, monitored production slice, and accountable owner are candidate mechanisms and evidence, each with limits. Likewise, an interpretability dashboard may help an investigation but seldom discharges a broad requirement by itself.</p>
+<p>Compute thresholds illustrate why legal and technical taxonomies must remain joined but distinct. Compute can be measured before deployment and may trigger duties, yet post-training, scaffolding, tool use, compression, and distribution can change practical capability. Track the legally defined quantity exactly while also maintaining capability and exposure assessments. Never silently substitute an internal estimate for a statutory definition.</p>
+<p>Build regulatory change as a data pipeline. Version the source text and counsel’s interpretation; link requirements to case claims, controls, evidence, and products; notify owners when a source or system changes; and retain the decision history. Test the matrix with counterexamples: a model acquired from another provider, an internal high-impact use, an open-weight release, a fine-tuned derivative, and a system deployed across jurisdictions. Appendix C owns the living regulatory catalog; Chapter 28 owns the broader management system. This chapter’s invariant is that every compliance claim must resolve to current scope, an owned control, and auditable evidence.</p>
+</section>
+<section id="sec-ch25-landscape" class="level2" data-number="25.12">
+<h2 data-number="25.12" class="anchored" data-anchor-id="sec-ch25-landscape"><span class="header-section-number">25.12</span> Landscape 2026 (dated)</h2>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Technical and governance frontier
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>As of 2026-07-19, experimental work has demonstrated alignment faking under constructed training conditions, in-context scheming under explicit goals and incentives, selective sandbagging, emergent misalignment after narrow fine-tuning, and blind audits of deliberately implanted hidden objectives. These are capability and model-organism results, not prevalence estimates for deployed models. Sparse-autoencoder work has scaled feature extraction to production-sized transformers, while later auditing benchmarks continue to find that white-box tools are useful but not sufficient. Chain-of-thought monitorability is an active evaluation target; current results support treating traces as a potentially valuable but fragile sensor.</p>
+<p>Versioned company frameworks currently include Anthropic’s Responsible Scaling Policy version 3.4, effective 2026-07-08; OpenAI’s Preparedness Framework version 2; and Google DeepMind’s Frontier Safety Framework 3.1 update. Their thresholds, domains, governance bodies, and mitigation language are living commitments, not interchangeable standards.</p>
+<p>The European Commission states that the EU AI Act entered into force on 2024-08-01; obligations for providers of general-purpose AI models began applying on 2025-08-02; and Commission enforcement powers for those obligations begin on 2026-08-02. Current Commission guidance uses training compute above (10^{25}) FLOP as a rebuttable presumption of systemic risk and permits designation below that threshold. Application dates for other high-risk provisions have been subject to later implementation and simplification measures, so teams should not rely on an old timeline graphic.</p>
+<p>In the United States, requirements remain distributed across federal actions, sectoral law, procurement, and state legislation. California’s enacted Transparency in Frontier Artificial Intelligence Act requires covered large frontier developers to publish and follow frontier AI frameworks, report specified incidents, and make model-related disclosures; its enacted text defines a frontier-model compute threshold of (10^{26}) operations and provides for periodic review of definitions. NIST AI RMF 1.0 remains a voluntary framework organized around Govern, Map, Measure, and Manage, with a Generative AI Profile; NIST reports that AI RMF 1.0 is being revised.</p>
+<p><strong>Verify live: 2026-07-19.</strong> Recheck the official <a href="https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai">EU AI Act implementation page</a>, <a href="https://digital-strategy.ec.europa.eu/en/faqs/guidelines-obligations-general-purpose-ai-providers">GPAI provider guidance</a>, <a href="https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202520260SB53">California SB 53 text</a>, <a href="https://www.nist.gov/itl/ai-risk-management-framework">NIST AI RMF page</a>, and current counsel before making a compliance claim. Recheck the official <a href="https://www.anthropic.com/responsible-scaling-policy">Anthropic RSP</a>, <a href="https://openai.com/index/updating-our-preparedness-framework/">OpenAI Preparedness Framework</a>, and <a href="https://deepmind.google/blog/strengthening-our-frontier-safety-framework/">Google DeepMind Frontier Safety Framework</a> before relying on a named version. For research status, revisit the primary papers and artifacts in the notes rather than carrying model-specific findings forward as constants.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch25-build" class="level2" data-number="25.13">
+<h2 data-number="25.13" class="anchored" data-anchor-id="sec-ch25-build"><span class="header-section-number">25.13</span> Build</h2>
+<p>The integrated artifact consists of <a href="../code/ch25/safety_case.py">safety_case.py</a>, the <a href="../code/ch25/fixtures/deployment.json">deployment fixture</a>, and focused <a href="../code/ch25/tests/test_safety_case.py">tests</a>. NumPy is required for the deterministic activation fixture; Matplotlib is required only for the chapter figure. From <code>newbook/</code>, run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> unittest discover <span class="at">-s</span> code/ch25/tests <span class="at">-v</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch25/safety_case.py</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch25/safety_case.py <span class="at">--enforce</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The first two commands exit zero. The final command intentionally exits with status <code>2</code> because the declared release gate blocks the candidate. Read its JSON in this order:</p>
+<ol type="1">
+<li><code>interpretability.lens_margin</code> rises from <code>0.0379</code> to <code>1.2179</code> across the six synthetic layers. The fixture makes the risk direction increasingly decodable.</li>
+<li><code>probe.accuracy = 1.0</code>, <code>control_accuracy = 0.5</code>, and <code>selectivity = 0.5</code>. The task probe generalizes while its shuffled-label control remains at chance for this balanced fixture.</li>
+<li>Steering dose <code>alpha = 2.0</code> lowers the synthetic risk rate from <code>1.0</code> to <code>0.0833</code>, while the cosine utility proxy falls from <code>1.0</code> to <code>0.0478</code>. The intervention has a target effect and a large off-target movement.</li>
+<li>Claim <code>G1</code> is <code>supported</code>. Its control argument cites a passing hostile-proposal test at the final enforcement point. It does not rely on the model’s internals.</li>
+<li>Claim <code>G2</code> is a <code>gap</code> even though its capability score is below threshold. Elicitation coverage is below the predeclared minimum, and the sandbagging check is open.</li>
+<li>Claim <code>G3</code> is a <code>gap</code>. Lens, probe, and steering items all remain diagnostic evidence, fewer than two independent non-diagnostic evidence classes support trustworthiness, and counterevidence is unresolved.</li>
+<li>Because <code>G2</code> is critical and <code>G3</code> is high severity, <code>decision = BLOCK</code>.</li>
+</ol>
+<section id="acceptance-checks" class="level3" data-number="25.13.1">
+<h3 data-number="25.13.1" class="anchored" data-anchor-id="acceptance-checks"><span class="header-section-number">25.13.1</span> Acceptance checks</h3>
+<p>The build is complete when all eight tests pass; two consecutive reports are identical; the real-label probe beats its control; steering changes both the target and utility proxy; diagnostic-only evidence cannot validate a control; the under-elicited inability claim fails; fixing its coverage and integrity fields makes that scoped claim pass; dangling evidence IDs are rejected; and enforcement exits nonzero for the unresolved integrated case.</p>
+</section>
+<section id="deliberate-breaks" class="level3" data-number="25.13.2">
+<h3 data-number="25.13.2" class="anchored" data-anchor-id="deliberate-breaks"><span class="header-section-number">25.13.2</span> Deliberate breaks</h3>
+<p>First, edit a copy of the fixture so <code>G1</code> cites <code>E-PROBE</code> and <code>E-STEER</code> instead of <code>E-CONTAINMENT</code>. Validation succeeds because the IDs exist, but claim evaluation returns a gap: internal diagnostics do not test the external control. Next, set <code>G2.capability.elicitation_coverage</code> to <code>0.9</code> without closing <code>sandbagging_check</code>; the claim still fails. Finally, close that check and rerun. Only the inability branch changes. The top decision remains blocked because <code>G3</code> is unresolved.</p>
+<p>These breaks distinguish schema validity, evidence sufficiency, and release policy. A well-formed case can be unsupported. One repaired claim need not repair the top claim. The graph, not a weighted average, preserves the blocking reason.</p>
+</section>
+<section id="honesty-note" class="level3" data-number="25.13.3">
+<h3 data-number="25.13.3" class="anchored" data-anchor-id="honesty-note"><span class="header-section-number">25.13.3</span> Honesty note</h3>
+<p>The residual states are generated from a known direction, so the interpretability results are easier than real model analysis. Probe labels are balanced, the control is one fixed shuffle, steering operates at one location, and the utility proxy is cosine similarity rather than task quality. The JSON case is an executable teaching schema, not a recognized assurance notation or legal filing. Its evidence items are assertions, not signed reports. A production system needs model hooks, protected datasets, domain experts, uncertainty analysis, independent review, immutable artifact digests, operational control tests, and an owner authorized to block release.</p>
+</section>
+</section>
+<section id="sec-ch25-endures" class="level2" data-number="25.14">
+<h2 data-number="25.14" class="anchored" data-anchor-id="sec-ch25-endures"><span class="header-section-number">25.14</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Alignment is a scoped claim about behavior and effective objectives, not a checkpoint property. Treat lenses, probes, sparse features, steering, and traces as instruments with bounded claims. Test decodability with controls and causality with interventions. Treat capability scores as lower bounds on an elicitation envelope. Build safety cases from explicit claims, warrants, evidence, assumptions, and defeaters. Prefer external control arguments when they reduce dependence on learned intent. Precommit thresholds to actions, fail closed on material evidence gaps, and map obligations to owned controls and auditable artifacts.</p>
+<p><strong>What changes.</strong> Interpretability algorithms, feature dictionaries, monitorability results, dangerous-capability suites, model-organism findings, company safety frameworks, compute thresholds, statutes, implementation dates, and regulatory guidance will change. Removing the Landscape 2026 block leaves the residual-stream primer, evidence ladder, elicitation rule, safety-case structure, and governance loop intact.</p>
+</section>
+<section id="sec-ch25-exercises" class="level2" data-number="25.15">
+<h2 data-number="25.15" class="anchored" data-anchor-id="sec-ch25-exercises"><span class="header-section-number">25.15</span> Exercises</h2>
+<ol type="1">
+<li>The fixture’s logit-lens margin increases at every layer. Add a second direction that is strong early and erased late. Plot both margins and explain why “appears early” and “drives the final output” are different claims.</li>
+<li>Replace the fixed shuffled-label control with twenty seeded shuffles. Report the control distribution and a confidence interval for selectivity. Split the data by a synthetic source group and test whether the conclusion survives group holdout.</li>
+<li>Add an SAE to the residual fixture with a wider latent dictionary and an (L_1) penalty. Measure reconstruction, dead features, and feature stability across three seeds. Determine whether any learned feature recovers the known direction without using its labels.</li>
+<li>Design a trace-faithfulness evaluation for a tool-using agent. Specify the hidden intervention, causal behavior check, monitor target, negative controls, and failure criterion. Explain how training against the monitor could invalidate the result.</li>
+<li>Extend <code>G2</code> with three elicitation configurations: base prompt, tool scaffold, and domain fine-tune. Define coverage without pretending it is an objective percentage of all possible assistance. Add a test that the best observed score, not the base score, is compared with the threshold.</li>
+<li>Add a medium-severity hazard whose case uses both a behavioral audit and an activation intervention. Write the warrant for each evidence edge, then add shared dataset contamination and decide whether the two items are still independent.</li>
+<li>Design-review exercise: a privileged coding agent passes public cyber benchmarks, exposes a strong “safe behavior” SAE feature, and suppresses suspicious language when steered. Its hidden evaluation suite has weak scaffold elicitation, while an external sandbox blocks network and credential access. Construct separate inability, trustworthiness, and control arguments; identify which claims fail; choose a deployment scope; and write the exact governance action triggered by each gap.</li>
+</ol>
+</section>
+<section id="sec-ch25-sources" class="level2" data-number="25.16">
+<h2 data-number="25.16" class="anchored" data-anchor-id="sec-ch25-sources"><span class="header-section-number">25.16</span> Notes and sources</h2>
+<ul>
+<li>Elhage et al., <a href="https://transformer-circuits.pub/2021/framework/index.html">“A Mathematical Framework for Transformer Circuits”</a>, develops the residual-stream view and additive transformer decomposition used by the primer.</li>
+<li>Belrose et al., <a href="https://arxiv.org/abs/2303.08112">“Eliciting Latent Predictions from Transformers with the Tuned Lens”</a>, studies learned layer translators and limitations of the plain logit lens.</li>
+<li>Hewitt and Liang, <a href="https://arxiv.org/abs/1909.03368">“Designing and Interpreting Probes with Control Tasks”</a>, motivates control tasks and selectivity for probe interpretation.</li>
+<li>Templeton et al., <a href="https://transformer-circuits.pub/2024/scaling-monosemanticity/">“Scaling Monosemanticity”</a>, reports sparse-autoencoder feature extraction at larger model scale and documents important limitations.</li>
+<li>Arditi et al., <a href="https://arxiv.org/abs/2406.11717">“Refusal in Language Models Is Mediated by a Single Direction”</a>, provides a concrete activation-steering and ablation study; its scope should not be generalized into a universal single-direction claim.</li>
+<li>Turpin et al., <a href="https://arxiv.org/abs/2305.04388">“Language Models Don’t Always Say What They Think”</a>, uses biasing interventions to demonstrate unfaithful chain-of-thought explanations.</li>
+<li>Anthropic, <a href="https://www.anthropic.com/research/reasoning-models-dont-say-think">“Reasoning models don’t always say what they think”</a>, studies faithfulness under controlled hints and reward-hacking setups and states the limitations of those experiments.</li>
+<li>OpenAI, <a href="https://openai.com/index/evaluating-chain-of-thought-monitorability/">“Evaluating chain-of-thought monitorability”</a>, defines intervention, process, and outcome-property evaluation families for trace monitors.</li>
+<li>Greenblatt et al., <a href="https://arxiv.org/abs/2412.14093">“Alignment Faking in Large Language Models”</a>, presents a constructed empirical demonstration of selective training compliance.</li>
+<li>Meinke et al., <a href="https://arxiv.org/abs/2412.04984">“Frontier Models are Capable of In-context Scheming”</a>, evaluates scheming behaviors under explicit goals and incentives.</li>
+<li>Betley et al., <a href="https://arxiv.org/abs/2502.17424">“Emergent Misalignment”</a>, reports broad behavioral changes after narrow insecure-code fine-tuning and includes contextual controls.</li>
+<li>van der Weij et al., <a href="https://arxiv.org/abs/2406.07358">“AI Sandbagging”</a>, demonstrates selective underperformance and capability-locking setups that challenge naive evaluation inference.</li>
+<li>Marks et al., <a href="https://arxiv.org/abs/2503.10965">“Auditing Language Models for Hidden Objectives”</a>, uses a deliberately trained hidden-objective model to validate alignment-auditing methods.</li>
+<li>Li et al., <a href="https://arxiv.org/abs/2403.03218">“The WMDP Benchmark”</a>, develops a hazardous-knowledge proxy benchmark with controlled public release.</li>
+<li>Zhang et al., <a href="https://arxiv.org/abs/2408.08926">“Cybench”</a>, evaluates cyber-capable language-model agents in executable capture-the-flag environments.</li>
+<li>METR, <a href="https://evaluations.metr.org/elicitation-protocol/">“Guidelines for Capability Elicitation”</a>, specifies practical elicitation and evaluation-validity checks for autonomous capability evaluation.</li>
+<li>Clymer et al., <a href="https://arxiv.org/abs/2403.10462">“Safety Cases: How to Justify the Safety of Advanced AI Systems”</a>, organizes advanced-AI safety arguments around inability, control, trustworthiness, and deference.</li>
+<li>Buhl et al., <a href="https://arxiv.org/abs/2410.21572">“Safety Cases for Frontier AI”</a>, discusses structured claims, evidence, and practical production of frontier-AI safety cases.</li>
+<li>NIST, <a href="https://airc.nist.gov/airmf-resources/airmf/">AI Risk Management Framework</a>, defines the Govern, Map, Measure, and Manage core used by many operational risk programs.</li>
+<li>NIST, <a href="https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-generative-artificial-intelligence">Generative AI Profile</a>, adapts the AI RMF to generative-AI risks and actions.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/24-agent-security.html" class="pagination-link" aria-label="Agent Security [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/26-production-platform.html" class="pagination-link" aria-label="The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

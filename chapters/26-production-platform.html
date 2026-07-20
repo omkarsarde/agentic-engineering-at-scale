@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Put identity, spend, recoverable effects, versioned state, and statistically defensible delivery around an agent.">
+
+<title>26&nbsp; The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/27-operating-agents.html" rel="next">
+<link href="../chapters/25-alignment-interpretability-governance.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/26-production-platform.html">Part VII — Production, Operations, and Organizations</a></li><li class="breadcrumb-item"><a href="../chapters/26-production-platform.html"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-you-need-going-in" id="toc-what-you-need-going-in" class="nav-link active" data-scroll-target="#what-you-need-going-in"><span class="header-section-number">26.1</span> What you need going in</a></li>
+  <li><a href="#contents" id="toc-contents" class="nav-link" data-scroll-target="#contents"><span class="header-section-number">26.2</span> Contents</a></li>
+  <li><a href="#sec-ch26-planes" id="toc-sec-ch26-planes" class="nav-link" data-scroll-target="#sec-ch26-planes"><span class="header-section-number">26.3</span> The platform is four planes, not one cluster</a></li>
+  <li><a href="#sec-ch26-artifact" id="toc-sec-ch26-artifact" class="nav-link" data-scroll-target="#sec-ch26-artifact"><span class="header-section-number">26.4</span> What you will build</a></li>
+  <li><a href="#sec-ch26-gateway" id="toc-sec-ch26-gateway" class="nav-link" data-scroll-target="#sec-ch26-gateway"><span class="header-section-number">26.5</span> One gateway owns identity, admission, and routing</a></li>
+  <li><a href="#sec-ch26-cost" id="toc-sec-ch26-cost" class="nav-link" data-scroll-target="#sec-ch26-cost"><span class="header-section-number">26.6</span> Price the journey and provision its constrained resource</a></li>
+  <li><a href="#sec-ch26-reliability" id="toc-sec-ch26-reliability" class="nav-link" data-scroll-target="#sec-ch26-reliability"><span class="header-section-number">26.7</span> Retries consume a deadline and an effect budget</a></li>
+  <li><a href="#sec-ch26-ledger" id="toc-sec-ch26-ledger" class="nav-link" data-scroll-target="#sec-ch26-ledger"><span class="header-section-number">26.8</span> Close the crash window with an effect ledger</a></li>
+  <li><a href="#sec-ch26-durable" id="toc-sec-ch26-durable" class="nav-link" data-scroll-target="#sec-ch26-durable"><span class="header-section-number">26.9</span> Choose checkpointing or durable execution by effect lifetime</a></li>
+  <li><a href="#sec-ch26-versioning" id="toc-sec-ch26-versioning" class="nav-link" data-scroll-target="#sec-ch26-versioning"><span class="header-section-number">26.10</span> Version and recover the complete artifact surface</a></li>
+  <li><a href="#sec-ch26-testing" id="toc-sec-ch26-testing" class="nav-link" data-scroll-target="#sec-ch26-testing"><span class="header-section-number">26.11</span> Test deterministic code as aggressively as model behavior</a></li>
+  <li><a href="#sec-ch26-delivery" id="toc-sec-ch26-delivery" class="nav-link" data-scroll-target="#sec-ch26-delivery"><span class="header-section-number">26.12</span> Deliver through gates, shadow traffic, and powered canaries</a></li>
+  <li><a href="#sec-ch26-build" id="toc-sec-ch26-build" class="nav-link" data-scroll-target="#sec-ch26-build"><span class="header-section-number">26.13</span> Build</a></li>
+  <li><a href="#sec-ch26-endures" id="toc-sec-ch26-endures" class="nav-link" data-scroll-target="#sec-ch26-endures"><span class="header-section-number">26.14</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch26-exercises" id="toc-sec-ch26-exercises" class="nav-link" data-scroll-target="#sec-ch26-exercises"><span class="header-section-number">26.15</span> Exercises</a></li>
+  <li><a href="#sec-ch26-sources" id="toc-sec-ch26-sources" class="nav-link" data-scroll-target="#sec-ch26-sources"><span class="header-section-number">26.16</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/26-production-platform.html">Part VII — Production, Operations, and Organizations</a></li><li class="breadcrumb-item"><a href="../chapters/26-production-platform.html"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch26" class="quarto-section-identifier"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-you-need-going-in" class="level2" data-number="26.1">
+<h2 data-number="26.1" class="anchored" data-anchor-id="what-you-need-going-in"><span class="header-section-number">26.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> production Python, HTTP APIs, SQL transactions, authentication versus authorization, retries, timeouts, containers, and basic continuous delivery.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/17-tool-harness-engineering.html#sec-ch17">Chapter 17</a> made tool effects explicit, <a href="../chapters/19-protocols-frameworks.html#sec-ch19">Chapter 19</a> introduced graph checkpointers, <a href="../chapters/22-evaluation.html#sec-ch22">Chapter 22</a> built the offline release argument, and <a href="../chapters/24-agent-security.html#sec-ch24">Chapter 24</a> put authorization at the final effect boundary. This chapter builds the platform around those mechanisms.</p>
+<p><strong>Not required:</strong> experience with an AI gateway, FinOps, workflow engine, property-based testing, or Kubernetes. Observability, SLOs, incident response, live review queues, and privacy operations belong to Chapter 27.</p>
+</blockquote>
+<blockquote class="blockquote">
+<p><strong>Route B backfill</strong></p>
+<ul>
+<li><strong>Chapter 10, goodput and cost sections (~6 pp).</strong> Read the serving-cost and goodput treatment in <a href="../chapters/10-serving-at-scale.html#sec-ch10">Serving at Scale</a> before the cost section here. Skipping it leaves the formulas usable but hides how continuous batching, cache reuse, prefill/decode imbalance, and admission control create the capacity envelope.</li>
+</ul>
+</blockquote>
+</section>
+<section id="contents" class="level2" data-number="26.2">
+<h2 data-number="26.2" class="anchored" data-anchor-id="contents"><span class="header-section-number">26.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch26-planes">The platform is four planes, not one cluster</a></li>
+<li><a href="#sec-ch26-artifact">What you will build</a></li>
+<li><a href="#sec-ch26-gateway">One gateway owns identity, admission, and routing</a></li>
+<li><a href="#sec-ch26-cost">Price the journey and provision its constrained resource</a></li>
+<li><a href="#sec-ch26-reliability">Retries consume a deadline and an effect budget</a></li>
+<li><a href="#sec-ch26-ledger">Close the crash window with an effect ledger</a></li>
+<li><a href="#sec-ch26-durable">Choose checkpointing or durable execution by effect lifetime</a></li>
+<li><a href="#sec-ch26-versioning">Version and recover the complete artifact surface</a></li>
+<li><a href="#sec-ch26-testing">Test deterministic code as aggressively as model behavior</a></li>
+<li><a href="#sec-ch26-delivery">Deliver through gates, shadow traffic, and powered canaries</a></li>
+<li><a href="#sec-ch26-build">Build</a></li>
+<li><a href="#sec-ch26-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch26-exercises">Exercises</a></li>
+<li><a href="#sec-ch26-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch26-planes" class="level2" data-number="26.3">
+<h2 data-number="26.3" class="anchored" data-anchor-id="sec-ch26-planes"><span class="header-section-number">26.3</span> The platform is four planes, not one cluster</h2>
+<p>At 16:40 on Friday, three product teams discover that their agents share one provider account. One team’s fallback loop retries a rate-limited request against two models, another prepends a large corpus on every turn, and a third runs an evaluation sweep. The account spends twenty-three thousand dollars before anyone can attribute the traffic to a tenant, release, or task. Disabling the only provider key stops the runaway loop—and every healthy application with it.</p>
+<p>The defect is not a missing dashboard. The organization has no enforcement point between application intent and scarce model capacity. A <strong>production platform</strong> gives every journey a trusted identity, explicit budget, routable capability, recoverable effect contract, complete version, and controlled release path. A <em>journey</em> is the whole user outcome, including model calls, retrieval, tools, retries, and review; one API request is only a hop within it.</p>
+<p>Separate the platform into four planes. The distinction is about responsibility, not necessarily four deployments:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Plane</th>
+<th>Owns</th>
+<th>Must not become</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>request</td>
+<td>authentication, admission, deadlines, routing, streaming, effect invocation</td>
+<td>a place where every product rule accumulates</td>
+</tr>
+<tr class="even">
+<td>data</td>
+<td>prompts, corpora, checkpoints, effect records, cache entries, receipts</td>
+<td>an unversioned collection of “temporary” state</td>
+</tr>
+<tr class="odd">
+<td>control</td>
+<td>catalogs, policies, budgets, release bundles, traffic allocation</td>
+<td>an eventually consistent path for per-request authorization</td>
+</tr>
+<tr class="even">
+<td>evidence</td>
+<td>traces, usage, eval results, lineage, audit exports</td>
+<td>hot-path authority whose outage blocks safe service by accident</td>
+</tr>
+</tbody>
+</table>
+<p>The request plane acts synchronously. The control plane publishes immutable configuration that request workers consume. The data plane stores both primary and derived state. The evidence plane records what occurred. Evidence can trigger a later control-plane change, but a trace collector should not decide whether a refund is authorized. That remains the final enforcement point from Chapter 24.</p>
+<p><a href="#fig-ch26-planes" class="quarto-xref">Figure&nbsp;<span>26.1</span></a> locates authority and evidence. A control-plane bundle is published ahead of traffic; the request path carries a verified bundle hash so a later trace can be interpreted against the exact rules it used.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    CLIENT["Client with virtual key"] --&gt; GATE["Request plane&lt;br/&gt;identity · budget · route · deadline"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    GATE --&gt; AGENT(["Agent runtime"])</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    AGENT --&gt; EFFECT["Effect gateway"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    CONTROL["Control plane&lt;br/&gt;catalog · policy · release bundle"] --&gt;|"atomic version pointer"| GATE</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    CONTROL --&gt;|"pinned model and tools"| AGENT</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    DATA[("Data plane&lt;br/&gt;corpus · cache · checkpoint&lt;br/&gt;effect ledger · receipt")]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    AGENT &lt;--&gt; DATA</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    EFFECT &lt;--&gt; DATA</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    GATE -. "usage + decision" .-&gt; EVIDENCE[("Evidence plane&lt;br/&gt;traces · evals · lineage · audit")]</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    AGENT -. "trajectory" .-&gt; EVIDENCE</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    EFFECT -. "authoritative receipt" .-&gt; EVIDENCE</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch26-planes" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch26-planes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch26-planes">flowchart LR
+    CLIENT["Client with virtual key"] --&gt; GATE["Request plane&lt;br/&gt;identity · budget · route · deadline"]
+    GATE --&gt; AGENT(["Agent runtime"])
+    AGENT --&gt; EFFECT["Effect gateway"]
+
+    CONTROL["Control plane&lt;br/&gt;catalog · policy · release bundle"] --&gt;|"atomic version pointer"| GATE
+    CONTROL --&gt;|"pinned model and tools"| AGENT
+    DATA[("Data plane&lt;br/&gt;corpus · cache · checkpoint&lt;br/&gt;effect ledger · receipt")]
+    AGENT &lt;--&gt; DATA
+    EFFECT &lt;--&gt; DATA
+
+    GATE -. "usage + decision" .-&gt; EVIDENCE[("Evidence plane&lt;br/&gt;traces · evals · lineage · audit")]
+    AGENT -. "trajectory" .-&gt; EVIDENCE
+    EFFECT -. "authoritative receipt" .-&gt; EVIDENCE
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch26-planes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;26.1: Where do request authority, durable state, release control, and operational evidence live?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Deployment topology follows constraints rather than fashion. A managed model API minimizes model-serving work and accelerates model substitution, but it creates provider availability, data-handling, quota, and network dependencies. Self-hosting gives control over weights, batching, isolation, and accelerators while adding serving expertise and capacity risk. On-premises or sovereign deployments can satisfy locality and procurement constraints at the cost of slower elasticity. Edge or hybrid systems reduce network latency and preserve an offline path, but memory, power, model size, and version convergence become first-class limits.</p>
+<p>Make the decision per workload and data class. The same organization may use a managed API for public drafting, a regional managed endpoint for tenant-private support, and a self-hosted small model for high-volume classification. Record residency, latency, availability, staffing, customization, isolation, update cadence, and exit cost. Chapter 27 converts residency and retention decisions into operated controls; Chapter 28 uses the staffing and substitution evidence for build-versus-buy.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 (dated)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Verify live: 2026-07-19. Appendix C owner: gateways, workflow engines, and deployment products.</strong> Current AI-gateway options include dedicated projects and AI extensions in general API gateways; current durable-execution choices include <a href="https://docs.temporal.io/">Temporal</a>, <a href="https://docs.restate.dev/foundations/key-concepts">Restate</a>, <a href="https://docs.dbos.dev/">DBOS</a>, and cloud workflow services. Managed accelerator endpoints, serverless GPU products, sovereign offerings, and supported regions change frequently. Select by the mechanism and verified service contract—identity propagation, policy enforcement, replay semantics, storage control, quotas, and failure behavior—not by the category label.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch26-artifact" class="level2" data-number="26.4">
+<h2 data-number="26.4" class="anchored" data-anchor-id="sec-ch26-artifact"><span class="header-section-number">26.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>The chapter artifact
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will build <a href="../code/ch26/mini_platform.py"><code>mini_platform.py</code></a>, one deterministic reference platform with an executable facade. <a href="../code/ch26/gateway_control.py"><code>gateway_control.py</code></a> owns identity, admission, routing, and retry policy; <a href="../code/ch26/effect_runtime.py"><code>effect_runtime.py</code></a> owns backpressure and crash-safe effects; and <a href="../code/ch26/release_gate.py"><code>release_gate.py</code></a> owns the canary decision. Together they settle metered usage, preserve stable effect identity, hash a complete release bundle, and gate promotion.</p>
+<p>The secondary <a href="../code/ch26/cost_curves.py"><code>cost_curves.py</code></a> derives the two quantitative questions that prose tends to obscure: when a prefix-cache write premium pays back, and how many independent canary cases are needed to have a stated chance of seeing a regression. The build deliberately uses injected clocks and a deterministic provider so every security and recovery claim has a focused test.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch26-gateway" class="level2" data-number="26.5">
+<h2 data-number="26.5" class="anchored" data-anchor-id="sec-ch26-gateway"><span class="header-section-number">26.5</span> One gateway owns identity, admission, and routing</h2>
+<p>An <strong>LLM gateway</strong> is the policy-controlled entry point to model inference. An <strong>AI gateway</strong> may additionally route embeddings, rerankers, media models, and safety classifiers. An <strong>MCP gateway</strong> mediates protocol servers and tools. The payloads differ, but the platform pattern is the same: authenticate the caller, derive trustworthy context, check policy and budgets, resolve a logical capability to a deployment, propagate a deadline, meter actual use, and emit evidence.</p>
+<p>A client header saying <code>tenant=bank-a</code> is data, not identity. Issue a <strong>virtual key</strong> or accept a verified workload token and map it server-side to tenant, project, allowed capabilities, environment, and budget. Never forward the platform’s broad provider key to an application. The gateway holds provider credentials and records the downstream account or deployment actually used.</p>
+<p>Admission occurs before expensive work. Reserve an estimate for the whole journey, not only the first model call. A request that can take eight agent steps, invoke a paid search tool, and fan out to four workers has a different maximum exposure than a single extraction call. Settle against authoritative provider usage and effect receipts, then release unused reservation. Under concurrency, reservations need an atomic counter or transactional ledger; checking a balance and incrementing it in separate operations overspends.</p>
+<p>The reference artifact makes the trust direction visible:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># gateway_control.py — identity and admission boundary</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> authenticate(<span class="va">self</span>, virtual_key, request_id, deadline_s):</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> virtual_key <span class="kw">not</span> <span class="kw">in</span> <span class="va">self</span>.keys:</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">PermissionError</span>(<span class="st">"unknown virtual key"</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    tenant, scopes <span class="op">=</span> <span class="va">self</span>.keys[virtual_key]</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> RequestContext(request_id, tenant, scopes, deadline_s)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> admit(<span class="va">self</span>, context, estimated_cost):</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    limit <span class="op">=</span> <span class="va">self</span>.limits[context.tenant]</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="va">self</span>.spend[context.tenant] <span class="op">+</span> estimated_cost <span class="op">&gt;</span> limit:</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> BudgetError(<span class="st">"tenant journey budget exhausted"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Production admission must atomically reserve outstanding cost; the small artifact has no concurrency and therefore says only that identity comes from the virtual key and a journey above its tenant limit is rejected before routing.</p>
+<p><strong>Routing</strong>, <strong>cascading</strong>, <strong>fallback</strong>, and <strong>hedging</strong> are different operations:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Operation</th>
+<th>Decision time</th>
+<th>Purpose</th>
+<th>Test oracle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>route</td>
+<td>before a call</td>
+<td>select a deployment satisfying capability, policy, locality, and health</td>
+<td>selected deployment is eligible</td>
+</tr>
+<tr class="even">
+<td>cascade</td>
+<td>after a valid low-cost result is graded insufficient</td>
+<td>escalate capability deliberately</td>
+<td>escalation rule and grader justify next tier</td>
+</tr>
+<tr class="odd">
+<td>fallback</td>
+<td>after an operational failure</td>
+<td>preserve availability with an equivalent contract</td>
+<td>only declared retryable failures change provider</td>
+</tr>
+<tr class="even">
+<td>hedge</td>
+<td>before the first attempt completes</td>
+<td>cut tail latency with a redundant attempt</td>
+<td>first valid result wins; loser is canceled and charged</td>
+</tr>
+</tbody>
+</table>
+<p>Resolve a product alias such as <code>support-answer</code> through capability filters first—schema support, context, modality, region, data class, release, and policy—then optimize cost or latency among eligible deployments. A cheap model that cannot satisfy the contract is not a candidate.</p>
+<p>Do not provider-shop around a policy refusal. If provider A refuses a harmful request, sending the same request to B until one complies converts resilience into a security bypass. The artifact permits fallback for overload, a connection reset, or rate limiting while time remains; authentication, invalid-request, and policy errors are terminal. Likewise, degraded mode is an application-declared smaller contract, such as “read-only answer without account action,” not the gateway quietly removing safety checks.</p>
+<p>A circuit breaker stops sending normal traffic to a failing deployment after a threshold, waits, then admits bounded probes. Its state is health evidence, not model-quality preference. Record fallback rate separately from escalation rate: rising fallback suggests provider or network health; rising escalation suggests task or routing quality.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>gateway_control.py</code> complete</td>
+<td style="text-align: right;">112 lines total; 12 shown</td>
+<td>An untrusted tenant field cannot select identity, an over-budget journey cannot start, and policy refusal cannot trigger provider shopping.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch26-cost" class="level2" data-number="26.6">
+<h2 data-number="26.6" class="anchored" data-anchor-id="sec-ch26-cost"><span class="header-section-number">26.6</span> Price the journey and provision its constrained resource</h2>
+<p>Per-token list price is an input to cost, not the answer. The useful unit is <strong>cost per successful business outcome</strong>. Attribute input, cached input, output, reasoning tokens, embeddings, reranking, tool charges, accelerator time, storage, network egress, and human review to one journey identity. Also retain failed and abandoned journeys: hiding them makes a retry-heavy system look efficient.</p>
+<p>For a journey with calls <span class="math inline">j=1,\ldots,m</span>, let <span class="math inline">x_j</span> and <span class="math inline">y_j</span> be metered input and output tokens, <span class="math inline">p^{(x)}_j</span> and <span class="math inline">p^{(y)}_j</span> their unit prices, <span class="math inline">u_j</span> other tool charges, and <span class="math inline">h</span> review cost. A first cost ledger is</p>
+<p><span class="math display">
+C_{\text{journey}}
+= \sum_{j=1}^{m}\left(x_jp^{(x)}_j+y_jp^{(y)}_j+u_j\right)+h.
+</span></p>
+<p>All prices must use the units declared by the provider; the code artifact converts per-million-token rates. Reconcile the unsampled billing ledger against sampled traces. Traces explain why cost occurred, but sampling them must never erase spend. Compare totals by provider invoice window, tenant, deployment, release, and usage class. Investigate missing usage, delayed adjustments, cached-token classification, and retries that lost their parent journey.</p>
+<p>Agent loops create hidden multipliers. A repeated system prompt pays input cost on every uncached turn. Parallel workers multiply shared context. A timeout followed by fallback may charge both providers. Long reasoning raises output and occupies decode capacity. A low-quality cheap model can cost more if it triggers retries, tool errors, or escalation. Set step, token, time, tool, concurrency, and currency budgets at the harness; enforce the currency reservation at the gateway.</p>
+<p>Caching has different correctness surfaces:</p>
+<ul>
+<li>a <strong>provider prefix cache</strong> reuses model-internal computation for byte- or token-identical prefixes;</li>
+<li>an <strong>exact response cache</strong> reuses an application result for the same correctness-scoped key;</li>
+<li>a <strong>semantic cache</strong> reuses a result for a merely similar query and therefore changes product semantics.</li>
+</ul>
+<p>Every cache key must include the scopes that can change correctness: tenant and permissions, model and adapter, prompt/template and tokenizer, tool schemas, corpus/index revision, policy, locale, time or freshness bucket, sampling contract, and output schema. Never share private prefixes or semantic responses across tenants without an explicit isolation proof. Chapter 10 owns KV and serving-cache isolation; Chapter 24 owns the threat model.</p>
+<p>Suppose an uncached prefix costs <span class="math inline">c</span>, writing it costs <span class="math inline">wc</span>, each cache read costs <span class="math inline">dc</span>, and it receives <span class="math inline">r</span> reuses after the write. Uncached cost is <span class="math inline">(r+1)c</span>; cached cost is <span class="math inline">(w+rd)c</span>. Caching pays back when</p>
+<p><span class="math display">
+r \ge \frac{w-1}{1-d}.
+</span></p>
+<p>The synthetic plot uses <span class="math inline">w=1.25</span> and <span class="math inline">d=0.10</span>, so one integer reuse is enough. Real values include expiry, invalidation, missed matches, capacity pressure, and the opportunity cost of cache memory. A semantic-cache threshold has no comparable price-only optimum: lowering it increases hit rate and also false reuse. Tune it against task correctness and privacy slices, not only savings.</p>
+<p>Capacity is governed by the tightest resource. Track input tokens per second, output tokens per second, concurrent sequences, KV memory, requests, tool concurrency, and provider quota. <strong>Goodput</strong> is the rate of completions that satisfy the task and service contract; throughput includes waste. If raw completion throughput is <span class="math inline">Q</span> and the qualifying fraction is <span class="math inline">s</span>, then goodput is <span class="math inline">G=Qs</span>. A faster deployment with more invalid outputs can have lower goodput.</p>
+<p>Retry probability amplifies load. If an attempt independently needs another attempt with probability (q&lt;1), the expected attempt count is (1/(1-q)). At (q=0.2), offered load grows by 25 percent before hedging or agent loops. This geometric model is a warning, not a capacity forecast: correlated outages make retries synchronize and become worse. Add jitter, enforce global retry budgets, and shed load at the outermost boundary that still knows tenant, priority, and journey value.</p>
+<p>Rate limits should use the constrained dimension. A token bucket per <code>(tenant, input-token)</code> prevents one enormous prompt from hiding behind request count; separate buckets can govern output, embeddings, tools, and spend. Give priority traffic reserved capacity, cap concurrency, and apply backpressure before queues outlive their deadlines. Provider quota is a ceiling, not a capacity plan; provisioned throughput is useful only when measured goodput and utilization justify its commitment.</p>
+</section>
+<section id="sec-ch26-reliability" class="level2" data-number="26.7">
+<h2 data-number="26.7" class="anchored" data-anchor-id="sec-ch26-reliability"><span class="header-section-number">26.7</span> Retries consume a deadline and an effect budget</h2>
+<p>A timeout says the caller stopped waiting. It does not say the server stopped working, the model call was unbilled, or the external effect did not occur. Treat every timeout after request transmission as <strong>ambiguous</strong> until an authoritative query or idempotent retry resolves it.</p>
+<p>Classify failures before retrying:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Class</th>
+<th>Examples</th>
+<th>Default handling</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>retryable</td>
+<td>connection reset before response, declared overload, rate limit with useful retry window</td>
+<td>retry within the same journey budget, deadline, and stable operation identity</td>
+</tr>
+<tr class="even">
+<td>terminal</td>
+<td>invalid schema, failed authentication, policy refusal, unsupported capability</td>
+<td>stop; repair caller or surface the decision</td>
+</tr>
+<tr class="odd">
+<td>ambiguous effect</td>
+<td>connection lost after sending a write, deadline after provider acceptance</td>
+<td>reconcile by stable idempotency key or effect status; never invent a new identity</td>
+</tr>
+</tbody>
+</table>
+<p>A <strong>retry budget</strong> limits total extra work, while a <strong>deadline</strong> bounds elapsed usefulness. Propagate an absolute deadline or a decreasing remaining duration. If a service receives 800 milliseconds remaining, it must not start a fixed two-second timeout and pretend the original objective still matters. Reserve time for validation, effect recording, and the response path. Cancellation is cooperative: downstream work may continue, so cost and effects still need reconciliation.</p>
+<p>Use exponential backoff with jitter for distributed transient failures, but do not let every layer retry independently. Three retries in a client, two in a gateway, and three in an SDK can produce eighteen attempts. Select one owner for each boundary, expose attempt metadata, and enforce a journey-wide maximum. Retry only operations whose semantics are safe under replay.</p>
+<p><strong>Hedging</strong> issues a redundant attempt after a latency threshold rather than waiting for failure. Dean and Barroso’s tail-at-scale analysis explains why a small fraction of slow components can dominate a fan-out request. Hedging can cut tail latency when attempts have weakly correlated delays, but it spends extra tokens, consumes capacity during the most loaded period, complicates streaming, and can duplicate effects. Use it for side-effect-free reads or model calls with stable correlation IDs; cancel losers when possible and charge both attempts to the journey.</p>
+<p>Idempotency means repeating the same operation identity and payload has the same externally visible effect as performing it once. It does not mean all retries are safe. A key must represent the business operation, not the network attempt. <code>uuid4()</code> inside a retry loop is a new identity every time. <code>refund:{order_id}:{approved_intent_version}</code> is better because every recovery path can recompute it and a changed amount or approval becomes a different—or rejected—intent.</p>
+<p>The platform should carry request identity, journey identity, step identity, effect identity, attempt number, parent trace, tenant, release bundle, and deadline. These are not interchangeable. Attempts may multiply; the effect identity must remain stable.</p>
+</section>
+<section id="sec-ch26-ledger" class="level2" data-number="26.8">
+<h2 data-number="26.8" class="anchored" data-anchor-id="sec-ch26-ledger"><span class="header-section-number">26.8</span> Close the crash window with an effect ledger</h2>
+<p>Now the second incident. A worker calls a refund provider. The provider commits the refund and returns a receipt. Before the worker checkpoints the response, its process dies. Replay restarts from the last checkpoint and calls the provider again. If it uses a new idempotency key, the customer receives two refunds.</p>
+<p>The unsafe interval is the <strong>crash window</strong> between an external commit and the durable record that tells replay not to repeat it. No ordinary checkpoint can atomically commit with an unrelated external provider across a network. “Exactly once” is therefore a scoped claim. Within one database transaction, a row and checkpoint can commit atomically. Across independent systems, use stable identity, idempotent providers, reconciliation, transactional messaging, or compensating actions.</p>
+<p><a href="#fig-ch26-crash" class="quarto-xref">Figure&nbsp;<span>26.2</span></a> makes the ambiguity visible. The ledger reserves a stable application-owned identity before the request. After the crash, recovery reuses that identity; the provider returns the original receipt instead of applying the refund again.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    participant W as Worker</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    participant L as Effect ledger</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    participant P as Provider</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    participant C as Workflow checkpoint</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    W-&gt;&gt;L: reserve(stable effect key, payload digest)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    L--&gt;&gt;W: RESERVED</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    W-&gt;&gt;P: apply(effect key, exact payload)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    P--&gt;&gt;W: committed(receipt-1)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    Note over W,C: process dies before receipt checkpoint</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    W-&gt;&gt;C: replay from prior workflow step</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    W-&gt;&gt;L: recover(stable effect key)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    W-&gt;&gt;P: apply(same key, same payload)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    P--&gt;&gt;W: existing receipt-1</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    W-&gt;&gt;L: record(receipt-1)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    W-&gt;&gt;C: checkpoint recorded result</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch26-crash" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch26-crash-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch26-crash">sequenceDiagram
+    participant W as Worker
+    participant L as Effect ledger
+    participant P as Provider
+    participant C as Workflow checkpoint
+
+    W-&gt;&gt;L: reserve(stable effect key, payload digest)
+    L--&gt;&gt;W: RESERVED
+    W-&gt;&gt;P: apply(effect key, exact payload)
+    P--&gt;&gt;W: committed(receipt-1)
+    Note over W,C: process dies before receipt checkpoint
+    W-&gt;&gt;C: replay from prior workflow step
+    W-&gt;&gt;L: recover(stable effect key)
+    W-&gt;&gt;P: apply(same key, same payload)
+    P--&gt;&gt;W: existing receipt-1
+    W-&gt;&gt;L: record(receipt-1)
+    W-&gt;&gt;C: checkpoint recorded result
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch26-crash-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;26.2: Where is a duplicate effect born, and which stable fact lets recovery resolve it?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>An <strong>effect ledger</strong> records application intent separately from workflow progress. The reference artifact uses five states. They are not ceremony; each answers a recovery question.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>stateDiagram-v2</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    [*] --&gt; INTENDED: create exact intent</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    INTENDED --&gt; RESERVED: persist key + payload digest</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    RESERVED --&gt; EXECUTED: provider returns receipt</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    EXECUTED --&gt; RECORDED: persist authoritative receipt</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    RESERVED --&gt; FAILED: terminal provider decision</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    FAILED --&gt; RESERVED: reviewed retry with same intent</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    RECORDED --&gt; [*]</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    note right of RESERVED</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>      Recovery asks provider by stable key.</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>      Never assumes “not checkpointed” means “not done.”</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    end note</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch26-ledger-states" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch26-ledger-states-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch26-ledger-states">stateDiagram-v2
+    [*] --&gt; INTENDED: create exact intent
+    INTENDED --&gt; RESERVED: persist key + payload digest
+    RESERVED --&gt; EXECUTED: provider returns receipt
+    EXECUTED --&gt; RECORDED: persist authoritative receipt
+    RESERVED --&gt; FAILED: terminal provider decision
+    FAILED --&gt; RESERVED: reviewed retry with same intent
+    RECORDED --&gt; [*]
+
+    note right of RESERVED
+      Recovery asks provider by stable key.
+      Never assumes “not checkpointed” means “not done.”
+    end note
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch26-ledger-states-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;26.3: What must recovery determine for each durable effect state?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><code>INTENDED</code> says the application has a valid effect plan. <code>RESERVED</code> says its immutable key and payload digest are durable. <code>EXECUTED</code> says a provider receipt is known in the current process. <code>RECORDED</code> says that receipt is durable and replay may return it. <code>FAILED</code> records a terminal result or a state requiring review. A production design may add leases, reconciliation timestamps, manual states, and fencing tokens; add states only when they change recovery behavior.</p>
+<p>The core implementation is small:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># effect_runtime.py — execute_once(), effect boundary</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>record <span class="op">=</span> ledger.reserve(key, payload)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> record.state <span class="op">==</span> EffectState.RECORDED:</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> record.receipt</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>receipt <span class="op">=</span> provider.<span class="bu">apply</span>(key, payload)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> crash_after_provider:</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> InjectedCrash(<span class="st">"died before recording receipt"</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>record.state <span class="op">=</span> EffectState.EXECUTED</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>record.receipt <span class="op">=</span> receipt</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>record.state <span class="op">=</span> EffectState.RECORDED</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> receipt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The test injects three deaths in the gap. Every recovery calls the provider again with <code>refund:A-17:v1</code>; the provider returns <code>receipt-1</code> and its authoritative effect count remains one. The ledger also rejects reuse of that key with a different payload digest. This proves only a composition: durable stable identity plus a provider that honors that identity. If the provider lacks idempotency, recovery needs a query by business key, an application-owned proxy that supplies it, or an explicit compensation and review policy.</p>
+<p>A <strong>transactional outbox</strong> solves a related local boundary. The application writes business state and an outgoing intent in one database transaction. A relay delivers outbox rows at least once; the consumer deduplicates by message identity. The outbox prevents “database committed but message was never scheduled,” not duplicate delivery by itself.</p>
+<p>Compensation is not time travel. A saga’s “undo shipment” may issue a return label; it cannot make the customer unsee a disclosure or retract an already-sent wire. Compensation is a new forward effect with its own stable identity, authorization, failure handling, and audit. Classify effects as reversible, compensatable, or irreversible before deciding how autonomous recovery may be.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>effect_runtime.py</code> complete</td>
+<td style="text-align: right;">124 lines total; 10 shown</td>
+<td>Three injected deaths after provider acceptance create one authoritative external effect, and a substituted payload cannot reuse its identity.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch26-durable" class="level2" data-number="26.9">
+<h2 data-number="26.9" class="anchored" data-anchor-id="sec-ch26-durable"><span class="header-section-number">26.9</span> Choose checkpointing or durable execution by effect lifetime</h2>
+<p>A framework <strong>checkpointer</strong> stores agent state so a graph or loop can resume. A <strong>durable-execution engine</strong> records enough workflow history to reconstruct decisions, schedules retries, timers, and signals, and moves work to another worker after failure. Both are useful; nesting them around the same state without an ownership decision creates two notions of progress.</p>
+<p>Use a checkpointer when one application owns the run, waits are short, effects already pass through a safe ledger, and a team can operate recovery itself. Use a workflow engine when tasks span deploys, workers, days, external callbacks, or many services; when timers and signals must survive downtime; or when operators need first-class visibility and intervention. A chat thread may need a graph checkpoint. A claims process that waits two weeks for documents and approval usually needs a durable workflow.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Decision</th>
+<th>Framework checkpointer</th>
+<th>Durable-execution engine</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>unit of resume</td>
+<td>model/graph state or named node</td>
+<td>workflow history plus activities/steps</td>
+</tr>
+<tr class="even">
+<td>long timers and external signals</td>
+<td>application implements and operates them</td>
+<td>native durable primitive in many engines</td>
+</tr>
+<tr class="odd">
+<td>deployment migration</td>
+<td>deserialize state into compatible graph code</td>
+<td>replay/version workflow history under engine rules</td>
+</tr>
+<tr class="even">
+<td>external effect contract</td>
+<td>application-owned</td>
+<td>still application-owned unless engine and data store share a documented atomic boundary</td>
+</tr>
+<tr class="odd">
+<td>best fit</td>
+<td>conversational or bounded agent state</td>
+<td>multi-service, long-running business process</td>
+</tr>
+</tbody>
+</table>
+<p>Deterministic replay means the workflow code makes the same decisions from recorded history. It does <strong>not</strong> mean calling the model again and hoping for the same tokens. Put nondeterministic or paid operations—model inference, network calls, current time, randomness—inside activities or steps whose result is recorded. On replay, return the recorded result. Re-executing an LLM call changes output, cost, latency, and possibly the next control path.</p>
+<p>An activity may run more than once if a worker dies after the external effect but before the engine records completion. The effect ledger remains necessary unless the engine gives a narrower atomic guarantee with the affected store. Official <a href="https://docs.dbos.dev/python/tutorials/transaction-tutorial">DBOS transaction documentation</a>, for example, distinguishes database transactions whose result is committed with durability metadata from general steps that can be retried. <a href="https://docs.restate.dev/foundations/key-concepts">Restate’s concepts</a> similarly describe journaled operations and replay. Read exact scope and failure assumptions; do not translate a marketing phrase into a universal guarantee.</p>
+<p>Long human waits become durable timers and signals. The workflow emits an approval request containing exact action identity, suspends without holding a process, and resumes only when a validated signal arrives or the timer expires. Chapter 17 defined approval mechanics, Chapter 24 defined authorization binding, and Chapter 27 operates the queue and reviewer experience. Here the platform guarantee is that restart, deployment, or a week of inactivity does not lose or duplicate the suspended intent.</p>
+<p>Version long-running workflows deliberately. Old histories may replay through new code after a deploy. Use the engine’s version markers or worker-version routing, maintain compatibility until old histories drain or migrate, and test yesterday’s checkpoints against today’s code. Never change an activity name, argument schema, serialization, or branch order and assume stored history will adapt.</p>
+<p>The application-owned residue is constant across substrates: business idempotency keys, object authorization, provider reconciliation, compensation semantics, schema migration, release version, secret handling, and authoritative outcome verification. A workflow engine removes a large amount of scheduler and recovery plumbing. It does not decide what “safe to repeat” means for your business.</p>
+</section>
+<section id="sec-ch26-versioning" class="level2" data-number="26.10">
+<h2 data-number="26.10" class="anchored" data-anchor-id="sec-ch26-versioning"><span class="header-section-number">26.10</span> Version and recover the complete artifact surface</h2>
+<p>“Model version” does not identify an agent release. Output can change when any of the following changes:</p>
+<ul>
+<li>base model, adapter, merge, quantization, tokenizer, or chat template;</li>
+<li>system prompt, behavior specification, tool schema, skill, or policy;</li>
+<li>retrieval source snapshot, chunker, embedder, vector index, reranker, or freshness rule;</li>
+<li>gateway route, decoding settings, cache scope, reasoning budget, or provider adapter;</li>
+<li>grader, judge rubric, evaluation task set, sandbox image, MCP server, or effect handler.</li>
+</ul>
+<p>A <strong>release bundle</strong> maps every material surface to an immutable identifier or content digest. Canonically serialize the map and hash it. Publish the new bundle fully, verify referenced artifacts exist, then atomically move a small environment pointer from the previous hash to the new one. Requests capture the resolved hash at admission and retain it through the whole journey. Rollback publishes a new control-plane event pointing at a proven prior bundle; it never edits historical bundle <code>v42</code> in place.</p>
+<p>Fail behavior depends on direction of risk. If the control plane is briefly unavailable, a request worker may <strong>fail static</strong> on its last verified bundle when staleness is safe and bounded. If authorization policy or a revoked tool cannot be verified, fail closed. If a new worker receives a bundle hash it cannot resolve, do not silently assemble a partial release from “latest” components.</p>
+<p>Cache keys include the bundle hash plus request-specific correctness scopes. Checkpoints store it so resume uses compatible tools and policies. Effect records store it so an incident can reconstruct the code and authorization that produced a receipt. Eval reports and canary decisions identify it so evidence cannot be reassigned to a later release.</p>
+<p>Data recovery needs per-store objectives. <strong>Recovery point objective</strong> (RPO) is the maximum tolerable data loss measured in time; <strong>recovery time objective</strong> (RTO) is the target time to restore service. A rebuildable vector index may tolerate an older backup if source documents, chunker, embedder, and deletion log are preserved. An effect ledger may require near-zero RPO because losing a receipt can duplicate money movement. A prompt cache can often be discarded. State that cannot be rebuilt needs tested backup and restore—not merely a backup job with a green timestamp.</p>
+<p>Maintain lineage from source document to chunk, embedding, index revision, retrieved context, model call, proposed action, policy decision, and effect receipt. That chain supports deletion propagation from Chapter 18, security forensics from Chapter 24, and incident work in Chapter 27. A vector index is derived state, but “derived” means it needs a reproducible rebuild recipe and source retention decision; it does not mean it may disappear without operational consequence.</p>
+<p>Legal hold, retention, and deletion can conflict. A hold preserves in-scope evidence from normal deletion; retention limits how long other data persists; deletion propagates through derived artifacts according to policy and law. Qualified owners decide that policy. The platform supplies classifications, lineage, immutable decisions, scoped jobs, and proof that requested stores were processed.</p>
+</section>
+<section id="sec-ch26-testing" class="level2" data-number="26.11">
+<h2 data-number="26.11" class="anchored" data-anchor-id="sec-ch26-testing"><span class="header-section-number">26.11</span> Test deterministic code as aggressively as model behavior</h2>
+<p>An evaluation asks whether a probabilistic system performs tasks. A test asks whether deterministic code obeys an invariant. A release needs both. A 92 percent task pass rate says nothing about whether concurrent budget checks overspend, a retry changes the effect key, a stream drops multibyte text, or yesterday’s checkpoint can load.</p>
+<p>Use several test families because each sees a different defect:</p>
+<ul>
+<li><strong>example tests</strong> pin incidents and important nominal paths;</li>
+<li><strong>property-based tests</strong> generate many inputs and verify invariants, such as spend never exceeding an atomically reserved cap;</li>
+<li><strong>metamorphic tests</strong> change execution while preserving the expected relation—for example, assembled streaming output equals non-streamed output, and adding a retry never increases external effect count;</li>
+<li><strong>fuzz tests</strong> attack parsers, protocol frames, schemas, and boundary values;</li>
+<li><strong>mutation tests</strong> deliberately alter code and check that the suite detects the change;</li>
+<li><strong>concurrency and crash tests</strong> inject interleavings and death at every persistence boundary;</li>
+<li><strong>migration tests</strong> load old checkpoints, bundles, ledger rows, and cache metadata under new code.</li>
+</ul>
+<p>The Chapter 26 suite has eight focused tests. It derives tenant identity from a virtual key, rejects an over-budget journey, prevents policy-refusal fallback, injects three crashes, rejects a changed payload under an old effect identity, drains and refills a token bucket under an injected clock, proves bundle order does not affect its digest while a corpus change does, and checks cache/canary math.</p>
+<p>Mocks are useful for rare errors and deterministic unit tests, but a mock provider often grants the exact idempotency behavior you forgot to verify. Record/replay preserves a historical response but cannot prove current policy, rate limiting, or side effects. Contract tests should run against a provider sandbox; crash and transaction guarantees need an integration environment with the actual database and workflow engine. Official DBOS testing guidance, for instance, distinguishes mock-level workflow sequence tests from integration tests of recovery behavior.</p>
+<p>Quarantine a flaky test only with an owner, diagnosis, impact statement, and expiry. A silently retried test suite trains the team to ignore evidence. If nondeterminism is intentional, control the seed or assert a statistical property with the method from Chapter 22; do not label every intermittent failure “the model.”</p>
+<p>Test the tests. A mutation that removes tenant scope, creates a fresh effect key on retry, skips an audit write, or reuses a stale bundle should fail. If it passes, the release argument has an uncovered boundary regardless of its number of green examples.</p>
+</section>
+<section id="sec-ch26-delivery" class="level2" data-number="26.12">
+<h2 data-number="26.12" class="anchored" data-anchor-id="sec-ch26-delivery"><span class="header-section-number">26.12</span> Deliver through gates, shadow traffic, and powered canaries</h2>
+<p>Progressive delivery limits the number of users and effects exposed while evidence accumulates:</p>
+<ol type="1">
+<li><strong>offline gate:</strong> unit, property, migration, security, and task evaluations run against the exact bundle;</li>
+<li><strong>shadow:</strong> the candidate receives a copy of eligible traffic but cannot create production effects; compare outputs, cost, latency, and grader results asynchronously;</li>
+<li><strong>canary:</strong> a small declared traffic slice uses the candidate with real effects and strong abort rules;</li>
+<li><strong>ramp:</strong> increase allocation in stages while preserving a stable comparison group and rollback path;</li>
+<li><strong>converge:</strong> retire the previous version only after old journeys, checkpoints, caches, and workflows drain or migrate.</li>
+</ol>
+<p>Shadowing is not free. It may duplicate model and tool cost, disclose production inputs to another provider, mutate caches, and overload dependencies. Strip write capabilities, use approved data handling, tag all usage, and exclude cases whose consent or residency does not permit duplication. Never call a real effect merely because its response will be ignored.</p>
+<p>A canary needs enough independent tasks to detect a plausible regression. If a candidate independently fails an additional fraction <span class="math inline">p</span> of cases and the gate detects the release after seeing at least one such failure, then the probability of detection in <span class="math inline">n</span> cases is</p>
+<p><span class="math display">
+P(\text{detect})=1-(1-p)^n.
+</span></p>
+<p>For target probability <span class="math inline">\gamma</span>, choose</p>
+<p><span class="math display">
+n \ge \frac{\log(1-\gamma)}{\log(1-p)}.
+</span></p>
+<p>At <span class="math inline">p=0.05</span>, 25 cases detect at least one extra failure with probability about 0.723—not “about half,” and certainly not proof of safety. Reaching 0.80 requires 32 independent cases under this simplified model. Correlation, low base rates, delayed outcomes, and imperfect graders reduce what the calculation means. For comparative quality, use the paired uncertainty and power methods from Chapter 22.</p>
+<p><a href="#fig-ch26-economics-delivery" class="quarto-xref">Figure&nbsp;<span>26.4</span></a> combines the two quantitative decisions generated from code. The left panel shows the synthetic cache break-even under declared multipliers. The right shows how slowly evidence accumulates for a five-percent failure mode.</p>
+<div id="fig-ch26-economics-delivery" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-cap="When does synthetic cache reuse pay back, and how many independent tasks expose a five-percent regression? Generated from `cost_curves.py`; assumptions are illustrative, not provider prices.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch26-economics-delivery-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../assets/figures/ch26-economics-delivery.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;26.4: Two panels show prefix-cache savings increasing after one reuse and the probability of observing at least one five-percent regression rising with independent canary tasks, crossing 80 percent at 32."><img src="../assets/figures/ch26-economics-delivery.svg" class="img-fluid figure-img" data-fig-cap="When does synthetic cache reuse pay back, and how many independent tasks expose a five-percent regression? Generated from `cost_curves.py`; assumptions are illustrative, not provider prices."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch26-economics-delivery-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;26.4: Two panels show prefix-cache savings increasing after one reuse and the probability of observing at least one five-percent regression rising with independent canary tasks, crossing 80 percent at 32.
+</figcaption>
+</figure>
+</div>
+<p>Use different gates for different harms. A single unauthorized transfer, cross-tenant disclosure, or broken must-not-break case can be zero tolerance. Quality and latency usually use non-inferiority margins, uncertainty bounds, and minimum slices. The reference gate holds if any critical failure occurs or if a Wilson lower bound misses a declared quality floor. That compact rule illustrates uncertainty; Chapter 22’s paired release contract remains canonical for full evaluation.</p>
+<p>Rollback has two meanings. <strong>Technical rollback</strong> moves traffic to a prior bundle. <strong>Business rollback</strong> repairs effects already caused: reconcile transactions, contact users, retract messages where possible, or invoke compensation. Chapter 27 owns incident execution. The delivery pipeline must retain the identities, receipts, release hashes, and kill-switch path that make both possible.</p>
+</section>
+<section id="sec-ch26-build" class="level2" data-number="26.13">
+<h2 data-number="26.13" class="anchored" data-anchor-id="sec-ch26-build"><span class="header-section-number">26.13</span> Build</h2>
+<p>The integrated build runs without a model, network, database, or workflow service. This is deliberate: it isolates the platform invariants before adapters add distributed failure modes. From the <code>newbook/</code> directory, run:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> pytest tests/test_ch26_platform.py <span class="at">-q</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch26/mini_platform.py</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch26/cost_curves.py <span class="dt">\</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--plot</span> assets/figures/ch26-economics-delivery.svg</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The deterministic platform report is:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"tenant"</span><span class="fu">:</span> <span class="st">"acme"</span><span class="fu">,</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"route"</span><span class="fu">:</span> <span class="st">"small"</span><span class="fu">,</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"journey_cost"</span><span class="fu">:</span> <span class="fl">0.013</span><span class="fu">,</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"injected_crashes"</span><span class="fu">:</span> <span class="dv">3</span><span class="fu">,</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"provider_effects"</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"receipt"</span><span class="fu">:</span> <span class="st">"receipt-1"</span><span class="fu">,</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"ledger_state"</span><span class="fu">:</span> <span class="st">"RECORDED"</span><span class="fu">,</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"canary"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"effect"</span><span class="fu">:</span> <span class="st">"PROMOTE"</span><span class="fu">,</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"observed_rate"</span><span class="fu">:</span> <span class="fl">0.98</span><span class="fu">,</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"lower_bound"</span><span class="fu">:</span> <span class="fl">0.9299868370580062</span><span class="fu">,</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"reasons"</span><span class="fu">:</span> <span class="ot">[]</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Follow the evidence in dependency order. First, <code>vk-acme</code> maps server-side to tenant <code>acme</code>; no payload tenant participates. The gateway selects the least-cost healthy deployment satisfying <code>chat</code>. It settles 20,000 input and 2,000 output tokens under an explicit synthetic schedule to 0.013 cost units.</p>
+<p>Second, the same refund intent is attempted across three injected process deaths. Each death occurs after the provider accepted the operation and before the local receipt was recorded—the dangerous window. Recovery retains <code>refund:A-17:v1</code>, the provider reports only one effect, and the final replay records <code>receipt-1</code>. Change the amount while keeping that key and the ledger rejects the substitution.</p>
+<p>Third, the canary observes 98 successes in 100 cases. Its Wilson lower bound is about 0.930, above the fixture’s 0.90 floor, so it promotes. Change the input to 24 of 25: the observed rate is still 0.96, but the lower bound is below 0.90 and the gate holds. Add one critical failure to a perfect 100 of 100 and the zero-tolerance rule also holds.</p>
+<p>Finally, regenerate the figure. Under the illustrative write multiplier 1.25 and read multiplier 0.10, one cache reuse crosses break-even. Under the independent one-hit detection model, 32 cases provide at least an 80-percent chance of seeing a five-percent regression.</p>
+<p>The artifact names its missing production assumptions. Budget admission is not transactional under concurrency. Deployments do not implement a circuit-breaker state machine. The provider supports stable-key idempotency. The effect ledger is in memory and has no leases, reconciliation worker, or external database transaction. The release bundle is hashed but not signed or atomically published. The canary has no paired baseline or delayed outcome. The token bucket is process-local. These are adapter requirements, not hidden guarantees.</p>
+<p>Map the mechanisms outward without changing their contracts. Put identity and atomic reservations in the gateway’s durable store. Resolve a catalog alias to a pinned model deployment. Wrap model inference as a recorded workflow activity. Put the effect ledger beside the credential and authoritative integration. Store release bundles in immutable object or database records and swap one signed pointer. Feed the Chapter 22 evaluation report into the offline gate. Then repeat the three-crash drill against the actual database, workflow engine, and provider sandbox before canarying.</p>
+</section>
+<section id="sec-ch26-endures" class="level2" data-number="26.14">
+<h2 data-number="26.14" class="anchored" data-anchor-id="sec-ch26-endures"><span class="header-section-number">26.14</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Give every journey trusted identity, a deadline, a complete release version, and a budget. Separate request, data, control, and evidence responsibilities. Route only among deployments that satisfy the contract. Treat retries as multiplied load and ambiguous writes as unresolved effects. Make effect identity stable before execution, preserve authoritative receipts, and state the exact scope of any exactly-once claim. Record nondeterministic results for replay. Version every correctness surface. Test crashes and migrations. Deliver from offline evidence through shadow, powered canary, and staged ramp with both technical and business rollback paths.</p>
+<p><strong>What changes.</strong> Provider prices, cache discounts, accelerator offerings, gateway products, workflow-engine APIs, managed regions, quotas, model catalogs, and deployment frameworks will change. Appendix C records those dated facts. Removing the Landscape box leaves the platform mechanisms, equations, and failure tests intact.</p>
+</section>
+<section id="sec-ch26-exercises" class="level2" data-number="26.15">
+<h2 data-number="26.15" class="anchored" data-anchor-id="sec-ch26-exercises"><span class="header-section-number">26.15</span> Exercises</h2>
+<ol type="1">
+<li>Extend the gateway with atomic budget reservation and settlement for concurrent journeys. Write a barrier-based test in which two estimates individually fit but together exceed the tenant limit; prove that at most one is admitted.</li>
+<li>Add a circuit breaker with closed, open, and half-open states under an injected clock. Test that a policy refusal does not affect health, transient failures open the circuit, and only a bounded probe enters half-open.</li>
+<li>Derive cache break-even when entries expire before reuse with probability <span class="math inline">e</span> and a miss pays both lookup overhead and uncached cost. Plot the boundary over <span class="math inline">e</span>, write premium, and read discount. State which probabilities must be measured per prefix cohort.</li>
+<li>Implement a reconciliation worker for ledger records left <code>RESERVED</code>. Model provider answers <code>committed</code>, <code>not_found</code>, and <code>unknown</code>; design a safe transition for each. Defend why <code>unknown</code> must not invent a new effect key.</li>
+<li>Design a saga for booking a flight, hotel, and nonrefundable event. Classify each effect as reversible, compensatable, or irreversible; give every forward and compensating action a stable identity; identify the states that require human ownership.</li>
+<li>Compare a graph checkpointer and a durable workflow engine for an agent waiting ten days on an approval. Include state ownership, timers, worker deploys, activity replay, schema migration, effect idempotency, operator controls, and the failure that each substrate leaves to the application.</li>
+<li>Write a complete release-bundle manifest for a permission-aware RAG agent. Mutate one tokenizer, corpus, policy, MCP server, and judge version independently; prove every mutation changes the digest and invalidates affected cache scopes.</li>
+<li>Power a canary for a critical failure expected at one in ten thousand journeys. Explain why waiting to observe one event may be unacceptable, then combine targeted offline adversarial cases, invariant gates, shadow evidence, and live exposure limits into a release argument.</li>
+</ol>
+</section>
+<section id="sec-ch26-sources" class="level2" data-number="26.16">
+<h2 data-number="26.16" class="anchored" data-anchor-id="sec-ch26-sources"><span class="header-section-number">26.16</span> Notes and sources</h2>
+<ul>
+<li>Dean and Barroso, <a href="https://research.google/pubs/the-tail-at-scale/">“The Tail at Scale”</a>, explain how component latency tails dominate large fan-out services and motivate carefully budgeted hedging.</li>
+<li>Gray, <a href="https://www.hpl.hp.com/techreports/tandem/TR-85.7.pdf">“Why Do Computers Stop and What Can Be Done About It?”</a>, is a foundational failure-and-recovery treatment behind process-pair and transaction thinking.</li>
+<li>Garcia-Molina and Salem, <a href="https://dl.acm.org/doi/10.1145/38713.38742">“Sagas”</a>, introduce compensating transactions for long-lived activities.</li>
+<li>Kleppmann, <a href="https://dataintensive.net/"><em>Designing Data-Intensive Applications</em></a>, is a useful systems reference for replication, transactions, derived data, stream processing, and the limits of distributed guarantees.</li>
+<li>Temporal’s official <a href="https://docs.temporal.io/">documentation</a> describes workflow history, replay, activities, timers, signals, and versioning in its current engine.</li>
+<li>Restate’s official <a href="https://docs.restate.dev/foundations/key-concepts">key concepts</a> describe journaled durable operations, single-writer state, and suspended handlers.</li>
+<li>DBOS’s official <a href="https://docs.dbos.dev/golang/tutorials/workflow-tutorial">workflow</a>, <a href="https://docs.dbos.dev/python/tutorials/transaction-tutorial">transaction</a>, and <a href="https://docs.dbos.dev/java/tutorials/testing">testing</a> documentation makes useful distinctions among workflow recovery, retried steps, atomic database transactions, and integration tests.</li>
+<li>Fowler, <a href="https://microservices.io/patterns/data/transactional-outbox.html">“Transactional Outbox”</a>, summarizes the local transaction plus at-least-once relay pattern and its consumer-idempotency requirement.</li>
+<li>Wilson, <a href="https://doi.org/10.1086/320169">“Probable Inference, the Law of Succession, and Statistical Inference”</a>, is the primary source for the binomial interval used by the compact canary gate; Chapter 22 provides the fuller comparative evaluation method.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/25-alignment-interpretability-governance.html" class="pagination-link" aria-label="Alignment, Interpretability, and Governance [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/27-operating-agents.html" class="pagination-link" aria-label="Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]">
+        <span class="nav-page-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

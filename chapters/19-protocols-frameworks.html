@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Separate interoperability protocols from orchestration frameworks, build one MCP surface for two hosts, and preserve authorization, state, UI, and migration boundaries.">
+
+<title>19&nbsp; Protocols and Frameworks: MCP, A2A, and Agent↔UI [S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/20-multi-agent-systems.html" rel="next">
+<link href="../chapters/18-memory-experiential-learning.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/16-agent-anatomy.html">Part V — Building Agents</a></li><li class="breadcrumb-item"><a href="../chapters/19-protocols-frameworks.html"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-you-need-going-in" id="toc-what-you-need-going-in" class="nav-link active" data-scroll-target="#what-you-need-going-in"><span class="header-section-number">19.1</span> What you need going in</a></li>
+  <li><a href="#contents" id="toc-contents" class="nav-link" data-scroll-target="#contents"><span class="header-section-number">19.2</span> Contents</a></li>
+  <li><a href="#what-you-will-build" id="toc-what-you-will-build" class="nav-link" data-scroll-target="#what-you-will-build"><span class="header-section-number">19.3</span> What you will build</a></li>
+  <li><a href="#sec-ch19-boundaries" id="toc-sec-ch19-boundaries" class="nav-link" data-scroll-target="#sec-ch19-boundaries"><span class="header-section-number">19.4</span> Protocols stabilize boundaries; frameworks own control flow</a></li>
+  <li><a href="#sec-ch19-mcp" id="toc-sec-ch19-mcp" class="nav-link" data-scroll-target="#sec-ch19-mcp"><span class="header-section-number">19.5</span> MCP architecture, primitives, and lifecycle</a></li>
+  <li><a href="#sec-ch19-server" id="toc-sec-ch19-server" class="nav-link" data-scroll-target="#sec-ch19-server"><span class="header-section-number">19.6</span> Design an interoperable MCP server</a></li>
+  <li><a href="#sec-ch19-security" id="toc-sec-ch19-security" class="nav-link" data-scroll-target="#sec-ch19-security"><span class="header-section-number">19.7</span> Authorize MCP without creating a confused deputy</a></li>
+  <li><a href="#sec-ch19-a2a" id="toc-sec-ch19-a2a" class="nav-link" data-scroll-target="#sec-ch19-a2a"><span class="header-section-number">19.8</span> A2A, task lifecycles, and protocol convergence</a></li>
+  <li><a href="#sec-ch19-ui" id="toc-sec-ch19-ui" class="nav-link" data-scroll-target="#sec-ch19-ui"><span class="header-section-number">19.9</span> Agent↔︎UI events and safe generative interfaces</a></li>
+  <li><a href="#sec-ch19-graphs" id="toc-sec-ch19-graphs" class="nav-link" data-scroll-target="#sec-ch19-graphs"><span class="header-section-number">19.10</span> Graph state, checkpointers, interrupts, and time travel</a></li>
+  <li><a href="#sec-ch19-selection" id="toc-sec-ch19-selection" class="nav-link" data-scroll-target="#sec-ch19-selection"><span class="header-section-number">19.11</span> Select a framework without surrendering the architecture</a></li>
+  <li><a href="#sec-ch19-build" id="toc-sec-ch19-build" class="nav-link" data-scroll-target="#sec-ch19-build"><span class="header-section-number">19.12</span> Build</a>
+  <ul class="collapse">
+  <li><a href="#acceptance-checks" id="toc-acceptance-checks" class="nav-link" data-scroll-target="#acceptance-checks"><span class="header-section-number">19.12.1</span> Acceptance checks</a></li>
+  <li><a href="#honesty-note" id="toc-honesty-note" class="nav-link" data-scroll-target="#honesty-note"><span class="header-section-number">19.12.2</span> Honesty note</a></li>
+  </ul></li>
+  <li><a href="#sec-ch19-endures" id="toc-sec-ch19-endures" class="nav-link" data-scroll-target="#sec-ch19-endures"><span class="header-section-number">19.13</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch19-exercises" id="toc-sec-ch19-exercises" class="nav-link" data-scroll-target="#sec-ch19-exercises"><span class="header-section-number">19.14</span> Exercises</a></li>
+  <li><a href="#sec-ch19-sources" id="toc-sec-ch19-sources" class="nav-link" data-scroll-target="#sec-ch19-sources"><span class="header-section-number">19.15</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/16-agent-anatomy.html">Part V — Building Agents</a></li><li class="breadcrumb-item"><a href="../chapters/19-protocols-frameworks.html"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch19" class="quarto-section-identifier"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-you-need-going-in" class="level2" data-number="19.1">
+<h2 data-number="19.1" class="anchored" data-anchor-id="what-you-need-going-in"><span class="header-section-number">19.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> HTTP, JSON, typed APIs, OAuth concepts, processes, and state machines.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/16-agent-anatomy.html">Chapter 16</a> supplies the proposal–gate–execute–observe kernel. <a href="../chapters/17-tool-harness-engineering.html">Chapter 17</a> owns tool contracts, workspaces, and approval binding. <a href="../chapters/18-memory-experiential-learning.html">Chapter 18</a> separates cross-session memory from run state.</p>
+<p><strong>Not required:</strong> prior MCP, A2A, AG-UI, LangGraph, or provider SDK experience. The chapter teaches the abstraction boundaries before any framework syntax.</p>
+</blockquote>
+</section>
+<section id="contents" class="level2" data-number="19.2">
+<h2 data-number="19.2" class="anchored" data-anchor-id="contents"><span class="header-section-number">19.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch19-boundaries">Protocols stabilize boundaries; frameworks own control flow</a></li>
+<li><a href="#sec-ch19-mcp">MCP architecture, primitives, and lifecycle</a></li>
+<li><a href="#sec-ch19-server">Design an interoperable MCP server</a></li>
+<li><a href="#sec-ch19-security">Authorize MCP without creating a confused deputy</a></li>
+<li><a href="#sec-ch19-a2a">A2A, task lifecycles, and protocol convergence</a></li>
+<li><a href="#sec-ch19-ui">Agent↔︎UI events and safe generative interfaces</a></li>
+<li><a href="#sec-ch19-graphs">Graph state, checkpointers, interrupts, and time travel</a></li>
+<li><a href="#sec-ch19-selection">Select a framework without surrendering the architecture</a></li>
+<li><a href="#sec-ch19-build">Build</a></li>
+<li><a href="#sec-ch19-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch19-exercises">Exercises</a></li>
+<li><a href="#sec-ch19-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="what-you-will-build" class="level2" data-number="19.3">
+<h2 data-number="19.3" class="anchored" data-anchor-id="what-you-will-build"><span class="header-section-number">19.3</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>One protocol seam, two orchestration hosts
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The artifact under <code>code/ch19/</code> exposes a refund-policy resource and two typed tools through a JSON-RPC-shaped protocol seam. A model-driven loop host and an explicit graph host discover and call the same surface. The graph pauses at a review interrupt, checkpoints state, resumes, and reaches the same domain outcome as the loop. A wrong-audience token is rejected and a replayed write returns the same receipt.</p>
+<p><code>mcp_server.py</code> is a thin adapter for the official Python MCP SDK. The deterministic fixture tests the domain and protocol contract in process, so it remains runnable without a network, model key, or live host.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch19-boundaries" class="level2" data-number="19.4">
+<h2 data-number="19.4" class="anchored" data-anchor-id="sec-ch19-boundaries"><span class="header-section-number">19.4</span> Protocols stabilize boundaries; frameworks own control flow</h2>
+<p>An agent platform connects several independently changing systems: models, tools, data sources, remote agents, user interfaces, identity providers, and durable runtimes. If one framework’s object model becomes the contract between all of them, every upgrade becomes a migration of the entire platform.</p>
+<p>A <strong>protocol</strong> defines what crosses a boundary. A <strong>framework</strong> helps implement behavior on one side of that boundary.</p>
+<ul>
+<li>MCP standardizes exchanges between an AI host and context or capability servers.</li>
+<li>A2A standardizes exchanges with a remote, potentially opaque agent.</li>
+<li>An agent–UI event protocol standardizes what a frontend observes, renders, and sends back.</li>
+<li>A graph or agent SDK implements control flow, state reduction, model calls, and interrupts inside an application.</li>
+</ul>
+<p>These concerns can coexist. They are not alternatives in one product comparison.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    UI["web / mobile UI"] &lt;--&gt;|"run, message, state, tool events"| Host["agent host"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    Host &lt;--&gt;|"MCP: tools, resources, prompts"| Server["capability servers"]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    Host &lt;--&gt;|"A2A: messages, tasks, artifacts"| Remote["remote agent systems"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    subgraph Application["Replaceable application internals"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>      Host --&gt; Runtime["loop, graph, or workflow runtime"]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      Runtime --&gt; Model["model adapter"]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>      Runtime --&gt; State["checkpointer / event store"]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    Server --&gt; APIs["domain APIs and data"]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    Remote --&gt; Other["other models, tools, and workflows"]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch19-boundaries" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch19-boundaries-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch19-boundaries">flowchart LR
+    UI["web / mobile UI"] &lt;--&gt;|"run, message, state, tool events"| Host["agent host"]
+    Host &lt;--&gt;|"MCP: tools, resources, prompts"| Server["capability servers"]
+    Host &lt;--&gt;|"A2A: messages, tasks, artifacts"| Remote["remote agent systems"]
+    subgraph Application["Replaceable application internals"]
+      Host --&gt; Runtime["loop, graph, or workflow runtime"]
+      Runtime --&gt; Model["model adapter"]
+      Runtime --&gt; State["checkpointer / event store"]
+    end
+    Server --&gt; APIs["domain APIs and data"]
+    Remote --&gt; Other["other models, tools, and workflows"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch19-boundaries-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;19.1: Which contract should remain stable when an orchestration framework changes?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The design test is substitution. Can a second host use the same capability server? Can the application swap a model-driven loop for a graph without rewriting domain authorization? Can the frontend reconnect and rebuild state without importing a Python runtime object? Can a remote agent be replaced without revealing its internal prompts or memory?</p>
+<p>Protocols do not remove application responsibility. MCP can describe a tool; it does not decide whether the current user may call it. A2A can represent a task; it does not prove the remote agent is competent or trustworthy. An event stream can display a proposed action; it does not make the proposal safe. The host still owns policy, context assembly, user consent, observability, and the final mapping from protocol objects into model-visible content.</p>
+<p>Frameworks remain valuable. They supply reducers, retries, tracing, streaming, checkpoint adapters, graph scheduling, and model integrations. The mistake is allowing convenient framework classes to become durable business interfaces. Define small application-owned ports—<code>Model</code>, <code>ToolRegistry</code>, <code>CheckpointStore</code>, <code>EventSink</code>, <code>PolicyDecision</code>—and adapt the framework around them.</p>
+<p>A protocol also has a version lifecycle. Messages that happen to serialize as JSON are not automatically interoperable. The parties must agree on a revision, capabilities, optional extensions, error semantics, and transport behavior. Persist the negotiated revision in traces. Reject an unknown major or incompatible date instead of quietly interpreting fields under the wrong contract.</p>
+</section>
+<section id="sec-ch19-mcp" class="level2" data-number="19.5">
+<h2 data-number="19.5" class="anchored" data-anchor-id="sec-ch19-mcp"><span class="header-section-number">19.5</span> MCP architecture, primitives, and lifecycle</h2>
+<p>The <a href="https://modelcontextprotocol.io/docs/learn/architecture">Model Context Protocol architecture</a> names three roles:</p>
+<ol type="1">
+<li>The <strong>host</strong> is the AI application. It owns the user relationship, model, permissions, context, and consent surface.</li>
+<li>An <strong>MCP client</strong> is the host-side protocol component for one server connection.</li>
+<li>An <strong>MCP server</strong> exposes bounded capabilities or context. It may run as a local process over standard input/output or remotely over HTTP.</li>
+</ol>
+<p>A host can manage many clients; each client connects the host to one server. This prevents a server from receiving the full conversation or learning about other servers unless the host deliberately sends that information.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>flowchart TB</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    User["user"] --&gt; Host["MCP host\nmodel + consent + context policy"]</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    subgraph HostProcess["host boundary"]</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>      Host --&gt; C1["client A"]</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>      Host --&gt; C2["client B"]</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>      Registry["namespaced tool/resource registry"] --&gt; Host</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    end</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    C1 &lt;--&gt;|"stdio"| Local["local filesystem server"]</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    C2 &lt;--&gt;|"streamable HTTP"| Remote["remote support server"]</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    Local --&gt; Files[("granted workspace")]</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    Remote --&gt; Gateway["domain authorization + API"]</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    Gateway --&gt; Data[("tenant data")]</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    Local -. no ambient access .-&gt; Data</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    Remote -. receives selected requests, not whole thread .-&gt; Host</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch19-mcp-architecture" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch19-mcp-architecture-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch19-mcp-architecture">flowchart TB
+    User["user"] --&gt; Host["MCP host\nmodel + consent + context policy"]
+    subgraph HostProcess["host boundary"]
+      Host --&gt; C1["client A"]
+      Host --&gt; C2["client B"]
+      Registry["namespaced tool/resource registry"] --&gt; Host
+    end
+    C1 &lt;--&gt;|"stdio"| Local["local filesystem server"]
+    C2 &lt;--&gt;|"streamable HTTP"| Remote["remote support server"]
+    Local --&gt; Files[("granted workspace")]
+    Remote --&gt; Gateway["domain authorization + API"]
+    Gateway --&gt; Data[("tenant data")]
+    Local -. no ambient access .-&gt; Data
+    Remote -. receives selected requests, not whole thread .-&gt; Host
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch19-mcp-architecture-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;19.2: Where do MCP trust, context, and capability boundaries sit?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>MCP’s server-side primitives express three different relationships:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Primitive</th>
+<th>Purpose</th>
+<th>Typical control</th>
+<th>Representative method</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Tool</td>
+<td>Execute a typed operation</td>
+<td>Model proposes; host gates</td>
+<td><code>tools/list</code>, <code>tools/call</code></td>
+</tr>
+<tr class="even">
+<td>Resource</td>
+<td>Read addressable context</td>
+<td>Application selects</td>
+<td><code>resources/list</code>, <code>resources/read</code></td>
+</tr>
+<tr class="odd">
+<td>Prompt</td>
+<td>Retrieve a reusable interaction template</td>
+<td>User or host selects</td>
+<td><code>prompts/list</code>, <code>prompts/get</code></td>
+</tr>
+</tbody>
+</table>
+<p>Tools are not a license for arbitrary code. Their names, descriptions, JSON Schemas, annotations, results, errors, and side-effect semantics are part of the interface taught in Chapter 17. Resources use URIs and media types so the host can decide whether and how to place content into context. Prompts distribute templates; the host must still merge them under its own instruction hierarchy.</p>
+<p>The protocol also supports client-side capabilities. A server may request model sampling, user elicitation, or logging when the client declared support. This reverses the usual call direction, so the host must treat each request as a new policy decision. A server asking the host to sample is not allowed to smuggle arbitrary system instructions or spend unbounded tokens.</p>
+<p>In the stable 2025-11-25 revision used by this chapter’s fixture, a connection begins with initialization: version negotiation, capability exchange, implementation metadata, and readiness. Discovery follows, then resource reads or tool calls. Requests have correlation identifiers; notifications do not expect a response. Streamable HTTP and standard I/O carry the same data-layer meanings but have different identity, logging, and process-isolation concerns.</p>
+<p>The lifecycle can be read as five gates: negotiate a revision and capabilities; discover the permitted surface; select only relevant definitions for model context; treat the model call as a proposal subject to host policy; then route the approved call and return a bounded observation. The server reauthorizes the operation even though the host already gated it. A denial or approval interrupt ends the path before execution.</p>
+<p>Keep transport failures, protocol errors, tool-domain errors, and model-visible observations distinct. A disconnected server may be retryable. <code>-32602</code>-class invalid parameters indicate a contract mismatch. “Order not eligible” is a valid domain result. Dumping all three into a string called <code>error</code> forces the model to invent retry policy.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — MCP is crossing a revision boundary
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Verified <strong>2026-07-19</strong>: the current stable protocol line is 2025-11-25. The official MCP project has published a <code>2026-07-28</code> release candidate centered on a stateless core and independently negotiated extensions; Tasks and MCP Apps are part of that evolution. The <a href="https://github.com/modelcontextprotocol/python-sdk">official Python SDK repository</a> still labels v1.x as stable while v2 is prerelease. This book therefore pins <code>mcp&gt;=1.27,&lt;2</code> and keeps the SDK adapter thin.</p>
+<p>Server metadata, registries, task wrappers, UI extensions, deprecated primitives, and lifecycle details are moving. <strong>Verify live:</strong> check the <a href="https://modelcontextprotocol.io/specification/2025-11-25">official specification</a>, SDK migration guide, negotiated revision, and host support matrix before deploying or upgrading.</p>
+</div>
+</div>
+<p>The enduring implementation rule is revision-aware behavior. Do not infer “latest,” and do not make a session handshake, a stateless request, or an extension available merely because one side knows its type. Negotiate or configure the contract explicitly and test both sides at the pinned boundary.</p>
+</section>
+<section id="sec-ch19-server" class="level2" data-number="19.6">
+<h2 data-number="19.6" class="anchored" data-anchor-id="sec-ch19-server"><span class="header-section-number">19.6</span> Design an interoperable MCP server</h2>
+<p>An MCP server should be a protocol adapter around domain services, not the new home of business logic. This keeps domain authorization, transactions, tests, and idempotency usable from a web API, background job, or future protocol.</p>
+<p>Design from the resource and action model:</p>
+<ul>
+<li>Use a <strong>resource</strong> when the caller needs addressable, cacheable context and the host should decide whether to read it.</li>
+<li>Use a <strong>tool</strong> when the caller requests computation or an effect.</li>
+<li>Use a <strong>prompt</strong> when distributing an optional workflow template creates value across hosts.</li>
+<li>Use an asynchronous task facility only when the operation truly outlives the request; it is not a substitute for ordinary application state.</li>
+</ul>
+<p>Give each tool one domain decision. Specify required and optional fields using supported JSON Schema features, add titles and descriptions that distinguish nearby tools, and make results machine-readable. Return stable resource versions, receipts, or artifact URIs. Put large payloads behind resources instead of flooding the next model turn.</p>
+<p>Names need server context. Two connected servers may both expose <code>search</code>. The host should retain server identity and namespace internally, even if it presents a friendlier label to the model. Tool changes need compatibility rules: additive optional fields are easier than repurposing an existing field; changed effect semantics deserve a new version or name.</p>
+<p>The chapter’s live adapter is intentionally thin:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># mcp_server.py — the official SDK decorates application-owned handlers</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>service <span class="op">=</span> SupportServer()</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>mcp <span class="op">=</span> FastMCP(<span class="st">"support-contracts"</span>, json_response<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">@mcp.resource</span>(<span class="st">"policy://refund/current"</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> current_refund_policy() <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Read the current refund policy resource."""</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> service.read_resource(</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">"policy://refund/current"</span>, principal</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    )[<span class="st">"contents"</span>][<span class="dv">0</span>][<span class="st">"text"</span>]</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">@mcp.tool</span>()</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> policy_lookup(topic: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Read the current refund policy for the authenticated tenant."""</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> service.call_tool(</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">"policy_lookup"</span>, {<span class="st">"topic"</span>: topic}, principal</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    )[<span class="st">"structuredContent"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The local <code>principal</code> exists only to keep the offline example compact. A remote deployment obtains identity from a validated access token and request context. A standard-I/O server normally inherits a deliberately restricted environment and filesystem grants from its launching host. Neither transport should accept <code>tenant_id</code> or <code>user_role</code> from model-generated tool arguments as proof of identity.</p>
+<p>Test the server at three layers:</p>
+<ol type="1">
+<li><strong>Domain tests</strong> call handlers directly and cover transactions, invariants, idempotency, and tenancy.</li>
+<li><strong>Protocol conformance tests</strong> initialize, discover, read, call, cancel where supported, and assert typed errors against a pinned SDK/spec revision.</li>
+<li><strong>Host compatibility tests</strong> connect at least two real hosts or reference clients and compare discovery, content rendering, approvals, streaming, and failure behavior.</li>
+</ol>
+<p>The MCP Inspector helps manual development; it does not replace automated contracts. Record golden protocol transcripts with volatile identifiers normalized. Fuzz JSON Schema boundaries, oversized content, pagination cursors, duplicate request identifiers, cancellations, disconnects, and notifications arriving during a call.</p>
+<p>Discovery is a supply-chain boundary. The <a href="https://modelcontextprotocol.io/registry/about">official MCP Registry</a> stores standardized public server metadata and namespace ownership; it does not certify that every published server is safe for a particular organization. Enterprise gateways should maintain an allowlist, pin package or endpoint identity, scan artifacts, attach owners and risk tiers, and expose different catalogs by tenant and role. Private registries should not leak internal capability descriptions through unauthenticated search.</p>
+<p>Server deployment follows ordinary service engineering. Remote servers need TLS, authentication, authorization, rate limits, tenancy isolation, timeouts, backpressure, bounded results, audit logs, health checks, and version rollouts. Local servers need package integrity, a minimal environment, process isolation, filesystem and network grants, output discipline, and cleanup. For standard I/O, application logs go to standard error; writing logs to standard output corrupts the protocol stream.</p>
+</section>
+<section id="sec-ch19-security" class="level2" data-number="19.7">
+<h2 data-number="19.7" class="anchored" data-anchor-id="sec-ch19-security"><span class="header-section-number">19.7</span> Authorize MCP without creating a confused deputy</h2>
+<p>MCP authorization protects the boundary between a host acting for a user and a resource server exposing tools or data. It does not turn model intent into user authority. The host authenticates the human or workload, obtains a token for the intended MCP resource, and asks the server to perform a specific operation. The server validates the token and independently authorizes that operation.</p>
+<p>The current <a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization">MCP authorization specification</a> builds on OAuth, protected-resource metadata, authorization-server discovery, PKCE for public clients, resource indicators, and incremental scopes. For production, use maintained identity libraries rather than implementing signature verification or OAuth flows inside an agent framework.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>sequenceDiagram</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    autonumber</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    participant U as User</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    participant H as MCP host/client</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    participant AS as Authorization server</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    participant S as MCP resource server</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    participant D as Downstream API</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    H-&gt;&gt;S: request without sufficient token</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    S--&gt;&gt;H: protected-resource metadata + scope challenge</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    H-&gt;&gt;U: identify client, resource, and requested scope</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    U--&gt;&gt;H: consent</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    H-&gt;&gt;AS: authorization + PKCE + resource=S</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    AS--&gt;&gt;H: short-lived token, audience=S</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    H-&gt;&gt;S: tools/call + token</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    S-&gt;&gt;S: validate issuer, signature, audience, expiry, scope, tenant</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    S-&gt;&gt;D: server's own downstream credential + delegated context</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    D--&gt;&gt;S: result</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    S--&gt;&gt;H: bounded result + audit correlation</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    Note over H,D: Never pass the user's S-audience token through to D</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch19-mcp-security" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch19-mcp-security-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch19-mcp-security">sequenceDiagram
+    autonumber
+    participant U as User
+    participant H as MCP host/client
+    participant AS as Authorization server
+    participant S as MCP resource server
+    participant D as Downstream API
+    H-&gt;&gt;S: request without sufficient token
+    S--&gt;&gt;H: protected-resource metadata + scope challenge
+    H-&gt;&gt;U: identify client, resource, and requested scope
+    U--&gt;&gt;H: consent
+    H-&gt;&gt;AS: authorization + PKCE + resource=S
+    AS--&gt;&gt;H: short-lived token, audience=S
+    H-&gt;&gt;S: tools/call + token
+    S-&gt;&gt;S: validate issuer, signature, audience, expiry, scope, tenant
+    S-&gt;&gt;D: server's own downstream credential + delegated context
+    D--&gt;&gt;S: result
+    S--&gt;&gt;H: bounded result + audit correlation
+    Note over H,D: Never pass the user's S-audience token through to D
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch19-mcp-security-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;19.3: How do resource-bound tokens prevent an MCP proxy from becoming a confused deputy?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Validate at least issuer, signature, audience/resource, expiry, not-before time, required scope, subject, client, and tenant binding. The chapter fixture makes the audience check visible: a token issued for <code>inventory://api</code> cannot list tools at <code>support://mcp</code>, even if it carries similarly named scopes.</p>
+<p><strong>Token passthrough</strong> is forbidden because the server would accept or forward a token not issued for it. This erases audience boundaries and audit attribution. If an MCP server calls a downstream API, it acts as an OAuth client for that API or uses a formal token-exchange/delegation mechanism. It does not relay an opaque user token and hope the downstream service interprets it safely.</p>
+<p>A <strong>confused deputy</strong> appears when a proxy with legitimate downstream power is tricked into using it for an unapproved client. Bind consent to the requesting client, exact redirect URI, user, downstream scopes, and MCP resource. Recheck these bindings on callback. Separate the proxy’s downstream credentials from host tokens and preserve end-user attribution in an application-controlled form.</p>
+<p>Protocol-specific supply-chain attacks need controls beyond OAuth:</p>
+<ul>
+<li><strong>Tool poisoning:</strong> a description or resource contains instructions to reveal secrets or call another tool. Treat all server content as untrusted data and keep policy outside it.</li>
+<li><strong>Rug pull:</strong> a server changes a tool after review. Pin identity and schema/version, monitor discovery changes, and require reapproval for authority-expanding diffs.</li>
+<li><strong>Tool shadowing:</strong> two servers use confusing names or one description claims authority over another. Preserve namespaces and do not let servers define cross-server policy.</li>
+<li><strong>Local-server escalation:</strong> a package runs with the host’s ambient privileges. Sandbox the process and grant filesystem, network, and credentials explicitly.</li>
+<li><strong>SSRF through discovery or authorization metadata:</strong> validate URLs, redirects, DNS/IP destinations, and HTTPS policy in server-side clients.</li>
+</ul>
+<p>An MCP gateway can centralize discovery, token validation, schema policy, rate limits, data-loss controls, approvals, and audit. It must not become an invisible superuser. Preserve caller identity, target server, original tool, exact arguments, and decision evidence end to end. Apply permission filtering before tool descriptions enter the model’s context.</p>
+<p>Chapter 24 embeds these controls in the broader agent threat model. The canonical MCP lesson here is narrower: protocol interoperability never implies transitive trust, and authorization is checked at the resource server for every operation.</p>
+</section>
+<section id="sec-ch19-a2a" class="level2" data-number="19.8">
+<h2 data-number="19.8" class="anchored" data-anchor-id="sec-ch19-a2a"><span class="header-section-number">19.8</span> A2A, task lifecycles, and protocol convergence</h2>
+<p>MCP connects a host to capabilities. A2A connects one application to a remote <strong>agentic system</strong> whose internal model, tools, memory, and workflow may remain opaque. The remote party may ask for clarification, work asynchronously, stream artifacts, or fail after partial progress. Treating it as one tool call loses that lifecycle.</p>
+<p>The <a href="https://a2a-protocol.org/latest/specification/">A2A specification</a> centers several objects:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Object</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Agent Card</td>
+<td>Discover identity, interfaces, capabilities, skills, and security schemes</td>
+</tr>
+<tr class="even">
+<td>Message</td>
+<td>One user- or agent-authored turn containing typed parts</td>
+</tr>
+<tr class="odd">
+<td>Task</td>
+<td>A stateful unit of work with a server-issued identity and lifecycle</td>
+</tr>
+<tr class="even">
+<td>Artifact</td>
+<td>A typed output assembled from parts</td>
+</tr>
+<tr class="odd">
+<td>Context</td>
+<td>A grouping identifier across related messages or tasks</td>
+</tr>
+<tr class="even">
+<td>Extension</td>
+<td>Negotiated behavior outside the core</td>
+</tr>
+</tbody>
+</table>
+<p>An Agent Card is capability metadata, not a credential or trust certificate. Fetch it from an authenticated or well-known location, verify signatures when provided, cache it with ordinary HTTP semantics, and protect extended cards that reveal sensitive internal skills. Never embed static secrets in the card. Registry search or semantic matching can propose a remote agent; policy decides whether it is an allowed delegate.</p>
+<p>A task may progress through submitted, working, input-required, completed, failed, canceled, or rejected states, depending on the negotiated revision. Clients can poll, receive a stream, or use authenticated push notifications. Preserve task and context identifiers so reconnecting does not create duplicate work. A terminal task should not silently accept another message as if it were the same execution.</p>
+<p>Delegation needs a <strong>task brief</strong>: objective, relevant evidence, constraints, allowed data, required output schema, deadline, budget, and success predicate. Send the minimum context. Do not forward the parent agent’s hidden instructions, unrelated conversation, ambient credentials, or full memory. When the remote agent returns an artifact, validate its media type, schema, provenance, and content before it enters context or triggers tools.</p>
+<p>MCP and A2A can compose. A remote agent exposed through A2A may use MCP servers internally. A host may wrap a simple A2A task as a model-visible tool. The semantic boundary still matters: an MCP tool result is normally a bounded operation result; an A2A task has independent state, messages, artifacts, and cancellation.</p>
+<p>Long-running MCP task extensions and A2A tasks may look similar because both represent asynchronous work. Choose by ownership. Use the capability protocol’s task wrapper when one server operation needs deferred completion. Use A2A when delegating to an independently operated agent whose task conversation and artifacts are first-class.</p>
+<p>Agentic payment protocols add another boundary: intent, mandate, quote, authorization, fulfillment, and receipt must be distinct objects. A model may propose a purchase or negotiate a quote; a trusted application binds payer identity, limits, merchant, asset, amount, expiry, and approval. Protocol names in this area are changing quickly. Preserve those economic invariants instead of granting a remote agent a reusable payment secret.</p>
+<p>Across protocol boundaries, use correlation and provenance that survive translation: parent run, delegation task, tool call, authorization decision, external effect, and returned artifact. Without that chain, a final answer can cite an artifact but operations cannot determine which remote action produced it.</p>
+</section>
+<section id="sec-ch19-ui" class="level2" data-number="19.9">
+<h2 data-number="19.9" class="anchored" data-anchor-id="sec-ch19-ui"><span class="header-section-number">19.9</span> Agent↔︎UI events and safe generative interfaces</h2>
+<p>A chat frontend needs more than token streaming once an agent can plan, call tools, pause, delegate, edit shared state, and produce interactive artifacts. The UI must know whether text is provisional, which tool call it belongs to, what the run awaits, and whether a reconnect requires a full snapshot.</p>
+<p>An event protocol should represent:</p>
+<ul>
+<li>run start, finish, cancellation, and error;</li>
+<li>message start, content deltas, and message end;</li>
+<li>tool-call identity, streamed arguments, result, and status;</li>
+<li>full state snapshots and ordered deltas;</li>
+<li>activities, subagent progress, artifacts, and citations;</li>
+<li>interrupts and user responses;</li>
+<li>correlation, sequence, schema version, and parent identifiers.</li>
+</ul>
+<p>The <a href="https://docs.ag-ui.com/concepts/events">AG-UI event model</a> is a useful current example: start–content–end event families for streaming content, and snapshot–delta patterns for synchronized state. The stable design lesson is transport-independent. Events are an appendable observation contract; frontend components derive views from them.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    Agent["agent runtime"] --&gt; Events["typed, ordered event stream"]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    Events --&gt; Validate["schema + run/sequence validation"]</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    Validate --&gt; Project["frontend state projector"]</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    Project --&gt; Catalog{"trusted component catalog"}</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    Catalog --&gt;|known component + validated props| Render["sandboxed rendering"]</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    Catalog --&gt;|unknown HTML/script/action| Reject["reject + safe fallback"]</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    User["user gesture"] --&gt; Intent["typed UI intent"]</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    Intent --&gt; HostGate["host auth, policy, approval"]</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    HostGate --&gt;|proposal accepted| Runtime["agent/tool runtime"]</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    HostGate --&gt;|denied| Project</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    Render -. cannot call domain API directly .-&gt; HostGate</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch19-ui-trust" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch19-ui-trust-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch19-ui-trust">flowchart LR
+    Agent["agent runtime"] --&gt; Events["typed, ordered event stream"]
+    Events --&gt; Validate["schema + run/sequence validation"]
+    Validate --&gt; Project["frontend state projector"]
+    Project --&gt; Catalog{"trusted component catalog"}
+    Catalog --&gt;|known component + validated props| Render["sandboxed rendering"]
+    Catalog --&gt;|unknown HTML/script/action| Reject["reject + safe fallback"]
+    User["user gesture"] --&gt; Intent["typed UI intent"]
+    Intent --&gt; HostGate["host auth, policy, approval"]
+    HostGate --&gt;|proposal accepted| Runtime["agent/tool runtime"]
+    HostGate --&gt;|denied| Project
+    Render -. cannot call domain API directly .-&gt; HostGate
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch19-ui-trust-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;19.4: How can a frontend stay expressive without executing model-generated authority?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>State synchronization needs recovery. Send a complete snapshot at connection or resynchronization, then ordered deltas. Give each event a stable run identifier and monotonic sequence within its stream. The frontend detects gaps or incompatible schema versions and requests a new snapshot rather than applying patches to unknown state. Make handlers idempotent so reconnect replay does not duplicate messages or approvals.</p>
+<p>Frontend tools reverse the direction: a remote agent may ask the UI to focus a panel, collect a form, or render a chart. A model request is still a proposal. The host maps a declared tool name to a trusted component or intent handler and validates every property. Unknown components, inline script, arbitrary URLs, event-handler source, and unrestricted CSS are rejected.</p>
+<p><strong>Generative UI</strong> should generate data and layout within a component grammar, not executable application code by default. A trusted catalog might allow <code>PolicyCard</code>, <code>DataTable</code>, and <code>ApprovalForm</code> with bounded props. The approval form displays an application-owned preview of an exact action; clicking it sends a typed decision back through the host’s authorization path. The rendered component never holds a payment token or invokes the effect directly.</p>
+<p>MCP Apps can deliver server-provided interactive interfaces inside supporting hosts. The same trust questions apply with a sharper sandbox boundary: predeclare the UI resource, sandbox the iframe, constrain messaging, validate tool calls at the host, apply content-security policy, and do not treat server origin as automatic permission. Host support and extension versions belong in the dated landscape, not in the application’s core state model.</p>
+<p>Separate <strong>display state</strong> from <strong>authoritative state</strong>. The UI can optimistically show that an approval was submitted; the source of truth is the signed decision event and later effect receipt. On reconnect, rebuild from server state. Never let a client-side “completed” badge become evidence that an external action committed.</p>
+<p>Test event streams with fragmented deltas, reordered or duplicated events, disconnects, stale snapshots, two concurrent tool calls, nested subagents, canceled runs, malformed component props, and a user response arriving after an interrupt expired. Accessibility is part of the component contract: focus, labels, keyboard actions, and readable status changes cannot depend on model-generated prose.</p>
+</section>
+<section id="sec-ch19-graphs" class="level2" data-number="19.10">
+<h2 data-number="19.10" class="anchored" data-anchor-id="sec-ch19-graphs"><span class="header-section-number">19.10</span> Graph state, checkpointers, interrupts, and time travel</h2>
+<p>Framework checkpointers belong with orchestration because they persist the runtime’s explicit state between graph steps. They are not the cross-session memory of Chapter 18 and not the durable external-effect ledger of Chapter 26.</p>
+<p>A graph runtime represents nodes, edges, state, and reducers. A node reads one state snapshot and emits an update. Conditional edges select the next node. Reducers define how parallel updates combine. A thread identifier selects one checkpoint history. This makes control flow inspectable and places pauses at named states rather than inside an opaque <code>while</code> loop.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>stateDiagram-v2</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    [*] --&gt; Discover</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    Discover --&gt; Lookup: save checkpoint 1</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    Lookup --&gt; Review: save checkpoint 2</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    Review --&gt; Paused: interrupt exact proposal</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    Paused --&gt; Tag: resume(approved)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    Paused --&gt; Rejected: resume(rejected)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    Tag --&gt; Finish: tool receipt + checkpoint 3</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    Review --&gt; ForkedReview: fork checkpoint 2 + edited state</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    ForkedReview --&gt; Tag: new branch approval</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    note right of Tag</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>      A checkpoint can replay this node.</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>      The write still needs idempotency</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>      and reconciliation.</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    end note</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch19-graph-state" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch19-graph-state-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch19-graph-state">stateDiagram-v2
+    [*] --&gt; Discover
+    Discover --&gt; Lookup: save checkpoint 1
+    Lookup --&gt; Review: save checkpoint 2
+    Review --&gt; Paused: interrupt exact proposal
+    Paused --&gt; Tag: resume(approved)
+    Paused --&gt; Rejected: resume(rejected)
+    Tag --&gt; Finish: tool receipt + checkpoint 3
+    Review --&gt; ForkedReview: fork checkpoint 2 + edited state
+    ForkedReview --&gt; Tag: new branch approval
+    note right of Tag
+      A checkpoint can replay this node.
+      The write still needs idempotency
+      and reconciliation.
+    end note
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch19-graph-state-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;19.5: What does a graph checkpoint preserve, and what happens when execution resumes or forks?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>An <strong>interrupt</strong> serializes a reviewable payload and pauses the graph. Resume uses the same thread and a typed human response. In many graph systems, the node containing the interrupt restarts from its beginning on resume. Side effects before the interrupt must therefore be absent or idempotent. The review must remain bound to exact arguments and target version as developed in Chapter 17.</p>
+<p>A <strong>checkpointer</strong> saves state snapshots and next-node metadata. A separate <strong>store</strong> may hold data shared across threads. Do not call every stored message “memory”; state that serves one thread has different retention, privacy, and retrieval semantics than a user preference shared across future runs.</p>
+<p><strong>Time travel</strong> means selecting an earlier checkpoint to inspect, replay, or fork. Replay may re-execute later model calls, tools, and interrupts; it is not a video recording. Forking creates a new branch with an edited state while preserving the old history. This is useful for debugging and counterfactual evaluation, but dangerous if a replay repeats an external effect. Effect calls need stable idempotency keys and a durable result lookup.</p>
+<p>The chapter’s graph host saves immutable snapshots before and at review:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># runtimes.py — explicit pause and immutable checkpoint history</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> start(<span class="va">self</span>, case_id: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">dict</span>[<span class="bu">str</span>, Any]:</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> {<span class="st">"node"</span>: <span class="st">"discover"</span>, <span class="st">"case_id"</span>: case_id, <span class="st">"status"</span>: <span class="st">"running"</span>}</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    tools <span class="op">=</span> <span class="va">self</span>.client.<span class="ex">connect</span>()</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    state.update(node<span class="op">=</span><span class="st">"lookup"</span>, tools<span class="op">=</span>tools)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>.checkpoints.save(state)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    policy <span class="op">=</span> <span class="va">self</span>.client.call(<span class="st">"policy_lookup"</span>, {<span class="st">"topic"</span>: <span class="st">"refund"</span>})</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    state.update(node<span class="op">=</span><span class="st">"review"</span>, policy<span class="op">=</span>policy, status<span class="op">=</span><span class="st">"awaiting_approval"</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>.checkpoints.save(state)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> deepcopy(state)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The build uses an in-memory log to expose semantics, not to claim crash recovery. A production checkpointer needs concurrency control, encryption, retention, schema migration, tenant isolation, and atomicity between checkpoint metadata and pending writes. Chapter 26 introduces a workflow/event history and effect ledger for hour- or day-long runs.</p>
+<p>Graphs are helpful when branches, joins, interrupts, or replay need names. A simple loop is often easier when the model repeatedly selects among tools and state is small. A deterministic workflow is better when the sequence is known. The artifact implements both graph and loop against the same protocol to show that orchestration choice need not change the server contract.</p>
+</section>
+<section id="sec-ch19-selection" class="level2" data-number="19.11">
+<h2 data-number="19.11" class="anchored" data-anchor-id="sec-ch19-selection"><span class="header-section-number">19.11</span> Select a framework without surrendering the architecture</h2>
+<p>Most agent frameworks emphasize one of three paradigms:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Paradigm</th>
+<th>Control owner</th>
+<th>Strength</th>
+<th>Failure pressure</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Deterministic workflow</td>
+<td>Application DAG or code</td>
+<td>Predictability, throughput, ordinary testing</td>
+<td>Rigid for underspecified tasks</td>
+</tr>
+<tr class="even">
+<td>Explicit state graph</td>
+<td>Application nodes plus conditional/model edges</td>
+<td>Branches, interrupts, replay, state inspection</td>
+<td>State and reducer complexity</td>
+</tr>
+<tr class="odd">
+<td>Model-driven loop</td>
+<td>Model proposes the next step inside harness gates</td>
+<td>Flexible exploration with small core</td>
+<td>Termination, observability, and cost variance</td>
+</tr>
+</tbody>
+</table>
+<p>Real systems mix them. A deterministic intake workflow may launch a model-driven research loop, then enter a graph approval node before a deterministic effect. Select at the level of a bounded subproblem rather than declaring one paradigm for the company.</p>
+<p>Evaluate a framework on mechanisms, not demo brevity:</p>
+<ul>
+<li>Can the application own prompts, messages, tool schemas, and the event stream?</li>
+<li>Are model, provider, storage, and protocol adapters replaceable?</li>
+<li>What is checkpointed, at what boundary, and under which consistency guarantee?</li>
+<li>Can interrupts bind exact action state and resume after a deployment?</li>
+<li>How are parallel updates reduced and conflicts surfaced?</li>
+<li>Can traces export in a vendor-neutral form with stable correlation identifiers?</li>
+<li>Can tests run with deterministic models, tools, time, and failure injection?</li>
+<li>What happens to running threads during state-schema and framework upgrades?</li>
+<li>Which hosted features disappear if the project self-hosts or migrates?</li>
+</ul>
+<p>Framework tax appears as hidden messages, automatic retries, implicit context, proprietary trace schemas, serialized runtime objects, and provider-specific tool wrappers. Any one may be convenient. The risk is relying on behavior the team cannot inspect, pin, or reproduce.</p>
+<p>Create an exit seam early. Domain handlers are ordinary functions or services. Protocol servers wrap those handlers. Application state is a versioned schema rather than a framework object graph. Checkpoints use an application-owned repository interface. UI events are mapped from runtime events. Model calls go through one adapter that preserves raw provider response metadata for debugging.</p>
+<p>Run a <strong>migration spike</strong> before adoption: implement one representative branch, one parallel join, one tool failure, one approval interrupt, one resume, one protocol call, and one trace export. Measure code, hidden events, latency, state size, and recovery behavior. Then reimplement the same slice with the simplest custom loop or a second framework. The comparison reveals what the framework actually owns.</p>
+<p>Protocols over frameworks does not mean avoiding frameworks. It means allowing a framework to be excellent at orchestration without granting it permanent ownership of identity, business effects, memory, UI, or interoperability.</p>
+</section>
+<section id="sec-ch19-build" class="level2" data-number="19.12">
+<h2 data-number="19.12" class="anchored" data-anchor-id="sec-ch19-build"><span class="header-section-number">19.12</span> Build</h2>
+<p>Run the dependency-free fixture from <code>newbook</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>python code<span class="op">/</span>ch19<span class="op">/</span>fixture<span class="op">.</span><span class="fu">py</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>python <span class="op">-</span>m pytest tests<span class="op">/</span>test_ch19_protocols<span class="op">.</span><span class="fu">py</span> <span class="op">-</span>q</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The fixture should end with:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"protocol"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"version"</span><span class="fu">:</span> <span class="st">"2025-11-25"</span><span class="fu">,</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"wrong_audience"</span><span class="fu">:</span> <span class="st">"invalid token audience"</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"loop"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"status"</span><span class="fu">:</span> <span class="st">"completed"</span><span class="fu">,</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"answer"</span><span class="fu">:</span> <span class="st">"C-41 routed to manual_review under policy v3"</span><span class="fu">,</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"methods"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"initialize"</span><span class="ot">,</span> <span class="st">"tools/list"</span><span class="ot">,</span> <span class="st">"tools/call"</span><span class="ot">,</span> <span class="st">"tools/call"</span><span class="ot">]</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"graph"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"paused"</span><span class="fu">:</span> <span class="st">"awaiting_approval"</span><span class="fu">,</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"status"</span><span class="fu">:</span> <span class="st">"completed"</span><span class="fu">,</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"answer"</span><span class="fu">:</span> <span class="st">"C-41 routed to manual_review under policy v3"</span><span class="fu">,</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"methods"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"initialize"</span><span class="ot">,</span> <span class="st">"tools/list"</span><span class="ot">,</span> <span class="st">"tools/call"</span><span class="ot">,</span> <span class="st">"tools/call"</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"checkpoints"</span><span class="fu">:</span> <span class="dv">3</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"equivalent_outcome"</span><span class="fu">:</span> <span class="kw">true</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Work through one integrated system in six passes.</p>
+<p><strong>1. Inspect the wire contract.</strong> In <code>protocol_lab.py</code>, follow <code>initialize</code>, <code>tools/list</code>, and <code>tools/call</code> through <code>dispatch</code>. Change the requested version to <code>latest</code> and observe the typed rejection. Restore the pinned revision.</p>
+<p><strong>2. Connect two hosts.</strong> <code>LoopHost</code> and <code>GraphHost</code> each create one <code>Client</code> for a fresh server. Compare their method transcripts. The orchestration differs; discovery and effects do not. Add a third host that only reads the policy resource without loading the write tool.</p>
+<p><strong>3. Filter discovery by authority.</strong> Remove <code>case:write</code> from the principal. <code>tools/list</code> should expose only <code>policy_lookup</code>; the model never sees the unauthorized tool. Attempt a direct <code>tools/call</code> anyway and verify server-side authorization still rejects it.</p>
+<p><strong>4. Pause and fork graph state.</strong> Run <code>GraphHost.start</code>, inspect its two checkpoints, and resume with <code>False</code>. Then fork the review snapshot with another case identifier and approve the branch. Confirm the original snapshot did not mutate.</p>
+<p><strong>5. Replay an effect.</strong> Call <code>case_tag</code> twice with the same idempotency key. Both responses match and one receipt exists. Change the key and observe that a new operation is recorded. Chapter 26 will replace this local property with a durable effect contract.</p>
+<p><strong>6. Use the official adapter.</strong> After installing the pinned requirements, run <code>python code/ch19/mcp_server.py</code> through an MCP Inspector or a compatible host using standard I/O. Connect two different hosts if available and record differences in displayed names, resource selection, approvals, structured content, and errors. Keep these compatibility notes dated.</p>
+<section id="acceptance-checks" class="level3" data-number="19.12.1">
+<h3 data-number="19.12.1" class="anchored" data-anchor-id="acceptance-checks"><span class="header-section-number">19.12.1</span> Acceptance checks</h3>
+<ul>
+<li>An explicit protocol revision is negotiated; <code>latest</code> is rejected.</li>
+<li>Read-only discovery does not reveal the write tool.</li>
+<li>A token for another audience cannot list or call tools.</li>
+<li>Loop and graph hosts reach the same domain outcome through the same method sequence.</li>
+<li>The graph exposes a typed review pause and immutable checkpoints.</li>
+<li>Replaying the same idempotency key produces one receipt.</li>
+<li>The SDK adapter contains no independent business or authorization rules.</li>
+</ul>
+</section>
+<section id="honesty-note" class="level3" data-number="19.12.2">
+<h3 data-number="19.12.2" class="anchored" data-anchor-id="honesty-note"><span class="header-section-number">19.12.2</span> Honesty note</h3>
+<p>The deterministic client implements only the JSON-RPC-shaped subset used in this lesson; conformance comes from the thin official SDK adapter and must be tested against the pinned MCP revision. The in-memory checkpointer is not durable. The fixture principal is not an OAuth implementation. The scripted planner is not a capability evaluation. These seams isolate protocol, authorization, and orchestration properties without claiming a production deployment.</p>
+</section>
+</section>
+<section id="sec-ch19-endures" class="level2" data-number="19.13">
+<h2 data-number="19.13" class="anchored" data-anchor-id="sec-ch19-endures"><span class="header-section-number">19.13</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Protocols define cross-system meaning; frameworks implement control flow. A host owns user context, consent, policy, and model behavior. MCP tools, resources, and prompts have different control relationships. Identity comes from the transport and is reauthorized at the server. Tokens are audience-bound and never blindly passed through. Remote agent tasks have an independent lifecycle. Frontends consume typed, recoverable events and render only trusted components. Graph checkpoints, cross-session memory, and durable effects remain separate contracts. Application-owned adapters keep framework choice reversible.</p>
+<p><strong>What changes.</strong> MCP lifecycle details, extensions, Tasks, Apps, server discovery, registries, SDK major versions, A2A bindings, payment protocols, UI event types, and framework APIs will evolve. Appendix C tracks pins. The stable review questions are: which boundary is crossed, which revision was negotiated, whose identity and authority apply, what state owns the lifecycle, what can be replayed, and how can either side be replaced?</p>
+</section>
+<section id="sec-ch19-exercises" class="level2" data-number="19.14">
+<h2 data-number="19.14" class="anchored" data-anchor-id="sec-ch19-exercises"><span class="header-section-number">19.14</span> Exercises</h2>
+<ol type="1">
+<li><strong>Real client compatibility.</strong> Connect <code>mcp_server.py</code> to two compatible hosts. Capture normalized transcripts for initialization, discovery, resource read, tool call, and invalid arguments. Explain every host-level difference.</li>
+<li><strong>Step-up authorization.</strong> Give the initial principal only <code>policy:read</code>. Design a scope challenge and consent flow for <code>case:write</code>, including resource indicator, PKCE, expiry, denial, and token refresh.</li>
+<li><strong>Rug-pull defense.</strong> Change <code>case_tag</code> so the same name accepts a new <code>notify_customer</code> field. Build a gateway rule that detects the authority-expanding schema diff and quarantines the update.</li>
+<li><strong>A2A translation.</strong> Wrap the case-routing operation as an asynchronous remote-agent task with a card, message, status changes, and artifact. State which information must not be copied from the parent run.</li>
+<li><strong>UI recovery.</strong> Define events for the graph pause, exact approval preview, user decision, tool receipt, and completion. Inject a missing state delta and specify how the client requests a fresh snapshot.</li>
+<li><strong>Replay boundary.</strong> Replace the in-memory receipt map with a database unique constraint. Crash after the effect but before the checkpoint, resume, and prove the idempotency key prevents a duplicate tag.</li>
+<li><strong>Framework exit spike.</strong> Port <code>GraphHost</code> to one graph framework, then export checkpoints into the application-owned state schema. List every field or behavior that prevents a clean round trip.</li>
+</ol>
+</section>
+<section id="sec-ch19-sources" class="level2" data-number="19.15">
+<h2 data-number="19.15" class="anchored" data-anchor-id="sec-ch19-sources"><span class="header-section-number">19.15</span> Notes and sources</h2>
+<p>The MCP material follows the official <a href="https://modelcontextprotocol.io/docs/learn/architecture">architecture overview</a>, <a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization">2025-11-25 authorization specification</a>, <a href="https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices">security best practices</a>, <a href="https://modelcontextprotocol.io/docs/develop/build-server">server tutorial</a>, <a href="https://github.com/modelcontextprotocol/python-sdk">Python SDK</a>, and <a href="https://modelcontextprotocol.io/extensions/apps/overview">MCP Apps overview</a>. Registry metadata and its non-certification boundary are documented by the <a href="https://modelcontextprotocol.io/registry/about">official MCP Registry</a>.</p>
+<p>The remote-agent lifecycle comes from the official <a href="https://a2a-protocol.org/latest/specification/">A2A specification</a> and <a href="https://a2a-protocol.org/latest/topics/agent-discovery/">agent discovery guidance</a>. The UI discussion uses the official <a href="https://docs.ag-ui.com/concepts/events">AG-UI event model</a>. The framework mechanics are grounded in the current LangGraph documentation for <a href="https://docs.langchain.com/oss/python/langgraph/persistence">persistence</a>, <a href="https://docs.langchain.com/oss/python/langgraph/interrupts">interrupts</a>, and <a href="https://docs.langchain.com/oss/python/langgraph/use-time-travel">time travel</a>; the chapter treats these as one worked paradigm, not a permanent dependency.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/18-memory-experiential-learning.html" class="pagination-link" aria-label="Agent Memory and Experiential Learning [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/20-multi-agent-systems.html" class="pagination-link" aria-label="Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

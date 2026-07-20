@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Separate model capacity from active computation, understand bounded-state sequence models, and read architecture economics directly from model configurations.">
+
+<title>4&nbsp; Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/05-scaling-laws-pretraining-data.html" rel="next">
+<link href="../chapters/03-attention-position-long-context.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-operational-on-ramp.html">Part I — The On-Ramp and Model Foundations</a></li><li class="breadcrumb-item"><a href="../chapters/04-moe-efficient-architectures.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch04-prerequisites" id="toc-sec-ch04-prerequisites" class="nav-link active" data-scroll-target="#sec-ch04-prerequisites"><span class="header-section-number">4.1</span> What you need going in</a></li>
+  <li><a href="#sec-ch04-contents" id="toc-sec-ch04-contents" class="nav-link" data-scroll-target="#sec-ch04-contents"><span class="header-section-number">4.2</span> Contents</a></li>
+  <li><a href="#sec-ch04-two-curves" id="toc-sec-ch04-two-curves" class="nav-link" data-scroll-target="#sec-ch04-two-curves"><span class="header-section-number">4.3</span> Two Curves, One Config</a></li>
+  <li><a href="#sec-ch04-will-build" id="toc-sec-ch04-will-build" class="nav-link" data-scroll-target="#sec-ch04-will-build"><span class="header-section-number">4.4</span> What you will build</a></li>
+  <li><a href="#sec-ch04-routing" id="toc-sec-ch04-routing" class="nav-link" data-scroll-target="#sec-ch04-routing"><span class="header-section-number">4.5</span> Routing Turns a Dense FFN into Conditional Compute</a>
+  <ul class="collapse">
+  <li><a href="#the-two-parameter-ledgers" id="toc-the-two-parameter-ledgers" class="nav-link" data-scroll-target="#the-two-parameter-ledgers"><span class="header-section-number">4.5.1</span> The two parameter ledgers</a></li>
+  </ul></li>
+  <li><a href="#sec-ch04-balance" id="toc-sec-ch04-balance" class="nav-link" data-scroll-target="#sec-ch04-balance"><span class="header-section-number">4.6</span> Balance Is the Optimization Problem</a>
+  <ul class="collapse">
+  <li><a href="#capacity-overflow-and-dropless-routing" id="toc-capacity-overflow-and-dropless-routing" class="nav-link" data-scroll-target="#capacity-overflow-and-dropless-routing"><span class="header-section-number">4.6.1</span> Capacity, overflow, and dropless routing</a></li>
+  </ul></li>
+  <li><a href="#sec-ch04-design-space" id="toc-sec-ch04-design-space" class="nav-link" data-scroll-target="#sec-ch04-design-space"><span class="header-section-number">4.7</span> The MoE Design Space and Its Systems Tax</a></li>
+  <li><a href="#sec-ch04-linear-state" id="toc-sec-ch04-linear-state" class="nav-link" data-scroll-target="#sec-ch04-linear-state"><span class="header-section-number">4.8</span> Linear Attention and State-Space Models Change Memory</a>
+  <ul class="collapse">
+  <li><a href="#from-s4-to-selective-state-spaces" id="toc-from-s4-to-selective-state-spaces" class="nav-link" data-scroll-target="#from-s4-to-selective-state-spaces"><span class="header-section-number">4.8.1</span> From S4 to selective state spaces</a></li>
+  </ul></li>
+  <li><a href="#sec-ch04-fixed-state" id="toc-sec-ch04-fixed-state" class="nav-link" data-scroll-target="#sec-ch04-fixed-state"><span class="header-section-number">4.9</span> Fixed State Forces a Recall Tradeoff</a></li>
+  <li><a href="#sec-ch04-hybrids" id="toc-sec-ch04-hybrids" class="nav-link" data-scroll-target="#sec-ch04-hybrids"><span class="header-section-number">4.10</span> Hybrids and Learned Sparsity Restore Selective Recall</a></li>
+  <li><a href="#sec-ch04-decoding" id="toc-sec-ch04-decoding" class="nav-link" data-scroll-target="#sec-ch04-decoding"><span class="header-section-number">4.11</span> Diffusion LMs and Multi-Token Prediction Change Decoding</a></li>
+  <li><a href="#sec-ch04-config" id="toc-sec-ch04-config" class="nav-link" data-scroll-target="#sec-ch04-config"><span class="header-section-number">4.12</span> Read the Economics from <code>config.json</code></a></li>
+  <li><a href="#sec-ch04-landscape" id="toc-sec-ch04-landscape" class="nav-link" data-scroll-target="#sec-ch04-landscape"><span class="header-section-number">4.13</span> Landscape 2026: The Moving Edge</a></li>
+  <li><a href="#sec-ch04-build" id="toc-sec-ch04-build" class="nav-link" data-scroll-target="#sec-ch04-build"><span class="header-section-number">4.14</span> Build</a></li>
+  <li><a href="#sec-ch04-endures" id="toc-sec-ch04-endures" class="nav-link" data-scroll-target="#sec-ch04-endures"><span class="header-section-number">4.15</span> What Endures, What Changes</a></li>
+  <li><a href="#sec-ch04-exercises" id="toc-sec-ch04-exercises" class="nav-link" data-scroll-target="#sec-ch04-exercises"><span class="header-section-number">4.16</span> Exercises</a></li>
+  <li><a href="#sec-ch04-notes" id="toc-sec-ch04-notes" class="nav-link" data-scroll-target="#sec-ch04-notes"><span class="header-section-number">4.17</span> Notes and Sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/01-operational-on-ramp.html">Part I — The On-Ramp and Model Foundations</a></li><li class="breadcrumb-item"><a href="../chapters/04-moe-efficient-architectures.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch04" class="quarto-section-identifier"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-ch04-prerequisites" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="sec-ch04-prerequisites"><span class="header-section-number">4.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, matrix multiplication, gradient-based optimization, basic Python, and beginner PyTorch.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/02-transformer-first-principles.html#sec-ch02-residual">Chapter 2, The Residual Stream and a Modern Block</a> — including the dense token-wise FFN that MoE replaces; <a href="../chapters/03-attention-position-long-context.html#sec-ch03-kv-equation">Chapter 3, The Canonical KV-Cache Equation</a> — the single byte equation reused by this chapter; <a href="../chapters/03-attention-position-long-context.html#sec-ch03-gqa">Chapter 3, Share Keys and Values</a> and <a href="../chapters/03-attention-position-long-context.html#sec-ch03-mla">Compress the Cache</a> — two attention-state designs that appear in real configurations below.</p>
+<p><strong>Not required:</strong> distributed-training collectives, custom GPU kernels, state-space scan derivations, or prior experience deploying an MoE model.</p>
+</blockquote>
+</section>
+<section id="sec-ch04-contents" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="sec-ch04-contents"><span class="header-section-number">4.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch04-two-curves">Two curves, one config</a></li>
+<li><a href="#sec-ch04-will-build">What you will build</a></li>
+<li><a href="#sec-ch04-routing">Routing turns a dense FFN into conditional compute</a></li>
+<li><a href="#sec-ch04-balance">Balance is the optimization problem</a></li>
+<li><a href="#sec-ch04-design-space">The MoE design space and its systems tax</a></li>
+<li><a href="#sec-ch04-linear-state">Linear attention and state-space models change memory</a></li>
+<li><a href="#sec-ch04-fixed-state">Fixed state forces a recall tradeoff</a></li>
+<li><a href="#sec-ch04-hybrids">Hybrids and learned sparsity restore selective recall</a></li>
+<li><a href="#sec-ch04-decoding">Diffusion LMs and multi-token prediction change decoding</a></li>
+<li><a href="#sec-ch04-config">Read the economics from <code>config.json</code></a></li>
+<li><a href="#sec-ch04-landscape">Landscape 2026: the moving edge</a></li>
+<li><a href="#sec-ch04-build">Build</a></li>
+<li><a href="#sec-ch04-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch04-exercises">Exercises</a></li>
+<li><a href="#sec-ch04-notes">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch04-two-curves" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="sec-ch04-two-curves"><span class="header-section-number">4.3</span> Two Curves, One Config</h2>
+<p>Suppose an agent model is described as “one trillion parameters, 32 billion active.” Both numbers are true, but they answer different engineering questions. The trillion parameters determine how much learned capacity exists, how much weight storage must be downloaded and retained, and how much traffic model loading or expert movement can create. The 32 billion active parameters approximate how many weights participate for one token, which influences arithmetic and weight reads during that token’s forward pass. An accelerator does not gain a trillion-parameter model merely by provisioning memory for 32 billion parameters.</p>
+<p>This separation is the first economic story in the chapter:</p>
+<p><span class="math display">
+\text{stored capacity} \ne \text{per-token active computation}.
+</span></p>
+<p>A dense feed-forward network applies the same large parameter matrices to every token. A mixture-of-experts (MoE) layer stores many feed-forward networks and routes each token to a small subset. Adding experts can grow total capacity while leaving the selected count fixed. The idea predates Transformers, but the sparsely gated MoE, GShard, and Switch Transformer made conditional computation practical at language-model scale. The price is a new learned subsystem—the router—and a new systems constraint: tokens selected for an expert must reach the device that owns it.</p>
+<p>Now consider an agent reading a million-token trace. Dense attention preserves token-addressable keys and values, so persistent state grows with retained context. Linear attention and state-space models instead update a fixed-size recurrent state. Their second economic story is different:</p>
+<p><span class="math display">
+\text{persistent sequence state} \not\propto T,
+</span></p>
+<p>for a fixed architecture, even as sequence length <span class="math inline">T</span> grows. Constant state can make streaming and long decoding attractive, but it cannot preserve an unbounded number of independent facts with perfect fidelity. The model must compress, forget, overwrite, or periodically consult token-addressable memory.</p>
+<p>These two stories are orthogonal. MoE sparsifies <strong>which parameters</strong> process a token. Linear or recurrent mixers change <strong>how sequence history</strong> is represented. A model may be dense with full attention, MoE with full attention, dense with recurrent mixers, or a hybrid MoE containing both recurrent and full-attention layers. “Efficient architecture” is therefore not one axis and not one benchmark score. It is a vector of weight capacity, active computation, persistent state, communication, kernel fit, and recall behavior.</p>
+<p>The durable skill is to reconstruct that vector rather than memorize model names. The fastest first source is often a public <code>config.json</code>: hidden width, layer count, expert count, selected experts, shared-expert width, attention cadence, KV heads, latent ranks, and recurrent-state dimensions. The rest of this chapter develops enough mechanism to read those fields without treating marketing parameter counts as a complete deployment plan.</p>
+</section>
+<section id="sec-ch04-will-build" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="sec-ch04-will-build"><span class="header-section-number">4.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>The chapter artifact.</strong> <a href="../code/ch04/moe_min.py"><code>moe_min.py</code></a> implements a top-<span class="math inline">k</span> router, a local toy MoE, an auxiliary-loss-free balancing update, a small gated linear-attention recurrence, and a synthetic associative-recall capacity probe. <a href="../code/ch04/config_reader.py"><code>config_reader.py</code></a> parses dense, MoE-plus-MLA, and hybrid-MoE configuration excerpts. It imports Chapter 3’s canonical <code>kv_bytes()</code> rather than redefining cache arithmetic. <a href="../code/ch04/run_build.py"><code>run_build.py</code></a> performs one deterministic build: it trains collapsed and balanced routers, reconstructs parameter counts, computes state at 32,768 tokens, runs the bounded-state probe, and writes every plotted point to CSV and JSON.</p>
+<p>Success means that all three total-parameter estimates are within two percent of their published counts; the intentionally biased router visibly collapses without a balancing term and distributes load with one; recurrent chunking matches full-sequence execution; and a fixed-state lookup loses exact recall as independent associations exceed its capacity. This is an architecture laboratory, not a throughput benchmark or distributed MoE runtime.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch04-routing" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="sec-ch04-routing"><span class="header-section-number">4.5</span> Routing Turns a Dense FFN into Conditional Compute</h2>
+<p>Let <span class="math inline">x\in\mathbb{R}^d</span> be one token representation and let <span class="math inline">E_i(x)</span> be expert <span class="math inline">i</span>’s feed-forward transformation. A router produces logits</p>
+<p><span class="math display">
+r=W_rx,
+</span></p>
+<p>converts them to scores <span class="math inline">p</span>, and selects a set <span class="math inline">I(x)</span> of the <span class="math inline">k</span> largest scores. With softmax routing, <span class="math inline">p_i=\exp(r_i)/\sum_j\exp(r_j)</span>. Some architectures use independent sigmoid scores before selection. A typical output is</p>
+<p><span class="math display">
+y=\sum_{i\in I(x)} g_i E_i(x),
+\qquad
+g_i=\frac{p_i}{\sum_{j\in I(x)}p_j}.
+</span></p>
+<p>The normalization is over selected experts. Top-1 routing can use its single gate directly or set it to one, depending on the implementation. Top-2 or larger <span class="math inline">k</span> lets multiple experts contribute but raises active computation and dispatch volume. Selection is discrete; gradients flow through selected gate values and through any differentiable balancing objective, not through an ordinary derivative of the top-<span class="math inline">k</span> index operation.</p>
+<p>The reference router keeps the observables needed to debug it:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>logits <span class="op">=</span> <span class="va">self</span>.projection(tokens)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>probabilities <span class="op">=</span> logits.softmax(<span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>indices <span class="op">=</span> (probabilities <span class="op">+</span> <span class="va">self</span>.selection_bias).topk(<span class="va">self</span>.top_k, dim<span class="op">=-</span><span class="dv">1</span>).indices</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>weights <span class="op">=</span> probabilities.gather(<span class="op">-</span><span class="dv">1</span>, indices)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>load <span class="op">=</span> one_hot(indices, <span class="va">self</span>.experts).<span class="bu">float</span>().<span class="bu">sum</span>(<span class="dv">1</span>).mean(<span class="dv">0</span>) <span class="op">/</span> <span class="va">self</span>.top_k</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>selection_bias</code> supports a balancing controller discussed next. It changes which experts win but does not change their output gates. Keeping those roles separate prevents a balancing correction from silently rescaling expert contributions.</p>
+<section id="the-two-parameter-ledgers" class="level3" data-number="4.5.1">
+<h3 data-number="4.5.1" class="anchored" data-anchor-id="the-two-parameter-ledgers"><span class="header-section-number">4.5.1</span> The two parameter ledgers</h3>
+<p>For a SwiGLU-like expert with model width <span class="math inline">d</span> and intermediate width <span class="math inline">h_e</span>, the three dominant matrices contain approximately</p>
+<p><span class="math display">
+P_e \approx 3dh_e
+</span></p>
+<p>parameters: gate and value projections up, then a projection down. If a layer stores <span class="math inline">E</span> routed experts, selects <span class="math inline">k</span>, and always applies <span class="math inline">S</span> shared-expert equivalents, its expert ledgers are approximately</p>
+<p><span class="math display">
+P_{\mathrm{expert,total}}=(E+S)P_e,
+\qquad
+P_{\mathrm{expert,active}}=(k+S)P_e.
+</span></p>
+<p>Router, attention, norms, embeddings, and output-head parameters are common to both ledgers. Dense layers before the first MoE layer are also always active. This is why “active parameters” is not just total parameters multiplied by <span class="math inline">k/E</span>. The common trunk can be a large fraction in a fine-grained MoE.</p>
+<p>Parameter count is also not FLOPs. Activations, attention, normalization, routing, and communication remain. Nor is active count resident memory. If every expert is available at low latency, the weights must exist somewhere in the serving topology. Quantization can reduce their bytes; expert offloading can trade memory for transfers; neither changes the logical total count.</p>
+<p>Routing is token-level, not sequence-level. Two adjacent tokens may choose different experts, and the same expert may process tokens from unrelated languages or domains. Visualizations sometimes reveal statistical specialization, but expert IDs are not guaranteed to be human-readable job titles. The useful contract is behavioral: the router chooses parameter subsets that jointly reduce the training objective while satisfying whatever balance pressure the system applies.</p>
+</section>
+</section>
+<section id="sec-ch04-balance" class="level2" data-number="4.6">
+<h2 data-number="4.6" class="anchored" data-anchor-id="sec-ch04-balance"><span class="header-section-number">4.6</span> Balance Is the Optimization Problem</h2>
+<p>A router initialized with a slight preference can create a positive feedback loop. The favored expert receives more tokens, therefore more task gradient, therefore becomes more useful, therefore receives still more tokens. Other experts become undertrained. This <strong>router collapse</strong> wastes stored parameters and creates severe device imbalance even when aggregate accelerator capacity is ample.</p>
+<p>Two statistics distinguish probability mass from actual assignments. For expert <span class="math inline">i</span> in a batch of <span class="math inline">N</span> tokens, define</p>
+<p><span class="math display">
+f_i=\frac{1}{Nk}\sum_{n=1}^{N}\mathbf{1}[i\in I(x_n)]
+</span></p>
+<p>as its hard routed fraction, and</p>
+<p><span class="math display">
+P_i=\frac{1}{N}\sum_{n=1}^{N}p_i(x_n)
+</span></p>
+<p>as its mean router score. A Switch-style auxiliary loss is</p>
+<p><span class="math display">
+L_{\mathrm{balance}}=E\sum_{i=1}^{E}f_iP_i.
+</span></p>
+<p>Implementations usually stop the gradient through <span class="math inline">f_i</span> because top-<span class="math inline">k</span> assignments are discrete; <span class="math inline">P_i</span> supplies a differentiable pressure. The minimum is near uniform use, but the coefficient matters. Too little pressure permits collapse. Too much asks the router to optimize a uniform histogram instead of the language-model objective, suppressing useful conditional specialization.</p>
+<p>Router logits can also grow to unstable magnitudes. ST-MoE introduced the router <span class="math inline">z</span>-loss</p>
+<p><span class="math display">
+L_z=\frac{1}{N}\sum_{n=1}^{N}
+\left(\log\sum_{i=1}^{E}\exp r_i(x_n)\right)^2,
+</span></p>
+<p>which discourages extreme log-partition values. It solves a numerical-stability problem, not load balance itself. Treating the two losses as interchangeable makes diagnosis harder.</p>
+<p>An alternative keeps balancing out of the task loss. Maintain a per-expert selection bias <span class="math inline">b_i</span> and route with <span class="math inline">p_i+b_i</span>. After measuring load, lower the bias of overloaded experts and raise the bias of underloaded experts:</p>
+<p><span class="math display">
+b_i\leftarrow b_i+\eta\,\operatorname{sign}\left(\frac{1}{E}-f_i\right).
+</span></p>
+<p>Subtracting the mean bias removes an irrelevant common offset. DeepSeek-V3 demonstrated this auxiliary-loss-free family at large scale. It is a feedback controller: its update rate, measurement window, and interaction with data parallelism require tuning. A sequence-wise auxiliary term can still be useful to avoid local bursts even when global balancing is bias-controlled.</p>
+<div id="fig-ch04-router-load" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two side-by-side bar charts for four experts. The unbalanced router sends all tokens to expert zero. The balanced router sends roughly one quarter to each expert.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch04-router-load-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch04/generated/router-load.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;4.1: A seeded four-expert toy classifier sends every token to expert 0 without balancing. Adding the Switch-style term spreads tokens near the 25 percent target while preserving high task accuracy. The dashed line is uniform load; values come from the saved router CSV."><img src="../code/ch04/generated/router-load.svg" class="img-fluid figure-img" alt="Two side-by-side bar charts for four experts. The unbalanced router sends all tokens to expert zero. The balanced router sends roughly one quarter to each expert."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch04-router-load-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4.1: A seeded four-expert toy classifier sends every token to expert 0 without balancing. Adding the Switch-style term spreads tokens near the 25 percent target while preserving high task accuracy. The dashed line is uniform load; values come from the saved router CSV.
+</figcaption>
+</figure>
+</div>
+<p>The build intentionally starts expert 0 with a logit advantage. After 300 seeded steps, the unbalanced run routes 100 percent of held-out tokens to expert 0 and reaches 98.35 percent toy classification accuracy. With balance weight <span class="math inline">{0.5}</span>, the loads are 26.57, 23.05, 24.56, and 25.82 percent, with 97.34 percent accuracy. This does not establish a production coefficient; it isolates the collapse mechanism. The important lesson is that task loss can look healthy while most experts are dead and one device is overloaded.</p>
+<section id="capacity-overflow-and-dropless-routing" class="level3" data-number="4.6.1">
+<h3 data-number="4.6.1" class="anchored" data-anchor-id="capacity-overflow-and-dropless-routing"><span class="header-section-number">4.6.1</span> Capacity, overflow, and dropless routing</h3>
+<p>Communication implementations often allocate each expert a token capacity</p>
+<p><span class="math display">
+C=\left\lceil c\frac{Nk}{E}\right\rceil,
+</span></p>
+<p>where <span class="math inline">c\ge 1</span> is a capacity factor. When more than <span class="math inline">C</span> assignments reach an expert, a system can drop overflow, route it to a lower-ranked expert, pad larger buffers, or use a dropless variable-size implementation. Dropping keeps static shapes and bounded communication but removes expert computation for some tokens. Rerouting changes the function chosen by the router. Dropless routing preserves assignments but exposes imbalance directly as stragglers and uneven buffers.</p>
+<p>Monitor at least per-layer load, probability entropy, overflow or drop rate, tokens per destination rank, and the gap between the busiest and median expert. An average histogram over an entire training run can hide short hot spots that determine step time. Balance is simultaneously an optimization objective and a distributed-systems service-level objective.</p>
+</section>
+</section>
+<section id="sec-ch04-design-space" class="level2" data-number="4.7">
+<h2 data-number="4.7" class="anchored" data-anchor-id="sec-ch04-design-space"><span class="header-section-number">4.7</span> The MoE Design Space and Its Systems Tax</h2>
+<p>“An MoE” leaves several independent choices unspecified:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Choice</th>
+<th>Smaller or simpler end</th>
+<th>Larger or richer end</th>
+<th>Consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Routed experts <span class="math inline">E</span></td>
+<td>few, wider experts</td>
+<td>many, fine-grained experts</td>
+<td>more capacity choices, smaller token groups</td>
+</tr>
+<tr class="even">
+<td>Selected experts <span class="math inline">k</span></td>
+<td>top-1</td>
+<td>top-2 or higher</td>
+<td>less compute versus ensemble-like mixing</td>
+</tr>
+<tr class="odd">
+<td>Shared path</td>
+<td>none</td>
+<td>one or more shared experts</td>
+<td>all-token capacity and extra active cost</td>
+</tr>
+<tr class="even">
+<td>Layer placement</td>
+<td>periodic MoE</td>
+<td>nearly every FFN is MoE</td>
+<td>lower versus higher conditional capacity</td>
+</tr>
+<tr class="odd">
+<td>Early stack</td>
+<td>MoE from layer 0</td>
+<td>dense-first</td>
+<td>immediate sparsity versus stable shared feature formation</td>
+</tr>
+<tr class="even">
+<td>Scoring</td>
+<td>softmax</td>
+<td>sigmoid plus normalization</td>
+<td>coupled versus independent preselection scores</td>
+</tr>
+<tr class="odd">
+<td>Balance</td>
+<td>auxiliary loss</td>
+<td>bias controller or hybrid</td>
+<td>direct gradient pressure versus external feedback</td>
+</tr>
+<tr class="even">
+<td>Overflow</td>
+<td>capacity and drops</td>
+<td>dropless dispatch</td>
+<td>static buffers versus dynamic imbalance</td>
+</tr>
+</tbody>
+</table>
+<p>A coarse MoE stores relatively few large experts. A fine-grained MoE divides the same or greater total capacity among many small experts and selects several. Fine granularity offers more combinations—choosing 8 of 256 is a richer code than choosing 1 of 8—but each expert receives fewer tokens per step, which can make matrix operations smaller and expert training noisier. Shared experts provide a dense path for common transformations, yet they appear in every active-parameter calculation.</p>
+<p>Layer placement matters as much as expert count. If only every fourth FFN is sparse, three quarters of FFN layers remain dense. If initial layers are dense, their parameters are always active. A model name such as <code>A3B</code> may summarize one publisher’s counting convention rather than the exact number obtained by summing every common projection. Always state whether embeddings, output heads, attention, routers, shared experts, norms, and multimodal encoders are included.</p>
+<p>The systems tax begins after top-<span class="math inline">k</span>. Under expert parallelism, each rank owns a subset of experts. Tokens start where preceding tensor or data-parallel work produced them; routing creates a permutation by destination expert. A conceptual layer therefore performs:</p>
+<ol type="1">
+<li>compute router scores and assignments;</li>
+<li>pack token states by destination rank and expert;</li>
+<li>exchange variable token groups, commonly with an all-to-all collective;</li>
+<li>run local expert matrix multiplications;</li>
+<li>exchange outputs back and restore token order;</li>
+<li>combine selected expert outputs using their gates.</li>
+</ol>
+<p>Small experts can turn compute into communication. Skew creates stragglers. Padding wastes bandwidth; variable sizes complicate scheduling. Topology matters because crossing a node boundary is not equivalent to moving within one accelerator fabric. These facts explain why equal active-parameter counts can have different latency, but the engineering of expert placement, overlap, dispatch kernels, and fault handling belongs to Chapters 6 and 10. At this point retain one rule: conditional FLOPs are not free if the chosen weights or token activations are far away.</p>
+<p>MoE also changes failure analysis. A corrupt or unavailable expert affects only routed tokens, creating input-dependent degradation. Quantizing experts can have heterogeneous error. Fine-tuning a sparse model may starve rarely selected experts. Capacity planning must cover total resident weights and peak routed traffic, not merely average active parameters.</p>
+</section>
+<section id="sec-ch04-linear-state" class="level2" data-number="4.8">
+<h2 data-number="4.8" class="anchored" data-anchor-id="sec-ch04-linear-state"><span class="header-section-number">4.8</span> Linear Attention and State-Space Models Change Memory</h2>
+<p>Softmax attention retains token-addressable keys and values. Linear attention begins by replacing the softmax similarity with a feature map whose kernel factorizes:</p>
+<p><span class="math display">
+\operatorname{sim}(q,k)\approx \phi(q)^\top\phi(k).
+</span></p>
+<p>For causal attention, associate first and sum second. With key feature width <span class="math inline">m</span> and value width <span class="math inline">d_v</span>, maintain</p>
+<p><span class="math display">
+S_t=\lambda_t S_{t-1}+\phi(k_t)v_t^\top,
+\qquad
+z_t=\lambda_t z_{t-1}+\phi(k_t),
+</span></p>
+<p>then compute</p>
+<p><span class="math display">
+y_t=\frac{\phi(q_t)^\top S_t}
+{\phi(q_t)^\top z_t+\epsilon}.
+</span></p>
+<p><span class="math inline">S_t</span> has shape <span class="math inline">m\times d_v</span> and <span class="math inline">z_t</span> has width <span class="math inline">m</span>, independent of <span class="math inline">t</span>. The learned decay <span class="math inline">\lambda_t</span> can forget old content. More expressive delta-rule variants update memory using the difference between a new value and the value currently retrieved by its key, reducing destructive accumulation. Gates can make writing, retaining, and erasing input-dependent.</p>
+<p>The reference block is deliberately small:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>state <span class="op">=</span> decay[:, :, <span class="va">None</span>] <span class="op">*</span> state <span class="op">+</span> einsum(<span class="st">"bf,bd-&gt;bfd"</span>, key, value)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>normalizer <span class="op">=</span> decay <span class="op">*</span> normalizer <span class="op">+</span> key</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>numerator <span class="op">=</span> einsum(<span class="st">"bf,bfd-&gt;bd"</span>, query, state)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>output <span class="op">=</span> numerator <span class="op">/</span> (query <span class="op">*</span> normalizer).<span class="bu">sum</span>(<span class="op">-</span><span class="dv">1</span>, keepdim<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The same recurrence processes an entire sequence or accepts the returned state one token at a time; the tests require both paths to match. For batch <span class="math inline">B</span>, feature width <span class="math inline">m</span>, and value width <span class="math inline">d_v</span>, this didactic state contains <span class="math inline">B(md_v+m)</span> scalars no matter how many tokens have passed. A production gated delta or SSM block has different states and kernels, but the fixed-state contract remains.</p>
+<section id="from-s4-to-selective-state-spaces" class="level3" data-number="4.8.1">
+<h3 data-number="4.8.1" class="anchored" data-anchor-id="from-s4-to-selective-state-spaces"><span class="header-section-number">4.8.1</span> From S4 to selective state spaces</h3>
+<p>A linear state-space model writes</p>
+<p><span class="math display">
+h_t=A h_{t-1}+B x_t,
+\qquad
+y_t=C h_t+D x_t.
+</span></p>
+<p>The challenge is to make the recurrence expressive, stable over long horizons, and efficient during parallel training. S4 structured <span class="math inline">A</span> so the corresponding long convolution could be computed efficiently. Mamba made state-space parameters input-dependent, letting the model select what to propagate or forget, and supplied a hardware-aware scan. Mamba-2’s structured state-space duality showed that useful SSMs and attention-like matrix transformations are closely related rather than opposing species.</p>
+<p>That lineage now includes gated delta networks, Kimi Delta Attention, and recurrent families such as RWKV. Names differ in update rule, normalization, gating, convolutional local path, and training algorithm. The engineering questions are more stable:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Question</th>
+<th>Full softmax attention</th>
+<th>Fixed-state linear or recurrent mixer</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Persistent history</td>
+<td>token-addressable KV entries</td>
+<td>compressed recurrent matrices or vectors</td>
+</tr>
+<tr class="even">
+<td>State growth with <span class="math inline">T</span></td>
+<td>linear for a fixed architecture</td>
+<td>constant for a fixed architecture</td>
+</tr>
+<tr class="odd">
+<td>Decode history work</td>
+<td>reads retained history</td>
+<td>recurrent update independent of <span class="math inline">T</span></td>
+</tr>
+<tr class="even">
+<td>Parallel training</td>
+<td>attention matrix with optimized kernels</td>
+<td>chunkwise, scan, or dual matrix form</td>
+</tr>
+<tr class="odd">
+<td>Exact arbitrary lookup</td>
+<td>direct content-addressable path</td>
+<td>limited by compressed state</td>
+</tr>
+<tr class="even">
+<td>Implementation sensitivity</td>
+<td>attention kernel and cache layout</td>
+<td>update-rule fusion and scan/chunk kernels</td>
+</tr>
+</tbody>
+</table>
+<p>“Linear” can describe asymptotic training work, a kernelized attention identity, or a recurrent decode path. It does not guarantee lower wall-clock latency at every sequence length. Dense attention benefits from exceptionally mature matrix kernels; recurrent operators may need specialized fusion and can be less parallel in naive code. Compare end-to-end throughput, memory, quality, and batch behavior on the target runtime.</p>
+</section>
+</section>
+<section id="sec-ch04-fixed-state" class="level2" data-number="4.9">
+<h2 data-number="4.9" class="anchored" data-anchor-id="sec-ch04-fixed-state"><span class="header-section-number">4.9</span> Fixed State Forces a Recall Tradeoff</h2>
+<p>A fixed-size state is a lossy compression channel. Imagine writing <span class="math inline">n</span> arbitrary key-value pairs and later querying any key. Full attention can retain one addressable representation per pair. A state with a fixed number of independent slots must eventually map distinct histories to the same or nearby representation. Without assumptions about the data, exact retrieval of unbounded independent associations is impossible at fixed precision.</p>
+<p>Multi-query associative recall (MQAR) exposes this pressure. A sequence supplies key-value pairs, then repeats keys whose values must be emitted. It removes much of natural language’s redundancy: the model cannot rely on topic or grammar to reconstruct a forgotten random value. State expansion, better update rules, and learned feature maps postpone interference; they do not repeal the information bottleneck.</p>
+<div id="fig-ch04-fixed-state-mqar" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Recall accuracy versus number of key-value pairs. Full attention remains perfect. Fixed states with eight and thirty-two slots decline as pair count increases, with thirty-two slots consistently better.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch04-fixed-state-mqar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch04/generated/fixed-state-mqar.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;4.2: Exact token-addressable lookup stays at one in this synthetic probe. A bounded last-write-wins feature state degrades as independent pairs exceed 8 or 32 hashed slots; increasing state moves the curve but does not remove the capacity limit. Each point contains 4,096 seeded trials."><img src="../code/ch04/generated/fixed-state-mqar.svg" class="img-fluid figure-img" alt="Recall accuracy versus number of key-value pairs. Full attention remains perfect. Fixed states with eight and thirty-two slots decline as pair count increases, with thirty-two slots consistently better."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch04-fixed-state-mqar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4.2: Exact token-addressable lookup stays at one in this synthetic probe. A bounded last-write-wins feature state degrades as independent pairs exceed 8 or 32 hashed slots; increasing state moves the curve but does not remove the capacity limit. Each point contains 4,096 seeded trials.
+</figcaption>
+</figure>
+</div>
+<p>The probe behind <a href="#fig-ch04-fixed-state-mqar" class="quarto-xref">Figure&nbsp;<span>4.2</span></a> is intentionally not a trained language model. It hashes each key to a bounded slot and stores the most recent value in that slot. At 128 pairs, the 8-slot state recalls 6.18 percent exactly and the 32-slot state recalls 24.32 percent, while the token-addressable reference remains at 100 percent. This makes one collision mechanism visible without attributing a benchmark score to an architecture family.</p>
+<p>Real recurrent models distribute information across continuous dimensions rather than literal hash buckets. They can exploit structure, compress correlated facts, learn selective forgetting, and answer many tasks without exact token recall. The plot therefore supports a bounded claim: fixed state creates a capacity tradeoff, and increasing state improves the tradeoff. It does not say that a 32-dimensional SSM attains the plotted rate or that full attention is universally better.</p>
+<p>For agents, the distinction matters. Summarizing a conversation’s intent is compression-friendly. Reproducing an exact identifier, line of code, or tool result from an arbitrary earlier position is associative recall. A workload with long streams and modest exact lookup may favor recurrence. A repository agent that must retrieve any of thousands of unique symbols benefits from periodic token-addressable attention, external retrieval, or both. Architecture evaluation should include the memory behavior of the intended task, not perplexity alone.</p>
+</section>
+<section id="sec-ch04-hybrids" class="level2" data-number="4.10">
+<h2 data-number="4.10" class="anchored" data-anchor-id="sec-ch04-hybrids"><span class="header-section-number">4.10</span> Hybrids and Learned Sparsity Restore Selective Recall</h2>
+<p>Hybrids combine cheap streaming layers with occasional token-addressable layers. If <span class="math inline">L_f</span> layers use full attention and <span class="math inline">L_r</span> use fixed-state mixers, persistent sequence state is approximately</p>
+<p><span class="math display">
+\operatorname{StateBytes}(T)
+=\operatorname{KVBytes}(L_f,T)+L_rP_{\mathrm{state}}s,
+</span></p>
+<p>where the first term uses the canonical equation from <a href="../chapters/03-attention-position-long-context.html#sec-ch03-kv-equation">Chapter 3</a>, <span class="math inline">P_{\mathrm{state}}</span> is recurrent scalars per layer, and <span class="math inline">s</span> is bytes per scalar. Only the full-attention layers contribute a context-proportional KV term. A cadence with three recurrent layers followed by one full-attention layer preserves a periodic exact-retrieval path while cutting the KV slope to roughly one quarter of an otherwise comparable all-attention stack.</p>
+<p>Cadence is not enough to predict quality. Layer order, state width, local convolutions, attention head design, training length distribution, and residual pathways all matter. The useful systems observation is additive: sum state by layer type. Do not apply an all-attention cache formula to every layer in a hybrid, and do not call the whole stack constant-memory merely because most layers recur.</p>
+<p>Sparse attention takes a different route: retain a token-addressable history but compute only selected interactions. Fixed windows and block patterns are easy to express but encode a predetermined visibility bias. Learned selectors can adapt retrieval to the query:</p>
+<ul>
+<li><strong>Native Sparse Attention (NSA)</strong> trains compression, fine-grained selection, and local sliding branches end to end, while co-designing block structure for hardware efficiency.</li>
+<li><strong>Mixture of Block Attention (MoBA)</strong> routes a query to selected key-value blocks, applying the MoE idea to attention regions and allowing a path between sparse and full modes.</li>
+<li><strong>DeepSeek Sparse Attention (DSA)</strong> uses a lightweight learned indexer to score historical tokens and selects a fine-grained top-<span class="math inline">k</span> set for the main attention computation.</li>
+</ul>
+<p>Learned sparsity must be trained or adapted with the backbone. Taking a dense-attention checkpoint and applying a post hoc mask changes the function under a distribution the model did not learn, and the selector itself can miss evidence. Selection cost also matters: an indexer that scores every past token may reduce expensive value mixing while retaining a linear search term. Block granularity, index caches, selector precision, and sparse kernels determine whether asymptotic savings become wall-clock savings.</p>
+<p>The design triangle is now visible. Full attention preserves direct access but grows state and work. Fixed-state recurrence bounds state but compresses history. Learned sparse attention keeps addressable history and chooses a subset, paying index and miss-risk costs. Hybrids place these mechanisms where each is useful. There is no architecture label that removes the need to measure recall, state, and runtime together.</p>
+</section>
+<section id="sec-ch04-decoding" class="level2" data-number="4.11">
+<h2 data-number="4.11" class="anchored" data-anchor-id="sec-ch04-decoding"><span class="header-section-number">4.11</span> Diffusion LMs and Multi-Token Prediction Change Decoding</h2>
+<p>Autoregressive language models factor a sequence left to right:</p>
+<p><span class="math display">
+p(x_{1:T})=\prod_{t=1}^{T}p(x_t\mid x_{&lt;t}).
+</span></p>
+<p>This supplies a simple cacheable interface but imposes a sequential dependency between committed output tokens. Two research lines relax different parts of that contract.</p>
+<p>A diffusion language model corrupts tokens or representations and learns to reverse the corruption over a sequence or block. At inference it initializes masked or noisy positions and refines many positions over several denoising steps. Because positions can change before commitment, the model can revise a block and perform infilling naturally. Latency depends on block size, number and schedule of denoising steps, confidence-based remasking, kernel efficiency, and how much prefix state can be reused. “Multiple tokens in parallel” is not itself a speed guarantee: one refinement step may process the whole block, and several steps may be required.</p>
+<p>Multi-token prediction (MTP) usually preserves an autoregressive trunk. At each training position, several heads predict successive future tokens:</p>
+<p><span class="math display">
+L_{\mathrm{MTP}}=\sum_{j=1}^{n}\lambda_j
+\operatorname{CE}\!\left(p_j(x_{t+j}\mid h_t),x_{t+j}\right).
+</span></p>
+<p>This gives the shared representation denser future supervision. After training, auxiliary heads may be discarded, or they can propose multiple future tokens for speculative verification. Verification against the target model preserves its exact distribution when implemented correctly; accepting unverified drafts does not. MTP therefore spans a training objective and a serving opportunity, while diffusion changes the generative factorization itself.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — Parallel text generation is now a product question
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Diffusion text models have moved beyond small research demonstrations, but reported speed numbers remain workload- and hardware-specific. Google DeepMind’s experimental Gemini Diffusion page reports an average sampling speed of 1,479 tokens per second excluding 0.84 seconds of overhead. Inception’s Mercury technical report reports 1,109 tokens per second for Mercury Coder Mini and 737 for Small on NVIDIA H100 GPUs, based on independent evaluations cited by the report. Inception announced Mercury 2 in July 2026 with a reported 1,009 tokens per second on NVIDIA Blackwell GPUs. These figures use different models, hardware, quality points, and accounting conventions; they are evidence of a viable design space, not a universal comparison against autoregressive serving.</p>
+<p>Current autoregressive releases also expose MTP-derived draft models or multi-step training. The operational question is no longer “does the paper predict several tokens?” but “does the deployed engine exploit the extra heads, what acceptance rate does it obtain, and what latency metric includes verification and overhead?” Chapter 10 owns those serving measurements.</p>
+<p><strong>Verify live:</strong> check the current <a href="https://deepmind.google/models/gemini-diffusion/">Gemini Diffusion model page</a>, <a href="https://arxiv.org/abs/2506.17298">Mercury technical report</a>, <a href="https://www.inceptionlabs.ai/blog/introducing-mercury-2">Mercury 2 announcement</a>, and the target engine’s documentation before using any throughput claim in a design review. <strong>Verified:</strong> 2026-07-19.</p>
+</div>
+</div>
+<p>The durable comparison is dependency structure. Autoregression commits one next token. Speculative MTP proposes several but verifies them. Diffusion refines a block through repeated passes. Their output-token counters are not automatically comparable, and agent latency includes time to first useful action, tool waits, and repeated model calls—not just steady-state generated tokens per second.</p>
+</section>
+<section id="sec-ch04-config" class="level2" data-number="4.12">
+<h2 data-number="4.12" class="anchored" data-anchor-id="sec-ch04-config"><span class="header-section-number">4.12</span> Read the Economics from <code>config.json</code></h2>
+<p>A configuration is not a complete implementation specification, but it is often enough to reject a bad capacity assumption. Read it in four passes.</p>
+<p><strong>Pass 1: the common trunk.</strong> Record <code>hidden_size</code>, <code>num_hidden_layers</code>, <code>vocab_size</code>, embedding tying, normalization style, and dense <code>intermediate_size</code>. Embedding and output matrices can materially affect smaller active counts. Count them once if tied and twice otherwise.</p>
+<p><strong>Pass 2: attention state.</strong> Record query heads, KV heads, head dimension, latent rank, decoupled rotary-key width, and which layers actually use full attention. Standard GQA caches keys and values; MLA-style configurations cache a latent plus a rotary component; hybrid configurations cache KV only in their attention layers. Feed those fields into the Chapter 3 equation rather than inventing a model-specific shortcut.</p>
+<p><strong>Pass 3: experts.</strong> Look for routed-expert count, selected experts per token, per-expert intermediate width, shared-expert width or count, dense-first layers, and MoE frequency. Field names vary: <code>n_routed_experts</code> and <code>num_experts</code> may mean the same thing; <code>num_experts_per_tok</code> usually means selected routed experts and may exclude a shared expert. Inspect model code or report when the semantics are ambiguous.</p>
+<p><strong>Pass 4: non-attention state.</strong> A linear mixer may expose key/value head counts, state dimensions, convolution width, and a full-attention interval. Recurrent state can include matrix memories and short convolution buffers. It is fixed with respect to context length but scales with batch, layers, heads, precision, and any tensor-parallel replication.</p>
+<p>The parser uses leading-order matrix counts. For a dense layer it adds GQA projections, approximately <span class="math inline">{3}dh</span> for SwiGLU, and two norm vectors. For MoE layers it counts every stored expert in <code>total_params</code> and selected plus shared experts in <code>active_params</code>. For hybrid layers it separately counts full-attention and linear mixers. Biases and some specialized parameters are included where the public structure makes them material; exact framework totals may include or omit buffers and modality components.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — Three configuration reconstructions
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The integrated build parses dated excerpts from three public configurations:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 13%">
+<col style="width: 18%">
+<col style="width: 18%">
+<col style="width: 18%">
+<col style="width: 18%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Configuration</th>
+<th>Architecture signal</th>
+<th style="text-align: right;">Estimated total</th>
+<th style="text-align: right;">Published total</th>
+<th style="text-align: right;">Estimated active</th>
+<th style="text-align: right;">State at 32,768 tokens, batch 1, BF16</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Llama 3.1 8B</td>
+<td>dense, 32 layers, 8 KV heads</td>
+<td style="text-align: right;">8.030B</td>
+<td style="text-align: right;">8B</td>
+<td style="text-align: right;">8.030B</td>
+<td style="text-align: right;">4.000 GiB KV</td>
+</tr>
+<tr class="even">
+<td>DeepSeek-V3</td>
+<td>256 routed, top-8 plus shared, MLA</td>
+<td style="text-align: right;">671.026B</td>
+<td style="text-align: right;">671B</td>
+<td style="text-align: right;">37.552B</td>
+<td style="text-align: right;">2.145 GiB KV</td>
+</tr>
+<tr class="odd">
+<td>Qwen3-Next 80B-A3B</td>
+<td>512 routed, top-10 plus shared, 3:1 linear/full</td>
+<td style="text-align: right;">79.574B</td>
+<td style="text-align: right;">80B</td>
+<td style="text-align: right;">3.774B</td>
+<td style="text-align: right;">0.750 GiB KV + 0.0368 GiB fixed state</td>
+</tr>
+</tbody>
+</table>
+<p>Total-count errors are 0.38, 0.004, and -0.53 percent, respectively. The Qwen active reconstruction exceeds the marketed 3B label because this parser includes embeddings, output head, token mixers, routers, norms, and the shared expert; the label uses its publisher’s convention. That disagreement is useful: “active parameters” needs a written counting boundary.</p>
+<p>The rows are architectural accounting, not quality or speed comparisons. Their widths, layers, precision assumptions, and attention mechanisms differ. Real serving memory adds model weights, allocator effects, temporary workspaces, parallel duplication, and batch-specific state.</p>
+<p><strong>Verify live:</strong> compare the local excerpts with the official <a href="https://huggingface.co/meta-llama/Llama-3.1-8B/blob/main/config.json">Llama 3.1 8B config</a>, <a href="https://huggingface.co/deepseek-ai/DeepSeek-V3-Base/blob/main/config.json">DeepSeek-V3 Base config</a>, and <a href="https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct/blob/main/config.json">Qwen3-Next 80B-A3B config</a>, then rerun the parser before making a deployment decision. <strong>Verified:</strong> 2026-07-19.</p>
+</div>
+</div>
+<p>The contrasting rows expose both economic stories. The MoE-plus-MLA example bends the active-weight curve. The recurrent/full-attention MoE bends the context-state curve, but its periodic attention layers still contribute context-proportional KV state. Neither ledger alone says whether a model fits or runs efficiently on a specific topology.</p>
+</section>
+<section id="sec-ch04-landscape" class="level2" data-number="4.13">
+<h2 data-number="4.13" class="anchored" data-anchor-id="sec-ch04-landscape"><span class="header-section-number">4.13</span> Landscape 2026: The Moving Edge</h2>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This section is intentionally removable. The equations, mechanisms, build, and config-reading method above do not depend on these model snapshots.</p>
+<div id="fig-ch04-landscape-scatter" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Log-log scatter plot of total versus active parameters for eight mixture-of-experts models. Dashed guide lines show three and five percent active fractions, and most points fall near that band.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch04-landscape-scatter-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="../code/ch04/generated/landscape-total-active.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Figure&nbsp;4.3: Eight published MoE configurations occupy a narrow band in which roughly three to five percent of total parameters are active for each token. Both axes are logarithmic; labels and values are generated from dated official model cards."><img src="../code/ch04/generated/landscape-total-active.svg" class="img-fluid figure-img" alt="Log-log scatter plot of total versus active parameters for eight mixture-of-experts models. Dashed guide lines show three and five percent active fractions, and most points fall near that band."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch04-landscape-scatter-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4.3: Eight published MoE configurations occupy a narrow band in which roughly three to five percent of total parameters are active for each token. Both axes are logarithmic; labels and values are generated from dated official model cards.
+</figcaption>
+</figure>
+</div>
+<p>As of the verification date, a visible open-weight trend is very large stored capacity with a low single-digit active fraction. The generated fixture records DeepSeek-V4-Pro at 1.6T total and 49B active, DeepSeek-V4-Flash at 284B and 13B, Kimi K2.5 at 1T and 32B, Qwen3.5 397B-A17B, GLM-5 at 744B and 40B, MiniMax-M2 at 230B and 10B, gpt-oss-120b at 117B and 5.1B, and Llama 4 Maverick at 400B and 17B. <a href="#fig-ch04-landscape-scatter" class="quarto-xref">Figure&nbsp;<span>4.3</span></a> shows published counting conventions, not parser-normalized counts.</p>
+<p>Architecture combinations are diversifying at the same time:</p>
+<ul>
+<li>DeepSeek-V4’s model card describes MoE with a hybrid of compressed sparse and heavily compressed attention; Pro and Flash trade total and active scale.</li>
+<li>Kimi K2.5 reports 384 routed experts, top-8 selection plus one shared expert, and MLA.</li>
+<li>Qwen3.5 397B-A17B reports 60 layers organized as repeated groups of three Gated DeltaNet layers followed by one gated full-attention layer, with 512 experts, top-10 routing, and a shared expert.</li>
+<li>GLM-5 reports 744B total, 40B active, and DeepSeek Sparse Attention. MiniMax-M2 retained the small active fraction, while later <a href="https://platform.minimax.io/docs/guides/text-m2-full-attention">deployment guidance for the M2 family</a> documents full-attention variants—evidence that sparse attention is not a one-way migration.</li>
+<li>Llama 4 introduced MoE to that family; Maverick reports 128 experts and 17B active. OpenAI’s gpt-oss-120b reports 117B total and 5.1B active.</li>
+<li>Google’s Gemma 4 family spans edge, dense, unified, and a 26B A4B MoE design; its model card describes hybrid local/global attention and MTP draft models. This is a reminder that the frontier includes deployment-targeted families, not only trillion-parameter checkpoints.</li>
+</ul>
+<p>Several choices now look established enough to design around: conditional FFN computation is a mainstream capacity lever; shared-KV or compressed-KV attention is common in long-context systems; and hybrid layer stacks are credible production architectures. Still contested are the best expert granularity, shared-expert design, auxiliary loss versus bias control, the ratio and placement of full attention, token- versus block-level learned sparsity, whether fixed-state mixers should dominate the stack, and whether diffusion decoding becomes a default rather than a specialized serving point.</p>
+<p><strong>Verify live:</strong> recheck every record in <a href="../code/ch04/fixtures/landscape_models.json"><code>landscape_models.json</code></a> against its linked official model card; then review the current official cards for <a href="https://huggingface.co/Qwen/Qwen3.5-397B-A17B">Qwen3.5 397B-A17B</a>, <a href="https://huggingface.co/moonshotai/Kimi-K2.5">Kimi K2.5</a>, <a href="https://huggingface.co/zai-org/GLM-5">GLM-5</a>, <a href="https://ai.google.dev/gemma/docs/core">Gemma 4</a>, and any successor models. Update the dated fixture rather than rewriting the durable sections. <strong>Verified:</strong> 2026-07-19.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch04-build" class="level2" data-number="4.14">
+<h2 data-number="4.14" class="anchored" data-anchor-id="sec-ch04-build"><span class="header-section-number">4.14</span> Build</h2>
+<p>Run the entire offline artifact from the book root (<code>newbook/</code> in this workspace):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch04/run_build.py</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pytest</span> <span class="at">-q</span> tests/test_ch04_efficient_architectures.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The build has no network dependency. Its public configuration excerpts and landscape records carry source URLs and a verification date. It writes:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Output</th>
+<th>What it makes auditable</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>config-estimates.csv</code></td>
+<td>every parameter, active-fraction, and 32K state estimate</td>
+</tr>
+<tr class="even">
+<td><code>router-loads.csv</code></td>
+<td>per-expert held-out load and task metrics for both router conditions</td>
+</tr>
+<tr class="odd">
+<td><code>mqar-capacity.csv</code></td>
+<td>trials underlying the fixed-state recall curves</td>
+</tr>
+<tr class="even">
+<td><code>landscape-models.csv</code></td>
+<td>the dated total-versus-active scatter inputs</td>
+</tr>
+<tr class="odd">
+<td><code>metrics.json</code></td>
+<td>all rows plus experiment contracts and claim boundaries</td>
+</tr>
+<tr class="even">
+<td>three SVG files</td>
+<td>figures generated directly from the saved measurements</td>
+</tr>
+</tbody>
+</table>
+<p>The reference parser explicitly imports <code>KVConfig</code> and <code>kv_bytes</code> from Chapter 3. This dependency is deliberate: one repository should not accumulate slightly different cache formulas. The parser’s hybrid estimate constructs a cache configuration with only 12 full-attention layers, then adds fixed recurrent state for the other 36 layers.</p>
+<p>The tests enforce seven contracts: router tensor shapes and normalized selected gates; balancing-bias direction; collapse prevention; recurrence chunk equivalence and fixed state size; bounded-state recall degradation; total-count reconstruction within two percent and known KV cases; and emission of all evidence files. The seeded router is the slowest part because it performs two short optimization runs. It uses one CPU thread and fixed generators so reruns are stable.</p>
+<p>To inspect a new architecture, copy only the fields required for accounting into a dated fixture, add a parser branch, and state the counting convention. Do not silently force an unfamiliar config into the nearest known schema. If a field such as <code>num_experts_per_tok</code> includes shared experts in one implementation and excludes them in another, resolve it from the model code or report and capture that decision in the fixture.</p>
+<p>The build excludes distributed all-to-all timing, production kernels, quantized weight packing, and language-model quality. Those require hardware and checkpoints and would turn a deterministic architecture lesson into an environment-specific benchmark. The generated evidence answers narrower questions: what is stored, what is active by a stated convention, how much sequence state grows, and what failure mechanism appears in a controlled toy system.</p>
+</section>
+<section id="sec-ch04-endures" class="level2" data-number="4.15">
+<h2 data-number="4.15" class="anchored" data-anchor-id="sec-ch04-endures"><span class="header-section-number">4.15</span> What Endures, What Changes</h2>
+<p><strong>Endures:</strong></p>
+<ul>
+<li>Total parameters, active parameters, FLOPs, resident bytes, communication bytes, and sequence-state bytes are different ledgers.</li>
+<li>Sparse top-<span class="math inline">k</span> routing needs a balance mechanism and operational load measurements; a low task loss does not prove healthy expert use.</li>
+<li>Shared experts and common trunk parameters are active for every token and must be counted explicitly.</li>
+<li>Expert parallelism turns routing decisions into data movement; topology and skew can dominate nominal compute savings.</li>
+<li>A fixed-size recurrent state cannot preserve an unbounded number of independent exact associations at fixed precision.</li>
+<li>Hybrid architectures are sums of layer-specific costs. Cache arithmetic must include only layers that actually maintain KV state.</li>
+<li>A configuration field is evidence only after its semantics and counting boundary are understood.</li>
+</ul>
+<p><strong>Changes:</strong></p>
+<ul>
+<li>Expert counts, granularity, top-<span class="math inline">k</span>, shared paths, dense-first depth, and balancing controllers.</li>
+<li>The preferred recurrence—SSM, gated delta, linear attention, or a successor—and the kernels that make it practical.</li>
+<li>The cadence among recurrent, local, sparse, and full-attention layers.</li>
+<li>Learned sparse-attention selectors, index granularity, and cache strategy.</li>
+<li>Whether MTP heads are discarded, used for drafting, or integrated into an engine-specific decoding path.</li>
+<li>The quality-speed frontier for diffusion language models and the metrics vendors use to report it.</li>
+<li>Model names and published total/active counts in the dated landscape.</li>
+</ul>
+<p>The senior-engineering habit is stable: translate architecture labels into ledgers and invariants, then measure the target runtime and recall workload. “MoE,” “linear,” “hybrid,” and “diffusion” begin an investigation; none completes one.</p>
+</section>
+<section id="sec-ch04-exercises" class="level2" data-number="4.16">
+<h2 data-number="4.16" class="anchored" data-anchor-id="sec-ch04-exercises"><span class="header-section-number">4.16</span> Exercises</h2>
+<ol type="1">
+<li><p><strong>Reconstruct an MoE layer.</strong> A model has width <span class="math inline">d=4{,}096</span>, <span class="math inline">E=64</span> routed SwiGLU experts of width <span class="math inline">h_e=1{,}024</span>, top-<span class="math inline">k=2</span>, and one shared expert of the same width. Ignoring biases and the router, compute total expert parameters, active expert parameters, and the active fraction. Then explain why the model-wide active fraction will differ.</p></li>
+<li><p><strong>Diagnose a router.</strong> Extend <code>train_router()</code> to log load every ten steps. Run balance weights of <span class="math inline">{0}</span>, <span class="math inline">{0.01}</span>, <span class="math inline">{0.1}</span>, <span class="math inline">{0.5}</span>, and <span class="math inline">{2}</span>. Plot maximum load and task accuracy. Identify a range that prevents collapse without making the balance term the apparent task, and state why the result cannot be transferred directly to a large-language-model run.</p></li>
+<li><p><strong>Compare overflow policies.</strong> For <span class="math inline">N=8{,}192</span>, <span class="math inline">E=32</span>, top-<span class="math inline">k=2</span>, and capacity factors <span class="math inline">{1.0}</span>, <span class="math inline">{1.1}</span>, and <span class="math inline">{1.25}</span>, compute per-expert capacity. Construct a skewed load vector and quantify assignments dropped under static capacity. Discuss how rerouting and dropless dispatch change correctness and step-time risks.</p></li>
+<li><p><strong>Break the fixed state.</strong> Modify <code>mqar_capacity_curve()</code> to use two independent hash tables and return a value only when they agree. Compare recall and state size with the one-table probe. Explain whether the modification removes the asymptotic bottleneck or only changes its constant.</p></li>
+<li><p><strong>Audit a new config.</strong> Choose a public dense, MoE, or hybrid model configuration not present in <code>fixtures/</code>. Write a field-semantics table, estimate total and active parameters under an explicit convention, and compute batch-one state at 32,768 tokens using Chapter 3’s <code>kv_bytes()</code>. Record source URL and verification date. List every omitted parameter family.</p></li>
+<li><p><strong>Design an agent backbone.</strong> Compare an all-attention MoE, a 3:1 recurrent/full hybrid MoE, and a learned sparse-attention MoE for an agent that reads large repositories and must reproduce exact identifiers. Give a weighted decision matrix for resident weights, per-token computation, persistent state, exact recall, implementation maturity, and distributed communication. Specify the experiments that could reverse your choice.</p></li>
+</ol>
+</section>
+<section id="sec-ch04-notes" class="level2" data-number="4.17">
+<h2 data-number="4.17" class="anchored" data-anchor-id="sec-ch04-notes"><span class="header-section-number">4.17</span> Notes and Sources</h2>
+<p>The conditional-computation lineage starts with Shazeer et al., <a href="https://arxiv.org/abs/1701.06538"><em>Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer</em></a>, followed here by <a href="https://arxiv.org/abs/2006.16668">GShard</a>, <a href="https://arxiv.org/abs/2101.03961">Switch Transformers</a>, and <a href="https://arxiv.org/abs/2202.08906">ST-MoE</a>. Switch motivates top-1 routing and its auxiliary balance objective; ST-MoE develops stability guidance including router <span class="math inline">z</span>-loss. The <a href="https://arxiv.org/abs/2412.19437">DeepSeek-V3 technical report</a> is the primary source for its total/active counts, auxiliary-loss-free balancing, MLA-plus-MoE architecture, and multi-token prediction objective. Exact fixture fields come from the linked official configs.</p>
+<p>For the fixed-state lineage, see <a href="https://arxiv.org/abs/2111.00396">S4</a>, <a href="https://arxiv.org/abs/2312.00752">Mamba</a>, <a href="https://arxiv.org/abs/2405.21060">Mamba-2 and structured state-space duality</a>, <a href="https://arxiv.org/abs/2412.06464">Gated Delta Networks</a>, and <a href="https://arxiv.org/abs/2510.26692">Kimi Linear</a>. The chapter uses their architectural contracts and lineage, not their paper-specific benchmark claims.</p>
+<p>For learned sparse attention, see <a href="https://arxiv.org/abs/2502.11089">Native Sparse Attention</a>, <a href="https://arxiv.org/abs/2502.13189">Mixture of Block Attention</a>, and the <a href="https://arxiv.org/abs/2512.02556">DeepSeek-V3.2 report</a> for DSA. These methods differ in granularity and selector design; grouping them does not imply identical complexity or quality.</p>
+<p>For alternative decoding and supervision, see Gloeckle et al., <a href="https://arxiv.org/abs/2404.19737"><em>Better &amp; Faster Large Language Models via Multi-token Prediction</em></a>, and the <a href="https://arxiv.org/abs/2506.17298">Mercury technical report</a>. Current product claims are confined to dated Landscape 2026 boxes so the mechanism chapter remains valid when the frontier changes.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/03-attention-position-long-context.html" class="pagination-link" aria-label="Attention, Position, and Long Context [F+S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/05-scaling-laws-pretraining-data.html" class="pagination-link" aria-label="Scaling Laws and Pretraining Data [F+S]">
+        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

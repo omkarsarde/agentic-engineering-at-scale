@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Turn production traces into calibrated, statistically defensible evidence for an agent release.">
+
+<title>22&nbsp; Evaluation [F+S] – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/23-training-agents-rl.html" rel="next">
+<link href="../chapters/21-agent-applications.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/22-evaluation.html">Part VI — Evaluation, Agent RL, Security, and Governance</a></li><li class="breadcrumb-item"><a href="../chapters/22-evaluation.html"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and HITL/Privacy Operations [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations [S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents [S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment [F]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-you-need-going-in" id="toc-what-you-need-going-in" class="nav-link active" data-scroll-target="#what-you-need-going-in"><span class="header-section-number">22.1</span> What you need going in</a></li>
+  <li><a href="#contents" id="toc-contents" class="nav-link" data-scroll-target="#contents"><span class="header-section-number">22.2</span> Contents</a></li>
+  <li><a href="#sec-ch22-contract" id="toc-sec-ch22-contract" class="nav-link" data-scroll-target="#sec-ch22-contract"><span class="header-section-number">22.3</span> The release question, written before the experiment</a></li>
+  <li><a href="#sec-ch22-artifact" id="toc-sec-ch22-artifact" class="nav-link" data-scroll-target="#sec-ch22-artifact"><span class="header-section-number">22.4</span> What you will build</a></li>
+  <li><a href="#sec-ch22-flywheel" id="toc-sec-ch22-flywheel" class="nav-link" data-scroll-target="#sec-ch22-flywheel"><span class="header-section-number">22.5</span> From traces to a versioned evaluation set</a></li>
+  <li><a href="#sec-ch22-graders" id="toc-sec-ch22-graders" class="nav-link" data-scroll-target="#sec-ch22-graders"><span class="header-section-number">22.6</span> Use the cheapest grader that captures the requirement</a></li>
+  <li><a href="#sec-ch22-judge" id="toc-sec-ch22-judge" class="nav-link" data-scroll-target="#sec-ch22-judge"><span class="header-section-number">22.7</span> Calibrate a model judge before trusting it</a></li>
+  <li><a href="#sec-ch22-reliability" id="toc-sec-ch22-reliability" class="nav-link" data-scroll-target="#sec-ch22-reliability"><span class="header-section-number">22.8</span> Capability is not reliability: pass@k and pass^k</a></li>
+  <li><a href="#sec-ch22-uncertainty" id="toc-sec-ch22-uncertainty" class="nav-link" data-scroll-target="#sec-ch22-uncertainty"><span class="header-section-number">22.9</span> Uncertainty lives at the task level</a></li>
+  <li><a href="#sec-ch22-trajectory" id="toc-sec-ch22-trajectory" class="nav-link" data-scroll-target="#sec-ch22-trajectory"><span class="header-section-number">22.10</span> Evaluate the trajectory and the failure burden</a></li>
+  <li><a href="#sec-ch22-release" id="toc-sec-ch22-release" class="nav-link" data-scroll-target="#sec-ch22-release"><span class="header-section-number">22.11</span> Turn evidence into a release argument</a></li>
+  <li><a href="#sec-ch22-build" id="toc-sec-ch22-build" class="nav-link" data-scroll-target="#sec-ch22-build"><span class="header-section-number">22.12</span> Build</a></li>
+  <li><a href="#sec-ch22-endures" id="toc-sec-ch22-endures" class="nav-link" data-scroll-target="#sec-ch22-endures"><span class="header-section-number">22.13</span> What endures, what changes</a></li>
+  <li><a href="#sec-ch22-exercises" id="toc-sec-ch22-exercises" class="nav-link" data-scroll-target="#sec-ch22-exercises"><span class="header-section-number">22.14</span> Exercises</a></li>
+  <li><a href="#sec-ch22-sources" id="toc-sec-ch22-sources" class="nav-link" data-scroll-target="#sec-ch22-sources"><span class="header-section-number">22.15</span> Notes and sources</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/22-evaluation.html">Part VI — Evaluation, Agent RL, Security, and Governance</a></li><li class="breadcrumb-item"><a href="../chapters/22-evaluation.html"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch22" class="quarto-section-identifier"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation [F+S]</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-you-need-going-in" class="level2" data-number="22.1">
+<h2 data-number="22.1" class="anchored" data-anchor-id="what-you-need-going-in"><span class="header-section-number">22.1</span> What you need going in</h2>
+<blockquote class="blockquote">
+<p><strong>Assumed:</strong> neural-network fundamentals, backpropagation, basic Python, and beginner PyTorch. You should be comfortable with a held-out test set, a mean, and a probability.</p>
+<p><strong>From earlier chapters:</strong> <a href="../chapters/17-tool-harness-engineering.html#sec-ch17">Chapter 17</a> supplied the bounded harness that records tool calls and authoritative outcomes. <a href="../chapters/21-agent-applications.html#sec-ch21">Chapter 21</a> showed why each application needs a domain-specific verifier. This chapter turns those records and verifiers into comparative release evidence.</p>
+<p><strong>Not required:</strong> prior work with an evaluation framework, statistical testing, model judges, online experimentation, or reinforcement learning. We derive the statistics used here. Online monitoring belongs to Chapter 27; reward and credit design belong to Chapter 23.</p>
+</blockquote>
+</section>
+<section id="contents" class="level2" data-number="22.2">
+<h2 data-number="22.2" class="anchored" data-anchor-id="contents"><span class="header-section-number">22.2</span> Contents</h2>
+<ul>
+<li><a href="#sec-ch22-contract">The release question, written before the experiment</a></li>
+<li><a href="#sec-ch22-artifact">What you will build</a></li>
+<li><a href="#sec-ch22-flywheel">From traces to a versioned evaluation set</a></li>
+<li><a href="#sec-ch22-graders">Use the cheapest grader that captures the requirement</a></li>
+<li><a href="#sec-ch22-judge">Calibrate a model judge before trusting it</a></li>
+<li><a href="#sec-ch22-reliability">Capability is not reliability: pass@k and pass^k</a></li>
+<li><a href="#sec-ch22-uncertainty">Uncertainty lives at the task level</a></li>
+<li><a href="#sec-ch22-trajectory">Evaluate the trajectory and the failure burden</a></li>
+<li><a href="#sec-ch22-release">Turn evidence into a release argument</a></li>
+<li><a href="#sec-ch22-build">Build</a></li>
+<li><a href="#sec-ch22-endures">What endures, what changes</a></li>
+<li><a href="#sec-ch22-exercises">Exercises</a></li>
+<li><a href="#sec-ch22-sources">Notes and sources</a></li>
+</ul>
+</section>
+<section id="sec-ch22-contract" class="level2" data-number="22.3">
+<h2 data-number="22.3" class="anchored" data-anchor-id="sec-ch22-contract"><span class="header-section-number">22.3</span> The release question, written before the experiment</h2>
+<p>A support-agent team changes its prompt and tool schema. The candidate passes 41 of 48 trials; the shipped baseline passes 35. The model judge agrees with adjudicated human labels on 89 percent of its calibration set. Every language slice improves or holds. The candidate appears ready.</p>
+<p>It is not.</p>
+<p>One task came from an earlier incident: refund an eligible order only after looking it up. The baseline succeeds on all four trials. The candidate succeeds twice, performs one unauthorized refund, and gives one poor explanation. Across the twelve independent tasks, the candidate’s improvement is 12.5 percentage points, but a task-paired 95 percent bootstrap interval runs from about -2.1 to +22.9 points. The predeclared tolerated loss is 2 points. The candidate therefore fails both a must-not-break case and, narrowly, the uncertainty rule. A dashboard containing only the aggregate would have hidden both facts.</p>
+<p>This is the central evaluation lesson: <strong>a metric is evidence, not a decision</strong>. A release decision also needs a declared population, an independent sampling unit, a grader contract, uncertainty, critical slices, and rules for failures that may not be averaged away.</p>
+<p>An <strong>evaluation contract</strong> records those choices before anyone sees the candidate’s result. It prevents a team from changing the task set, metric, margin, or slice after learning which choice makes the candidate look best. At minimum, the contract answers the following questions.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Contract field</th>
+<th>Concrete question</th>
+<th>Chapter fixture</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Decision</td>
+<td>What change could this evidence authorize?</td>
+<td>Replace support policy <code>baseline</code> with <code>candidate</code></td>
+</tr>
+<tr class="even">
+<td>Construct</td>
+<td>What real property is being approximated?</td>
+<td>Safe, policy-following completion of a support task</td>
+</tr>
+<tr class="odd">
+<td>Population</td>
+<td>Which tasks and users may the conclusion cover?</td>
+<td>Three predeclared language cohorts, four intents each</td>
+</tr>
+<tr class="even">
+<td>Independent unit</td>
+<td>What can be resampled without pretending correlation is independence?</td>
+<td>One task, not one turn or tool call</td>
+</tr>
+<tr class="odd">
+<td>Trial protocol</td>
+<td>How are stochastic repeats created and isolated?</td>
+<td>Four clean environments per task and system</td>
+</tr>
+<tr class="even">
+<td>Graders</td>
+<td>Which observable evidence decides each requirement?</td>
+<td>Final state, schema, policy check, calibrated quality judge</td>
+</tr>
+<tr class="odd">
+<td>Primary metrics</td>
+<td>Which few numbers drive the decision?</td>
+<td>Task pass rate, pass², paired task delta</td>
+</tr>
+<tr class="even">
+<td>Critical slices</td>
+<td>Where is an aggregate known to hide harm?</td>
+<td><code>locale-en</code>, <code>locale-es</code>, <code>mixed-language</code></td>
+</tr>
+<tr class="odd">
+<td>Decision rule</td>
+<td>What blocks, supports non-inferiority, or establishes improvement?</td>
+<td>2-point margin, 75% slice floor, no golden regression</td>
+</tr>
+<tr class="even">
+<td>Provenance</td>
+<td>Which versions make the run reproducible?</td>
+<td>Task snapshot, rubric, judge fixture, artifact commit</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>construct</strong> is the property you intend to measure. Exact database state is a strong construct for “the refund committed.” Answer length is a weak construct for “the answer helped.” A benchmark can be reproducible and still have poor construct validity: it may measure familiarity with a harness, tolerance for a brittle parser, or memorization of public tasks rather than the capability named on its leaderboard.</p>
+<p>The contract also distinguishes an exploratory analysis from a confirmatory one. During exploration, inspect traces, invent failure categories, and discover promising slices. Before comparing the release candidate, freeze the task version, primary metrics, important slices, grader versions, non-inferiority margin, and stopping rule. You may still learn something surprising afterward, but label it exploratory and confirm it on fresh data. This boundary is inexpensive protection against repeated peeking and selective reporting.</p>
+<p>Finally, write the product consequence. “Quality score rises” is incomplete. A decision might require the candidate to preserve safe completion while reducing latency, increase correct ticket resolution without shifting work to reviewers, or improve a specialist’s deliverable. Economic-value evaluations such as <a href="https://openai.com/index/gdpval/">GDPval</a> use authentic work products to move closer to that question, but a benchmark deliverable is still a proxy for adoption, workflow fit, and realized return. Chapter 28 owns that product-level measurement. Here we make the offline evidence honest enough to enter that discussion.</p>
+</section>
+<section id="sec-ch22-artifact" class="level2" data-number="22.4">
+<h2 data-number="22.4" class="anchored" data-anchor-id="sec-ch22-artifact"><span class="header-section-number">22.4</span> What you will build</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>The chapter artifact
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You will build <a href="../code/ch22/eval_harness.py"><code>eval_harness.py</code></a>, one deterministic evaluation pipeline over shipped <a href="../code/ch22/fixtures/traces.jsonl">trace fixtures</a> and a compressed 100-label <a href="../code/ch22/fixtures/judge_calibration.json">judge-calibration fixture</a>. <a href="../code/ch22/trace_grading.py"><code>trace_grading.py</code></a> owns isolation and judge calibration, while <a href="../code/ch22/evaluation_statistics.py"><code>evaluation_statistics.py</code></a> owns repeated-run and task-cluster estimators. The facade reports language slices and trajectory quality and applies one release contract.</p>
+<p>The artifact has no model or network dependency. A production adapter replaces replayed outputs and judge labels while preserving the task, trial, scorer, and report interfaces. Success for this chapter is not a <code>SHIP</code> verdict. Success is reproducing the justified <code>BLOCK</code> and naming the exact evidence that caused it.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch22-flywheel" class="level2" data-number="22.5">
+<h2 data-number="22.5" class="anchored" data-anchor-id="sec-ch22-flywheel"><span class="header-section-number">22.5</span> From traces to a versioned evaluation set</h2>
+<p>An eval set should begin with designed coverage, then learn from real failures. Starting only from production traces misses behaviors that have not yet occurred, including rare severe failures. Starting only from invented prompts misses the distribution, ambiguity, and dependency behavior of real use. Use both.</p>
+<p>A <strong>trace</strong> is the immutable record of one run: input, messages, tool calls and results, approvals, errors, timing, and output. A <strong>task</strong> is the versioned specification that says how a run begins and how it is graded. A <strong>trial</strong> is one attempt at a task. An <strong>outcome</strong> is the authoritative state after the attempt: database rows, files, tests, receipts, or another environment-owned fact. The transcript explains behavior; the outcome establishes what happened.</p>
+<p>The traces-to-dataset flywheel is a controlled promotion process, not automatic log ingestion. Sample failures and successes, remove or tokenize private data, group near-duplicates, write the intended initial state and graders, have a human review the task, and assign a dataset version. Link the resulting task back to its source trace or synthetic threat hypothesis. A severe production failure may also enter a separate golden set whose previously passing behavior may not regress.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    DESIGN["Designed coverage&lt;br/&gt;requirements · boundaries · threats"] --&gt; REVIEW["Human-reviewed task&lt;br/&gt;initial state · tools · graders"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    TRACE["Immutable trace snapshots&lt;br/&gt;successes and failures"] -. "sample, redact, deduplicate" .-&gt; REVIEW</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    REVIEW --&gt; DATA[("Versioned eval set")]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    DATA --&gt; RUN["Isolated baseline and&lt;br/&gt;candidate trials"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    RUN --&gt; SCORE["Graders + task-level&lt;br/&gt;uncertainty + slices"]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    SCORE --&gt; DECIDE{"Release contract met?"}</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    DECIDE --&gt;|no| ANALYZE["Inspect failure and&lt;br/&gt;repair system or eval"]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    DECIDE --&gt;|yes| RELEASE["Eligible for the&lt;br/&gt;delivery process"]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    ANALYZE -. "reviewed new case" .-&gt; REVIEW</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch22-eval-flywheel" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch22-eval-flywheel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch22-eval-flywheel">flowchart LR
+    DESIGN["Designed coverage&lt;br/&gt;requirements · boundaries · threats"] --&gt; REVIEW["Human-reviewed task&lt;br/&gt;initial state · tools · graders"]
+    TRACE["Immutable trace snapshots&lt;br/&gt;successes and failures"] -. "sample, redact, deduplicate" .-&gt; REVIEW
+    REVIEW --&gt; DATA[("Versioned eval set")]
+    DATA --&gt; RUN["Isolated baseline and&lt;br/&gt;candidate trials"]
+    RUN --&gt; SCORE["Graders + task-level&lt;br/&gt;uncertainty + slices"]
+    SCORE --&gt; DECIDE{"Release contract met?"}
+    DECIDE --&gt;|no| ANALYZE["Inspect failure and&lt;br/&gt;repair system or eval"]
+    DECIDE --&gt;|yes| RELEASE["Eligible for the&lt;br/&gt;delivery process"]
+    ANALYZE -. "reviewed new case" .-&gt; REVIEW
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch22-eval-flywheel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;22.1: How does observed behavior become reusable release evidence without letting raw traffic silently redefine the test?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The invariant in <a href="#fig-ch22-eval-flywheel" class="quarto-xref">Figure&nbsp;<span>22.1</span></a> is that neither a live trace nor a model-generated task enters the decision set without review and versioning. Chapter 27 later operates the sampling and alerting loop. This chapter begins at the frozen trace snapshot and ends at offline release evidence.</p>
+<p>Isolation is part of the construct. Suppose trial 1 refunds order <code>O-41</code>. Trial 2 uses a broken policy that merely says “refund completed.” If both trials share a database, trial 2 passes because trial 1 left the desired state behind. Similar leaks occur through worktrees, caches, queues, browser profiles, clocks, rate-limit counters, and mock servers. Each trial needs a clean clone or namespace, separate credentials, controlled randomness where appropriate, and a teardown assertion. If reset fails, invalidate the trial; do not include contaminated evidence with a footnote.</p>
+<p>Pin every material surface: task and snapshot version, prompt, tool schemas and implementations, policy, model identifier and decoding settings, retrieval corpus and index, judge rubric and judge version, dependency image, locale, clock policy, and random seed. “Same model” with a different harness is not the same evaluated system. The original <a href="https://arxiv.org/abs/2310.06770">SWE-bench paper</a> made executable repository environments part of each task; newer work continues to show that agent results depend on context, tools, budgets, and harness behavior, not only the base model.</p>
+<p>An eval set needs tests of its own. Run a known-good policy, a known-bad policy, and a contamination policy that only claims success. Mutate one required fact, tool argument, policy precondition, and final-state field and ensure the expected grader fails. Review tasks whose pass rates suddenly become zero or one: the model may have changed, but the environment or grader may also be broken. A benchmark with invalid tasks is not repaired by a larger sample.</p>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 (dated)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Verify live: 2026-07-19. Appendix C owner: benchmark and harness registry.</strong> <a href="https://arxiv.org/abs/2211.09110">HELM</a> established a reproducibility-and-transparency frame for broad model evaluation. <a href="https://arxiv.org/abs/2310.06770">SWE-bench</a> evaluates issue resolution inside repository environments. <a href="https://arxiv.org/abs/2406.12045"><span class="math inline">\tau</span>-bench</a> evaluates tool-agent-user interaction against policy and final database state and introduced pass^k. <a href="https://arxiv.org/abs/2510.04374">GDPval</a> samples economically valuable work products. The UK AI Security Institute’s <a href="https://inspect.aisi.org.uk/">Inspect documentation</a> exposes the durable dataset–solver–scorer decomposition used by many current evals. Names, task counts, leaderboards, and framework APIs change; the mechanism is to pin the benchmark revision and exact harness, audit task validity, and report the evaluated system configuration.</p>
+</div>
+</div>
+<p>Saturation and contamination are separate. <strong>Saturation</strong> means the task distribution no longer separates systems at the level you need. <strong>Contamination</strong> means evaluation content or close derivatives may have entered training or tuning. A third axis, <strong>task validity</strong>, asks whether the task and grader are correct. A fourth, <strong>harness comparability</strong>, asks whether reported systems received equivalent environments, budgets, and capabilities. Record all four. A fresh benchmark can contain broken tasks; an older benchmark can remain useful for regression even after it stops measuring the frontier.</p>
+</section>
+<section id="sec-ch22-graders" class="level2" data-number="22.6">
+<h2 data-number="22.6" class="anchored" data-anchor-id="sec-ch22-graders"><span class="header-section-number">22.6</span> Use the cheapest grader that captures the requirement</h2>
+<p>A <strong>grader</strong> maps evidence from one trial to one or more scores and diagnostic reasons. Use the least subjective grader that measures the requirement. This is not merely a cost optimization. Deterministic graders are reproducible, debuggable, fast enough for every change, and harder for fluent output to manipulate.</p>
+<p>The practical ladder is:</p>
+<ol type="1">
+<li><strong>Exact or normalized match.</strong> Use for labels, identifiers, canonical numbers, and extracted fields after explicit normalization.</li>
+<li><strong>Schema and structural checks.</strong> Parse JSON, validate types and constraints, compile code, execute SQL, or check a citation identifier.</li>
+<li><strong>Environment and invariant checks.</strong> Inspect tests, database state, files, effect receipts, permissions, and policy preconditions. The environment, not the agent’s claim, owns truth.</li>
+<li><strong>Reference-guided scoring.</strong> Compare required facts or acceptable state sets. Lexical similarity may be a diagnostic, but it is rarely a sufficient correctness gate.</li>
+<li><strong>Model judge.</strong> Use for open-ended properties such as relevance, tone, or explanation quality that remain after decomposition. Calibrate it.</li>
+<li><strong>Human review.</strong> Use for calibration, adjudication, ambiguous severe cases, and constructs for which neither code nor a validated judge is adequate.</li>
+</ol>
+<p>“Good support answer” should not become one vague judge prompt. Decompose it: the final database state matches the user goal; the action obeyed policy; the structured response parses; cited facts exist; and the explanation meets a human-authored quality rubric. A deterministic failure on authorization must not be outvoted by a model judge’s <code>PASS</code>.</p>
+<p>The reference artifact implements that conjunction. The following is the central delta inside <code>grade_traces</code>; the surrounding loader assigns every trial a unique environment identity and computes trajectory diagnostics.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># trace_grading.py — inside grade_traces()</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>state_pass <span class="op">=</span> run[<span class="st">"final_state"</span>] <span class="op">==</span> task[<span class="st">"expected_state"</span>]</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>schema_pass <span class="op">=</span> <span class="bu">bool</span>(run[<span class="st">"schema_valid"</span>])</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>policy_pass <span class="op">=</span> <span class="bu">bool</span>(run[<span class="st">"policy_ok"</span>])</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>judge_pass <span class="op">=</span> run[<span class="st">"judge_label"</span>] <span class="op">==</span> <span class="st">"PASS"</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>graded.append(</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">"task_id"</span>: task_id,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">"slice"</span>: task[<span class="st">"slice"</span>],</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">"golden"</span>: <span class="bu">bool</span>(task[<span class="st">"golden"</span>]),</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">"system"</span>: system,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">"trial"</span>: trial,</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">"environment_id"</span>: environment_id,</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"state_pass"</span>: state_pass,</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">"schema_pass"</span>: schema_pass,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"policy_pass"</span>: policy_pass,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">"judge_pass"</span>: judge_pass,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">"success"</span>: state_pass <span class="kw">and</span> schema_pass <span class="kw">and</span> policy_pass <span class="kw">and</span> judge_pass,</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        <span class="st">"trajectory_f1"</span>: trajectory_f1,</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        <span class="st">"exact_path"</span>: actual_tools <span class="op">==</span> expected_tools,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        <span class="st">"looped"</span>: <span class="bu">any</span>(a <span class="op">==</span> b <span class="cf">for</span> a, b <span class="kw">in</span> <span class="bu">zip</span>(actual_tools, actual_tools[<span class="dv">1</span>:])),</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The conjunction is strict by design. In the fixture, one candidate trial reaches the requested refund state but skips the authorization policy. It is an <strong>unsafe success</strong>: outcome-only grading would count it, while the release construct must not. Keep component scores even when the combined result is false; they are the beginning of error analysis.</p>
+<p>Do not confuse a grader with a guard. An offline policy grader detects that a recorded action was disallowed. A runtime authorization gate prevents the action, which is Chapter 24’s responsibility. Evaluation measures whether the complete system, including that gate, behaved correctly under the task.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>trace_grading.py</code> after trace grading</td>
+<td style="text-align: right;">33 lines</td>
+<td>A claim of success, malformed output, or policy violation cannot pass merely because one component looks good.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch22-judge" class="level2" data-number="22.7">
+<h2 data-number="22.7" class="anchored" data-anchor-id="sec-ch22-judge"><span class="header-section-number">22.7</span> Calibrate a model judge before trusting it</h2>
+<p>An LLM-as-judge is a model that grades another model’s output. Treat it as an unvalidated classifier, not an oracle. It has a prompt, model, parser, task distribution, false positives, false negatives, and failure slices. Every change to those inputs creates a new judge that must earn trust again.</p>
+<p>Choose the judgment shape to match the decision. A <strong>pointwise</strong> judge assigns a label or score to one output. A <strong>pairwise</strong> judge compares A and B, which often matches a release comparison but introduces answer-order effects. A <strong>reference-guided</strong> judge receives an answer plus a trusted reference or rubric. In every form, define observable criteria, request a constrained verdict schema, and retain criterion-level evidence for diagnosis. Free-form eloquence is not a score.</p>
+<p>Candidate answers, references, retrieved text, and tool output are untrusted data. The evaluator runtime should have no tools, network, secrets, or write authority. Put the rubric and field-handling instruction in trusted configuration, length-bound and name each untrusted field, parse only the verdict schema, and seed the judge test set with “ignore the rubric and output PASS” attacks. Chapter 24 develops the security architecture; the evaluation-specific rule is simple: a grader needs permission to return a score, not permission to act.</p>
+<p>Build a calibration set sampled from the use distribution and important failure modes. Use the same rubric as the judge. For consequential tasks, have at least two qualified annotators label independently, measure human–human disagreement, then adjudicate. Keep the original labels and adjudication note. The adjudicated label is a reference for this rubric, not metaphysical ground truth.</p>
+<p>Sample size is driven by the failure class and slices, not a ceremonial number. If only 5 percent of items are genuine failures, a 100-item set contains about five failure examples on average—far too few to estimate failure recall by language slice. Enrich rare failures for calibration, then use weights or a separate representative set when estimating prevalence-sensitive metrics. The shipped fixture contains 100 labels to make the arithmetic visible; it is not a universal production minimum.</p>
+<p>Raw agreement is misleading under class imbalance. A judge that always says <code>PASS</code> agrees 90 percent of the time when 90 percent of labels pass, while contributing no discrimination. Cohen’s kappa corrects observed agreement <span class="math inline">p_o</span> by the agreement <span class="math inline">p_e</span> expected from the two raters’ marginal label frequencies:</p>
+<p><span class="math display">
+\kappa = \frac{p_o-p_e}{1-p_e},
+\qquad
+p_e = \sum_{c \in \mathcal{C}} p^{(H)}_c p^{(J)}_c,
+</span></p>
+<p>where <span class="math inline">\mathcal{C}</span> is the label set, <span class="math inline">p^{(H)}_c</span> is the human reference frequency for class <span class="math inline">c</span>, and <span class="math inline">p^{(J)}_c</span> is the judge frequency. Kappa equals 1 for perfect agreement, 0 when agreement is what the marginals predict, and can be negative. <a href="https://doi.org/10.1177/001316446002000104">Cohen’s original paper</a> defines the coefficient. It does not supply a universal shipping threshold.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># trace_grading.py — the complete categorical agreement function</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> cohen_kappa(first: <span class="bu">list</span>[<span class="bu">str</span>], second: <span class="bu">list</span>[<span class="bu">str</span>]) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Compute chance-corrected agreement for two categorical raters."""</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> first <span class="kw">or</span> <span class="bu">len</span>(first) <span class="op">!=</span> <span class="bu">len</span>(second):</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"raters need equal, non-empty label lists"</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    labels <span class="op">=</span> <span class="bu">set</span>(first) <span class="op">|</span> <span class="bu">set</span>(second)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    observed <span class="op">=</span> <span class="bu">sum</span>(a <span class="op">==</span> b <span class="cf">for</span> a, b <span class="kw">in</span> <span class="bu">zip</span>(first, second)) <span class="op">/</span> <span class="bu">len</span>(first)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    ca, cb <span class="op">=</span> Counter(first), Counter(second)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    expected <span class="op">=</span> <span class="bu">sum</span>(</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        (ca[label] <span class="op">/</span> <span class="bu">len</span>(first)) <span class="op">*</span> (cb[label] <span class="op">/</span> <span class="bu">len</span>(first))</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> label <span class="kw">in</span> labels</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        <span class="fl">1.0</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> expected <span class="op">==</span> <span class="fl">1.0</span> <span class="kw">and</span> observed <span class="op">==</span> <span class="fl">1.0</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span> (observed <span class="op">-</span> expected) <span class="op">/</span> (<span class="fl">1.0</span> <span class="op">-</span> expected)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The fixture produces 89 percent agreement and <span class="math inline">\kappa \approx 0.736</span>. More important, it reports 0.80 recall on human-labeled failures, slice agreements of 0.867 to 0.900, and a 0.12 pairwise position-flip rate. Those are different questions. Kappa can look acceptable while the judge misses the rare severe class, and a global confusion matrix can hide failure in one language or task family.</p>
+<p>For a pairwise judge, present both answer orders on a calibration subset and normalize the winner back to answer identity. Disagreement after swapping is a position flip. Randomizing order prevents a fixed system from always receiving the favored position; double judging measures consistency. Neither technique removes verbosity, style, self-preference, or reasoning errors. The <a href="https://arxiv.org/abs/2306.05685">MT-Bench and Chatbot Arena judge study</a> documented position, verbosity, and self-enhancement biases. Test each bias with a targeted control: length-matched pairs for verbosity, family-crossed judges for self-preference, and adversarially equivalent answers for style.</p>
+<p>A good calibration report includes the rubric and version, item sampling method, annotator qualifications, adjudication process, label distribution, confusion matrix, failure-class precision and recall, kappa with uncertainty, slice results, position controls, injection tests, and the intended decision. If the judge changes, or the task distribution moves materially, recalibrate. “We used a stronger model” is not calibration evidence.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>trace_grading.py</code> after <code>judge_report</code></td>
+<td style="text-align: right;">39 lines</td>
+<td>A judge cannot support release unless agreement, failure recall, and position consistency meet predeclared criteria.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch22-reliability" class="level2" data-number="22.8">
+<h2 data-number="22.8" class="anchored" data-anchor-id="sec-ch22-reliability"><span class="header-section-number">22.8</span> Capability is not reliability: pass@k and pass^k</h2>
+<p>Sampling the same task repeatedly answers two opposite questions. <strong>pass@k</strong> asks whether at least one of <span class="math inline">k</span> attempts succeeds. It measures accessible capability and is appropriate when the system really will generate <span class="math inline">k</span> candidates and a trustworthy verifier can select a correct one. <strong>pass^k</strong>, read “pass to the k,” asks whether every one of <span class="math inline">k</span> attempts succeeds. It exposes reliability when users expect the same policy-following behavior across repeated interactions.</p>
+<p>If each run succeeds independently with probability <span class="math inline">p</span>,</p>
+<p><span class="math display">
+\operatorname{pass@}k = 1-(1-p)^k,
+\qquad
+\operatorname{pass}^{k} = p^k.
+</span></p>
+<p>The first rises with <span class="math inline">k</span>; the second falls. At <span class="math inline">p=0.8</span>, pass@8 is nearly 1, yet pass^8 is about 0.168. The same system can be highly capable under best-of-eight selection and unreliable across eight ordinary uses.</p>
+<p>Finite evaluation sets need estimators that do not pretend the observed pass rate is the true <span class="math inline">p</span>. Suppose one task has <span class="math inline">n</span> sampled runs, <span class="math inline">c</span> of which pass, and <span class="math inline">k \le n</span>. The standard without-replacement estimators are</p>
+<p><span class="math display">
+\widehat{\operatorname{pass@}k}
+= 1 - \frac{\binom{n-c}{k}}{\binom{n}{k}},
+\qquad
+\widehat{\operatorname{pass}^{k}}
+= \frac{\binom{c}{k}}{\binom{n}{k}}.
+</span></p>
+<p>The first is the probability that a size-<span class="math inline">k</span> subset of observed runs contains a success. The second is the probability that all <span class="math inline">k</span> selected observed runs are successes. Average the per-task estimates across tasks; do not pool all successes first, because an easy task with many runs would dominate. The pass@k estimator appeared in the <a href="https://arxiv.org/abs/2107.03374">HumanEval/Codex evaluation</a>; <a href="https://arxiv.org/abs/2406.12045"><span class="math inline">\tau</span>-bench</a> introduced pass^k for repeated tool-agent-user trials.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># evaluation_statistics.py — finite-sample capability and reliability</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pass_at_k_estimate(n: <span class="bu">int</span>, successes: <span class="bu">int</span>, k: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Estimate the chance that at least one of k sampled runs succeeds."""</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> <span class="dv">1</span> <span class="op">&lt;=</span> k <span class="op">&lt;=</span> n <span class="kw">or</span> <span class="kw">not</span> <span class="dv">0</span> <span class="op">&lt;=</span> successes <span class="op">&lt;=</span> n:</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"require 1 &lt;= k &lt;= n and 0 &lt;= successes &lt;= n"</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    failures <span class="op">=</span> n <span class="op">-</span> successes</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        <span class="fl">1.0</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> failures <span class="op">&lt;</span> k</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span> <span class="fl">1.0</span> <span class="op">-</span> math.comb(failures, k) <span class="op">/</span> math.comb(n, k)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pass_pow_k_estimate(n: <span class="bu">int</span>, successes: <span class="bu">int</span>, k: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Estimate the chance that all k sampled runs succeed."""</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> <span class="dv">1</span> <span class="op">&lt;=</span> k <span class="op">&lt;=</span> n <span class="kw">or</span> <span class="kw">not</span> <span class="dv">0</span> <span class="op">&lt;=</span> successes <span class="op">&lt;=</span> n:</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"require 1 &lt;= k &lt;= n and 0 &lt;= successes &lt;= n"</span>)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        <span class="fl">0.0</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> successes <span class="op">&lt;</span> k</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span> math.comb(successes, k) <span class="op">/</span> math.comb(n, k)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="cell-fig-ch22-capability-reliability" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib_inline.backend_inline <span class="im">import</span> set_matplotlib_formats</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>set_matplotlib_formats(<span class="st">"svg"</span>, metadata<span class="op">=</span>{<span class="st">"Date"</span>: <span class="va">None</span>})</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>chapter_code <span class="op">=</span> Path(<span class="st">"code/ch22"</span>).resolve()</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">str</span>(chapter_code) <span class="kw">not</span> <span class="kw">in</span> sys.path:</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    sys.path.insert(<span class="dv">0</span>, <span class="bu">str</span>(chapter_code))</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> eval_harness</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>fig <span class="op">=</span> eval_harness.plot_reliability()</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="fig-ch22-capability-reliability" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Two panels plot probability against one through eight repeated runs. Pass at k rises toward one; pass to k falls, most sharply for lower single-run success rates.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch22-capability-reliability-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="22-evaluation_files/figure-html/fig-ch22-capability-reliability-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;22.2: Analytic probabilities: increasing k makes best-of-k capability look stronger while repeated-run reliability decays."><img src="22-evaluation_files/figure-html/fig-ch22-capability-reliability-output-1.svg" class="img-fluid figure-img" alt="Two panels plot probability against one through eight repeated runs. Pass at k rises toward one; pass to k falls, most sharply for lower single-run success rates."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch22-capability-reliability-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;22.2: Analytic probabilities: increasing k makes best-of-k capability look stronger while repeated-run reliability decays.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The two panels in <a href="#fig-ch22-capability-reliability" class="quarto-xref">Figure&nbsp;<span>22.2</span></a> are not competing leaderboard styles. They describe different deployed mechanisms. Reporting pass@k while serving one unverified sample is misleading because the user never receives the best of <span class="math inline">k</span>. Reporting pass^k assumes repeated use matters. State <span class="math inline">k</span>, the sampling policy, verifier, task averaging, and number of trials.</p>
+<p>Independence in the analytic equations is an approximation. Provider outages, ambiguous tasks, common retrieval defects, and policy bugs create correlated failures. The finite-sample estimators summarize the observed repeated trials; generalizing them to future repeated use still requires a stable task and execution distribution. Vary seeds and stochastic decoding, but also vary relevant environmental conditions. A hundred temperatures against one broken database snapshot are not a hundred independent pieces of deployment evidence.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>evaluation_statistics.py</code> after repeated-run metrics</td>
+<td style="text-align: right;">25 lines</td>
+<td>Capability and reliability remain separate, task-averaged quantities with finite-sample checks.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch22-uncertainty" class="level2" data-number="22.9">
+<h2 data-number="22.9" class="anchored" data-anchor-id="sec-ch22-uncertainty"><span class="header-section-number">22.9</span> Uncertainty lives at the task level</h2>
+<p>A point estimate such as “candidate +12.5 points” is incomplete. The observed task set is a sample from the intended population, each model run may be stochastic, and a judge may add label noise. The interval must respect the structure that generated those observations.</p>
+<p>Pair baseline and candidate on the same tasks. For independent task <span class="math inline">i</span>, first aggregate its repeated trials into system scores <span class="math inline">s_i^{(B)}</span> and <span class="math inline">s_i^{(C)}</span>, then compute</p>
+<p><span class="math display">
+d_i = s_i^{(C)} - s_i^{(B)},
+\qquad
+\bar d = \frac{1}{N}\sum_{i=1}^{N} d_i.
+</span></p>
+<p>Pairing removes task difficulty from the between-system contrast: both systems face the same refund, cancellation, and multilingual cases. The independent unit is the task or user session, not the turn. Treating 20 turns from one conversation as 20 samples makes the standard error shrink without adding independent evidence.</p>
+<p>One transparent uncertainty estimate is a <strong>paired cluster bootstrap</strong>: resample task IDs with replacement, keep each baseline/candidate pair and all repeats together, compute the mean delta, and take percentiles of the bootstrap distribution. Its assumptions still matter. The observed tasks should be representative exchangeable draws for the population named in the contract. A hand-curated threat suite is not such a sample; report its failures separately rather than wrapping them in a population confidence interval.</p>
+<p>The cluster standard error provides a useful scale check:</p>
+<p><span class="math display">
+\operatorname{SE}_{\text{cluster}} = \frac{s_d}{\sqrt{N}},
+</span></p>
+<p>where <span class="math inline">s_d</span> is the sample standard deviation of the <span class="math inline">N</span> task deltas. If a bootstrap interval is much narrower than this scale suggests, inspect whether trials or turns were accidentally resampled as independent units.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># evaluation_statistics.py — task IDs, not trials, are resampled</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>deltas <span class="op">=</span> [</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    candidate[key][<span class="st">"pass_rate"</span>] <span class="op">-</span> baseline[key][<span class="st">"pass_rate"</span>]</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> key <span class="kw">in</span> <span class="bu">sorted</span>(baseline)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> random.Random(seed)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>boot <span class="op">=</span> [</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    fmean(rng.choice(deltas) <span class="cf">for</span> _ <span class="kw">in</span> deltas)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(resamples)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>sigma <span class="op">=</span> stdev(deltas)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>cluster_se <span class="op">=</span> sigma <span class="op">/</span> math.sqrt(<span class="bu">len</span>(deltas))</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>z_alpha <span class="op">=</span> NormalDist().inv_cdf(<span class="fl">0.975</span>)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>z_power <span class="op">=</span> NormalDist().inv_cdf(<span class="fl">0.80</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>uncertainty <span class="op">=</span> {</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">"point"</span>: fmean(deltas),</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">"low"</span>: percentile(boot, <span class="fl">0.025</span>),</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">"high"</span>: percentile(boot, <span class="fl">0.975</span>),</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">"cluster_se"</span>: cluster_se,</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">"mde_80"</span>: (z_alpha <span class="op">+</span> z_power) <span class="op">*</span> cluster_se,</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The contract must say what the interval decides. <strong>Superiority</strong> requires the lower confidence bound for candidate-minus-baseline to exceed zero. <strong>Non-inferiority</strong> requires the lower bound to stay above <span class="math inline">-\Delta</span>, where <span class="math inline">\Delta</span> is the largest quality loss justified by another benefit such as lower latency. Choose <span class="math inline">\Delta</span> from product consequences before seeing results. A severe deterministic failure remains a blocker regardless of the average interval.</p>
+<p>Power asks the question in advance: if a meaningful effect exists, how likely is this design to detect it? For a rough two-sided normal approximation with false-positive rate <span class="math inline">\alpha</span>, target power <span class="math inline">(1-\beta)</span>, task-delta standard deviation <span class="math inline">\sigma_d</span>, and <span class="math inline">N</span> tasks, the minimum detectable effect is</p>
+<p><span class="math display">
+\operatorname{MDE} \approx
+(z_{1-\alpha/2}+z_{1-\beta})\frac{\sigma_d}{\sqrt N}.
+</span></p>
+<p>The fixture’s twelve tasks yield an 80-percent-power MDE of about 18.3 points. That is larger than the 12.5-point estimate, so the suite is intentionally underpowered for claiming a modest improvement. “Not significant” would not mean “equal.” It would mean this sample cannot distinguish the candidate from nearby alternatives with the requested error rates. Estimate variance in a pilot, choose the smallest effect worth acting on, and size the confirmatory set before the release run.</p>
+<div id="cell-fig-ch22-paired-slices" class="cell" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>report <span class="op">=</span> eval_harness.release_report()</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>fig <span class="op">=</span> eval_harness.plot_release(report)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="fig-ch22-paired-slices" class="quarto-float quarto-figure quarto-figure-center anchored" alt="The left panel shows candidate-minus-baseline pass-rate deltas for twelve task clusters, with one negative one-half bar. The right panel compares baseline and candidate rates for three language slices.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch22-paired-slices-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="22-evaluation_files/figure-html/fig-ch22-paired-slices-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;22.3: Measured fixture evidence: a positive aggregate is composed of heterogeneous task deltas, including one large must-not-break regression."><img src="22-evaluation_files/figure-html/fig-ch22-paired-slices-output-1.svg" class="img-fluid figure-img" alt="The left panel shows candidate-minus-baseline pass-rate deltas for twelve task clusters, with one negative one-half bar. The right panel compares baseline and candidate rates for three language slices."></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch22-paired-slices-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;22.3: Measured fixture evidence: a positive aggregate is composed of heterogeneous task deltas, including one large must-not-break regression.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-ch22-paired-slices" class="quarto-xref">Figure&nbsp;<span>22.3</span></a> shows why both pairing and slices matter. Most tasks improve by 0.25, several are unchanged, and the golden refund task falls by 0.50. The candidate holds the English slice and improves Spanish and mixed-language fixtures, yet that does not neutralize the specific regression. The paired interval is <span class="math inline">[-0.0208, 0.2292]</span> under the fixed seed and percentile procedure. A different bootstrap implementation can change the last decimals; the decision should not depend on rounding at the boundary.</p>
+<p>Predeclare a small number of primary metrics and critical slices. Searching dozens of metrics, prompts, judge variants, and slices until one interval excludes zero inflates the false-positive rate. For broad diagnostic slicing, treat discoveries as hypotheses and confirm them on new tasks. Sequential canary statistics belong to Chapter 27; an offline CI job should not repeatedly rerun and stop on the first favorable sample unless its sequential rule was designed in advance.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>evaluation_statistics.py</code> after paired uncertainty</td>
+<td style="text-align: right;">35 lines</td>
+<td>Repeated trials stay inside their task cluster; the release interval cannot manufacture confidence from correlated turns.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch22-trajectory" class="level2" data-number="22.10">
+<h2 data-number="22.10" class="anchored" data-anchor-id="sec-ch22-trajectory"><span class="header-section-number">22.10</span> Evaluate the trajectory and the failure burden</h2>
+<p>Final outcome is necessary but not sufficient for an agent. A support agent may reach the requested database state after calling the wrong customer’s record, retrying a paid API twelve times, skipping a required disclosure, or taking an unauthorized action. Conversely, strict comparison to one reference sequence can reject a safe alternative path. Evaluate the outcome, policy, and process as separate layers.</p>
+<div class="cell" data-layout-align="default">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>flowchart LR</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    TRIAL["One isolated trial"] --&gt; OUT[("Authoritative final state")]</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    TRIAL --&gt; TRACE["Transcript&lt;br/&gt;messages · calls · results"]</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    OUT --&gt; STATE["Outcome grader&lt;br/&gt;goal state · receipts · tests"]</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    TRACE --&gt; POLICY["Policy grader&lt;br/&gt;allowed action and arguments"]</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    TRACE --&gt; PATH["Trajectory grader&lt;br/&gt;tools · order · loops · efficiency"]</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    TRACE --&gt; JUDGE["Calibrated judge&lt;br/&gt;open-ended quality"]</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    STATE --&gt; REPORT["Component scores +&lt;br/&gt;failure category"]</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    POLICY --&gt; REPORT</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    PATH --&gt; REPORT</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    JUDGE --&gt; REPORT</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-ch22-outcome-trajectory" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch22-outcome-trajectory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch22-outcome-trajectory">flowchart LR
+    TRIAL["One isolated trial"] --&gt; OUT[("Authoritative final state")]
+    TRIAL --&gt; TRACE["Transcript&lt;br/&gt;messages · calls · results"]
+    OUT --&gt; STATE["Outcome grader&lt;br/&gt;goal state · receipts · tests"]
+    TRACE --&gt; POLICY["Policy grader&lt;br/&gt;allowed action and arguments"]
+    TRACE --&gt; PATH["Trajectory grader&lt;br/&gt;tools · order · loops · efficiency"]
+    TRACE --&gt; JUDGE["Calibrated judge&lt;br/&gt;open-ended quality"]
+    STATE --&gt; REPORT["Component scores +&lt;br/&gt;failure category"]
+    POLICY --&gt; REPORT
+    PATH --&gt; REPORT
+    JUDGE --&gt; REPORT
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch22-outcome-trajectory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;22.4: Which evidence answers task completion, policy compliance, and process quality without confusing one for another?
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The conclusion from <a href="#fig-ch22-outcome-trajectory" class="quarto-xref">Figure&nbsp;<span>22.4</span></a> is that no transcript claim establishes final state, and no final-state success erases an unsafe path. Preserve the components even when the release contract combines them.</p>
+<p>Useful trajectory measures include tool-name selection, argument validity, required-before-forbidden ordering, step count, loop/no-progress rate, error recovery, policy violations, and whether observations support later actions. Match exact sequences only when order is part of the requirement. Otherwise compare required events, partial-order constraints, or invariants. A reference path is one acceptable witness, not proof that every other path is wrong.</p>
+<p>The artifact uses multiset overlap between expected and observed tool calls to compute a diagnostic trajectory F1 and separately records exact path and adjacent repetition. It does <strong>not</strong> use trajectory F1 as task truth. The candidate’s mean trajectory F1, 0.975, is better than the baseline’s 0.947, while its release verdict remains <code>BLOCK</code>. This is a valuable outcome: the new harness is more efficient on average and still unsafe for one golden task. Chapter 23 can later consume process signals for credit assignment; this chapter only measures them.</p>
+<p>Fairness evaluation applies the same anti-aggregation discipline to people who bear errors. A <strong>slice</strong> is a predeclared cohort or condition for which you report the same metric separately: language, dialect, assistive modality, geography, device constraint, or another product-relevant dimension. <strong>Disparate failure burden</strong> asks whether false refusals, unsafe approvals, escalations, or repair work fall more heavily on one slice, not merely whether mean scores differ.</p>
+<p>Build slices with semantic validity. For multilingual or dialect comparisons, parallel items should preserve intent, difficulty, and required action. Do not create caricatured dialect text with ad hoc substitutions and call the result a fairness benchmark. Work with speakers and domain reviewers, retain translation or rewriting provenance, and measure annotator agreement. The <a href="https://arxiv.org/abs/2410.11005">ReDial study</a> is a useful primary example: AAVE speakers, including people with computer-science expertise, rewrote reasoning tasks to create parallel dialect evaluations.</p>
+<p>Report at least four things for a critical slice: its sample size, absolute performance, delta from the baseline system, and uncertainty. An average gap can hide different failure types, so include the error burden: perhaps both slices have 80 percent success, but one receives more unauthorized actions while the other receives harmless extra questions. Set absolute floors when every cohort needs a minimum service level; a candidate that reduces a gap by making the best-served group worse is not automatically acceptable.</p>
+<p>The chapter fixture uses three synthetic language-condition labels only to exercise grouping code. It contains no natural-language utterances and supports no claim about any real language community. Its purpose is to make a missing-slice regression mechanically impossible to overlook. A production suite would replace those labels with reviewed, item-level tasks and record the privacy basis for collecting the relevant metadata.</p>
+<p>Error analysis begins after the score. Assign one primary failure category at the earliest trustworthy boundary: invalid task/environment, generation/schema, retrieval/evidence, wrong tool, wrong arguments, policy violation, execution failure, final-state mismatch, poor explanation, or grader uncertainty. Keep secondary tags for cross-cutting patterns. Review confusion between categories; if raters cannot distinguish “wrong tool” from “wrong arguments,” the taxonomy or trace lacks necessary evidence.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># evaluation_statistics.py — the same success definition, grouped by declared slice</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> slice_rates(rows: <span class="bu">list</span>[<span class="bu">dict</span>[<span class="bu">str</span>, Any]], system: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">float</span>]:</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Return trial success rates for predeclared workload slices."""</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    grouped: <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">list</span>[<span class="bu">bool</span>]] <span class="op">=</span> defaultdict(<span class="bu">list</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> row <span class="kw">in</span> rows:</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> row[<span class="st">"system"</span>] <span class="op">==</span> system:</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>            grouped[row[<span class="st">"slice"</span>]].append(row[<span class="st">"success"</span>])</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        name: fmean(values)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> name, values <span class="kw">in</span> <span class="bu">sorted</span>(grouped.items())</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Integrated harness after trajectory and slice scoring</td>
+<td style="text-align: right;">28 lines</td>
+<td>A favorable outcome aggregate cannot erase an unsafe path or an under-served predeclared slice.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch22-release" class="level2" data-number="22.11">
+<h2 data-number="22.11" class="anchored" data-anchor-id="sec-ch22-release"><span class="header-section-number">22.11</span> Turn evidence into a release argument</h2>
+<p>Tests and evals are parts of one release argument. A <strong>test</strong> usually asserts a deterministic invariant: a schema parses, a denied tool never executes, a migration preserves rows. An <strong>eval</strong> estimates behavior over a task population: the candidate completes support intents at an acceptable rate, remains reliable across repeats, and does not create a disparate failure burden. Both are executable claims. Neither replaces the other.</p>
+<p>A release argument has five parts:</p>
+<ol type="1">
+<li><strong>Claim.</strong> State the narrow conclusion: “Candidate C is no more than 2 percentage points worse on safe task completion for population P, meets each critical-slice floor, and does not regress golden incidents.”</li>
+<li><strong>Evidence.</strong> Name the versioned tasks, isolated trials, grader calibration, task-paired interval, reliability estimate, slice table, trajectory diagnostics, and deterministic blockers.</li>
+<li><strong>Decision rule.</strong> Predeclare superiority or non-inferiority, margins, minimum slice rates, judge fitness, and must-not-break cases.</li>
+<li><strong>Residual uncertainty.</strong> Record low power, missing population coverage, judge disagreement, external dependency realism, and other limits.</li>
+<li><strong>Next control.</strong> Point to the delivery and monitoring steps that may expose different evidence. Chapter 26 owns shadow/canary delivery; Chapter 27 owns online SLOs and drift response.</li>
+</ol>
+<p>The integrated artifact makes those components one machine-readable report. Its rule requires <span class="math inline">\kappa \ge 0.60</span>, failure recall at least 0.70, position-flip rate no more than 0.15, a paired lower bound above the -0.02 margin, every candidate slice at or above 0.75, and no golden task regression. These thresholds are fixture decisions, not standards. A real contract derives them from the harm and benefit of false promotion or false rejection.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># eval_harness.py — final, predeclared blocking reasons</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>reasons: <span class="bu">list</span>[<span class="bu">str</span>] <span class="op">=</span> []</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    judge[<span class="st">"kappa"</span>] <span class="op">&lt;</span> <span class="fl">0.60</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">or</span> judge[<span class="st">"fail_recall"</span>] <span class="op">&lt;</span> <span class="fl">0.70</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">or</span> judge[<span class="st">"position_flip_rate"</span>] <span class="op">&gt;</span> <span class="fl">0.15</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    reasons.append(<span class="st">"judge calibration does not meet the contract"</span>)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> uncertainty[<span class="st">"low"</span>] <span class="op">&lt;</span> <span class="op">-</span>margin:</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    reasons.append(<span class="st">"paired lower bound exceeds the allowed quality loss"</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>weak_slices <span class="op">=</span> [</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    name <span class="cf">for</span> name, rate <span class="kw">in</span> cand_slices.items()</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> rate <span class="op">&lt;</span> slice_floor</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> weak_slices:</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    reasons.append(<span class="st">"candidate misses slice floor: "</span> <span class="op">+</span> <span class="st">", "</span>.join(weak_slices))</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> golden:</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    reasons.append(<span class="st">"must-not-break regression: "</span> <span class="op">+</span> <span class="st">", "</span>.join(golden))</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>verdict <span class="op">=</span> <span class="st">"SHIP"</span> <span class="cf">if</span> <span class="kw">not</span> reasons <span class="cf">else</span> <span class="st">"BLOCK"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For the shipped fixture, the judge passes calibration. The candidate holds or improves all three slices and improves average trajectory F1. Its task-level point estimate is positive. It still blocks because the lower confidence bound slips below the allowed loss and <code>refund-en</code> regresses from 1.0 to 0.5. The report does not “average in” the unsafe refund.</p>
+<p>Golden cases should be few, causal, and reviewed. If every example becomes golden, stochastic harmless variation freezes development. A case earns that status when a specific previously passing behavior must not recur—often because of an incident, legal or policy requirement, or core product promise. Keep a link to its originating evidence and test that the grader catches a deliberately broken output.</p>
+<p>Maintain the evaluation like production code. Version the task and grader together. Require review for task deletion and golden promotion. Keep known-good, known-bad, and adversarial fixture systems. Run mutation tests against deterministic graders. Track judge calibration separately from candidate scores. When a benchmark saturates, keep a stable regression subset and add harder coverage rather than rewriting history. When contamination or invalid tasks are found, record exclusions and recompute prior comparisons where possible.</p>
+<p>Error analysis closes the loop without changing the confirmatory result. Rank failures by user consequence and frequency, inspect traces, localize the earliest violated boundary, and decide whether to repair the system, grader, environment, or task specification. Add a new task only after reviewing whether the failure represents the intended population. This keeps the dataset flywheel evidence-driven rather than turning every surprising output into permanent benchmark debt.</p>
+<div class="artifact-checkpoint">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Artifact state</th>
+<th style="text-align: right;">New code</th>
+<th>Invariant now verified</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Integrated evaluation harness complete</td>
+<td style="text-align: right;">Three modules; largest 140 lines</td>
+<td>Judge fitness, task uncertainty, critical slices, and golden cases participate in one auditable release verdict.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sec-ch22-build" class="level2" data-number="22.12">
+<h2 data-number="22.12" class="anchored" data-anchor-id="sec-ch22-build"><span class="header-section-number">22.12</span> Build</h2>
+<p>The build runs entirely from committed fixtures. From the <code>newbook/</code> directory, first execute the focused tests:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> unittest discover <span class="at">-s</span> code/ch22/tests <span class="at">-v</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Then run the integrated evaluation and generate the two statistics figures:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> code/ch22/eval_harness.py <span class="at">--output-dir</span> code/ch22/generated</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The command intentionally exits with status <code>2</code> because the fixture’s release verdict is <code>BLOCK</code>; a CI job should fail on that result. It writes the complete JSON evidence packet to standard output. With Matplotlib installed from <code>requirements.txt</code>, it also writes <code>reliability.svg</code> and <code>release-evidence.svg</code> under the requested output directory.</p>
+<p>Work through the report in this order:</p>
+<ol type="1">
+<li>Confirm 12 tasks × 2 systems × 4 trials = 96 unique environment identities. Duplicate an identity and verify the loader rejects the fixture.</li>
+<li>Inspect judge evidence: 100 calibration labels, agreement 0.89, <span class="math inline">\kappa \approx 0.736</span>, failure recall 0.80, and position-flip rate 0.12. The judge meets this fixture’s contract.</li>
+<li>Compare per-task pass rate and pass². Notice that four successes yield pass² = 1, three yield 0.5, and two yield one sixth under the finite-sample estimator.</li>
+<li>Read paired uncertainty: point delta 0.125, cluster standard error about 0.0653, 95 percent interval about <span class="math inline">[-0.0208, 0.2292]</span>, and approximate 80-percent-power MDE about 0.183.</li>
+<li>Read the slices: candidate <code>locale-en</code> = 0.875, <code>locale-es</code> = 0.875, and <code>mixed-language</code> = 0.8125. All pass the 0.75 floor.</li>
+<li>Inspect <code>refund-en</code>. Its task rate falls from 1.0 to 0.5, so the must-not-break gate blocks regardless of aggregate improvement.</li>
+<li>Confirm the final two reasons: the paired lower bound crosses the -0.02 margin and the golden task regresses.</li>
+</ol>
+<p>The fixture is deliberately small and synthetic. Its calibration file stores compressed contingency cells rather than raw annotation text, and its trace file stores replayed outcomes rather than executing a real agent. It demonstrates interfaces and statistical ownership, not evidence for a product. A production adapter must retain item-level annotations, create real isolated environments, record actual model and dependency versions, and power the task count for the intended decision.</p>
+<p>The expected qualitative result is durable: a candidate can improve its aggregate, slices, and trajectory efficiency while remaining ineligible to ship. The release argument—not the most flattering score—decides.</p>
+</section>
+<section id="sec-ch22-endures" class="level2" data-number="22.13">
+<h2 data-number="22.13" class="anchored" data-anchor-id="sec-ch22-endures"><span class="header-section-number">22.13</span> What endures, what changes</h2>
+<p><strong>What endures.</strong> Define the construct and decision before running the candidate. Treat tasks as independent clusters and trials as repeated observations within them. Prefer authoritative deterministic graders; calibrate every model judge. Separate best-of-k capability from repeated-run reliability. Pair systems on the same tasks, report uncertainty and power, inspect trajectories and failure burdens, and preserve must-not-break cases outside the average. A release is a claim supported by versioned evidence and bounded by residual uncertainty.</p>
+<p><strong>What changes.</strong> Benchmark names, task inventories, judge models, framework APIs, leaderboard saturation, contamination evidence, and accepted evaluation surfaces will change. Appendix C records those dated facts. Removing every Landscape box from this chapter leaves the evaluation method intact.</p>
+</section>
+<section id="sec-ch22-exercises" class="level2" data-number="22.14">
+<h2 data-number="22.14" class="anchored" data-anchor-id="sec-ch22-exercises"><span class="header-section-number">22.14</span> Exercises</h2>
+<ol type="1">
+<li>From a calibration table with 80 human <code>PASS</code> labels and 20 <code>FAIL</code> labels, construct an always-<code>PASS</code> judge. Compute raw agreement and kappa by hand, then explain why failure recall is the decisive companion metric.</li>
+<li>For <span class="math inline">n=10</span>, <span class="math inline">c=7</span>, and <span class="math inline">k\in\{1,2,4,8\}</span>, compute both finite-sample estimators. Predict which one rises and which falls before running the artifact functions.</li>
+<li>Change one candidate <code>refund-en</code> run from a policy violation to a safe success. Predict the golden gate, paired interval, pass², and final verdict; then verify each prediction.</li>
+<li>Modify the fixture so two task records reuse the same snapshot identifier. Explain why environment identity is an evaluated invariant, then add a test that catches the reuse before any scores are reported.</li>
+<li>Raise the pairwise position-flip count until it exceeds the contract. Confirm that judge calibration blocks even though pointwise kappa is unchanged. Name one bias that answer swapping still does not test.</li>
+<li>Implement a naive trial-level bootstrap that treats 48 trials as independent and compare its interval with the task-clustered interval. Explain which dependency the naive version discards.</li>
+<li>Design an evaluation contract for a multilingual appointment-booking agent. Include a construct, authoritative outcome, trajectory invariant, human-label plan, three predeclared slices, MDE, non-inferiority margin, golden rule, and residual risk. Defend which failures may be averaged and which may not.</li>
+</ol>
+</section>
+<section id="sec-ch22-sources" class="level2" data-number="22.15">
+<h2 data-number="22.15" class="anchored" data-anchor-id="sec-ch22-sources"><span class="header-section-number">22.15</span> Notes and sources</h2>
+<ul>
+<li>Chen et al., <a href="https://arxiv.org/abs/2107.03374">“Evaluating Large Language Models Trained on Code”</a>, introduced HumanEval and the unbiased pass@k estimator.</li>
+<li>Yao et al., <a href="https://arxiv.org/abs/2406.12045"><span class="math inline">\tau</span>-bench</a>, formalized repeated tool-agent-user trials and pass^k.</li>
+<li>Zheng et al., <a href="https://arxiv.org/abs/2306.05685">“Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena”</a>, evaluated judge agreement and documented position, verbosity, and self-enhancement biases.</li>
+<li>Cohen, <a href="https://doi.org/10.1177/001316446002000104">“A Coefficient of Agreement for Nominal Scales”</a>, is the primary source for kappa.</li>
+<li>Liang et al., <a href="https://arxiv.org/abs/2211.09110">“Holistic Evaluation of Language Models”</a>, motivates transparent multi-metric, multi-scenario evaluation.</li>
+<li>Jimenez et al., <a href="https://arxiv.org/abs/2310.06770">SWE-bench</a>, is a primary example of evaluation whose executable repository environment is part of the task.</li>
+<li>Lin et al., <a href="https://arxiv.org/abs/2410.11005">ReDial</a>, provide a speaker-reviewed approach to dialect robustness and fairness evaluation.</li>
+<li>The UK AI Security Institute’s official <a href="https://inspect.aisi.org.uk/datasets.html">Inspect datasets</a>, <a href="https://inspect.aisi.org.uk/tasks.html">tasks</a>, and <a href="https://inspect.aisi.org.uk/scorers.html">scorers</a> documentation maps the chapter’s mechanism to a maintained evaluation framework without making that framework the mechanism.</li>
+<li>OpenAI’s <a href="https://arxiv.org/abs/2510.04374">GDPval paper</a> is a primary example of evaluating authentic, economically valuable deliverables; Chapter 28 handles the further step from deliverable quality to product ROI.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/21-agent-applications.html" class="pagination-link" aria-label="Agent Applications: Coding, Deep Research, and Computer Use [S]">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/23-training-agents-rl.html" class="pagination-link" aria-label="Training Agents with RL [S]">
+        <span class="nav-page-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with RL [S]</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
