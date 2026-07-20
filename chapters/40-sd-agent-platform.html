@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="The platform family of the agentic system-design round, worked once: a multi-tenant agent platform for fifty teams, where the product is not tokens but accountable runs, and the design is governance made mechanical — identity, immutable releases, cells, and evidence, priced by cost per successful task.">
+
+<title>40&nbsp; Platform Design: A Multi-Tenant Agent Platform – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../appendices/a-bridge.html" rel="next">
+<link href="../chapters/39-sd-deep-research.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/33-sd-interview-framework.html">Part IX — The Agentic System-Design Interview</a></li><li class="breadcrumb-item"><a href="../chapters/40-sd-agent-platform.html"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">Platform Design: A Multi-Tenant Agent Platform</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent-to-UI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Orchestrator-Workers, Failure Modes, and Economics</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Conversational, Computer Use, Data, and Deep Research</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation: From Traces to a Release Gate</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with Reinforcement Learning</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and Privacy Ops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IX — The Agentic System-Design Interview</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/33-sd-interview-framework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">The Interview Framework: Seven Moves and a Toolkit</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/34-sd-enterprise-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Enterprise RAG: The Retrieval-Heavy Family</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/35-sd-support-agent.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Designing an Acting Support Agent</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/36-sd-serving-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Model Infra: An LLM Serving Platform</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/37-sd-eval-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">The Eval Platform: A Number Someone Will Trust</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/38-sd-memory-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">Designing Cross-Session Memory</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/39-sd-deep-research.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Designing a Multi-Agent Deep-Research System</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/40-sd-agent-platform.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">Platform Design: A Multi-Tenant Agent Platform</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch40-scope" id="toc-sec-ch40-scope" class="nav-link active" data-scroll-target="#sec-ch40-scope"><span class="header-section-number">40.1</span> The prompt, and scoping fifty teams</a></li>
+  <li><a href="#sec-ch40-boe" id="toc-sec-ch40-boe" class="nav-link" data-scroll-target="#sec-ch40-boe"><span class="header-section-number">40.2</span> The numbers first</a></li>
+  <li><a href="#sec-ch40-skeleton" id="toc-sec-ch40-skeleton" class="nav-link" data-scroll-target="#sec-ch40-skeleton"><span class="header-section-number">40.3</span> The contract and the four-plane skeleton</a></li>
+  <li><a href="#sec-ch40-gateway" id="toc-sec-ch40-gateway" class="nav-link" data-scroll-target="#sec-ch40-gateway"><span class="header-section-number">40.4</span> Deep dive: the LLM gateway</a></li>
+  <li><a href="#sec-ch40-evidence" id="toc-sec-ch40-evidence" class="nav-link" data-scroll-target="#sec-ch40-evidence"><span class="header-section-number">40.5</span> Deep dive: trace versus audit</a></li>
+  <li><a href="#sec-ch40-tradeoffs" id="toc-sec-ch40-tradeoffs" class="nav-link" data-scroll-target="#sec-ch40-tradeoffs"><span class="header-section-number">40.6</span> Tradeoffs and failure</a></li>
+  <li><a href="#sec-ch40-evolution" id="toc-sec-ch40-evolution" class="nav-link" data-scroll-target="#sec-ch40-evolution"><span class="header-section-number">40.7</span> Evolution: build order and the changed requirement</a></li>
+  <li><a href="#sec-ch40-probes" id="toc-sec-ch40-probes" class="nav-link" data-scroll-target="#sec-ch40-probes"><span class="header-section-number">40.8</span> Interviewer probes</a></li>
+  <li><a href="#sec-ch40-family" id="toc-sec-ch40-family" class="nav-link" data-scroll-target="#sec-ch40-family"><span class="header-section-number">40.9</span> The platform family</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span class="header-section-number">40.10</span> Summary</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises"><span class="header-section-number">40.11</span> Exercises</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/33-sd-interview-framework.html">Part IX — The Agentic System-Design Interview</a></li><li class="breadcrumb-item"><a href="../chapters/40-sd-agent-platform.html"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">Platform Design: A Multi-Tenant Agent Platform</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch40" class="quarto-section-identifier"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">Platform Design: A Multi-Tenant Agent Platform</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This is the last family on the taxonomy (<a href="33-sd-interview-framework.html#sec-ch33-families" class="quarto-xref"><span>Section 33.2</span></a>) and the one that inverts the others: the customers are fifty engineering teams, not end users, so the thing we design is the control plane itself — releases, identity, isolation, and evidence promoted to the product. We run the seven moves once, on one prompt, and end with the family skeleton that re-instantiates the same bones across a tool registry, a review platform, and an agent CI/CD system. The fork that identifies this family is the one the whole chapter turns on: <em>which controls are mandatory per risk tier, and where is the reviewed escape hatch?</em></p>
+<section id="sec-ch40-scope" class="level2" data-number="40.1">
+<h2 data-number="40.1" class="anchored" data-anchor-id="sec-ch40-scope"><span class="header-section-number">40.1</span> The prompt, and scoping fifty teams</h2>
+<p>The interviewer says it like this:</p>
+<blockquote class="blockquote">
+<p><em>“We have fifty teams shipping agents, and every one of them is rebuilding identity, durability, evals, deployment, and incident response from scratch. Design the platform so they stop. Some agents just answer questions; some take real business actions. It’s multi-tenant, but we do not want one giant shared super-agent.”</em></p>
+</blockquote>
+<p>Underspecified on purpose: no isolation boundary, no risk taxonomy, no statement of which service levels the platform owns versus which the teams own. The first five minutes buy exactly the answers that fork the architecture, and the platform family has four such clarifiers.</p>
+<p><em>What workload shapes are in scope?</em> Read-only assistants need identity and evals; agents that issue refunds or file tickets drag in the whole approval-and-effect machinery of the acting-agent family (<a href="26-production-platform.html#sec-ch26-ledger" class="quarto-xref"><span>Section 26.5</span></a>). If both are in scope — they are — the platform must serve the strict superset, which means the effect ledger is not optional.</p>
+<p><em>Where is the tenant and failure isolation boundary?</em> This is the difference between a noisy-neighbour incident that touches one team and one that takes down fifty. The senior answer names <strong>cells</strong> — capacity partitioned by tenant, risk tier, or region so a failure’s blast radius is a fraction, not the fleet.</p>
+<p><em>Which controls are mandatory per risk tier, and where is the escape hatch?</em> This is the family fork. A platform with no mandatory controls is a wiki; a platform with no escape hatch grows shadow platforms in the teams that need the exception. The answer is risk-tiered mandatory controls plus a <em>reviewed</em> escape hatch whose exceptions carry an owner and an age.</p>
+<p><em>Which SLO is platform-owned and which is product-owned?</em> The platform owns the substrate’s availability, admission latency, and rollback time; a team owns its own task success rate. Confusing the two is how a platform ends up paged for a product’s bad prompt.</p>
+<p>A senior closes the move by restating the problem with numbers and naming a non-goal aloud: no shared super-agent, no cross-tenant data flow, no platform ownership of product quality.</p>
+<div id="tbl-ch40-reqs" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ch40-reqs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;40.1: What the platform promises, restated with numbers before any boxes are drawn.
+</figcaption>
+<div aria-describedby="tbl-ch40-reqs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Requirement</th>
+<th>Number / decision</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Tenants</td>
+<td>50 teams, mixed workloads</td>
+</tr>
+<tr class="even">
+<td>Workload range</td>
+<td>read-only assistants → approval-gated business actions</td>
+</tr>
+<tr class="odd">
+<td>Isolation</td>
+<td>cells by tenant · risk tier · region</td>
+</tr>
+<tr class="even">
+<td>Deployable unit</td>
+<td>immutable release bundle behind an alias</td>
+</tr>
+<tr class="odd">
+<td>Mandatory controls</td>
+<td>risk-tiered; reviewed escape hatch with exception debt</td>
+</tr>
+<tr class="even">
+<td>Platform SLO</td>
+<td>control-plane availability, admission/queue delay, rollback time</td>
+</tr>
+<tr class="odd">
+<td>Product SLO</td>
+<td>task success, groundedness — owned by the team</td>
+</tr>
+<tr class="even">
+<td>Headline metric</td>
+<td>cost per <strong>successful</strong> task, not agents deployed</td>
+</tr>
+<tr class="odd">
+<td>Out of scope</td>
+<td>shared super-agent · cross-tenant flow · product quality</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="sec-ch40-boe" class="level2" data-number="40.2">
+<h2 data-number="40.2" class="anchored" data-anchor-id="sec-ch40-boe"><span class="header-section-number">40.2</span> The numbers first</h2>
+<p>Numbers before boxes. The platform family’s classic numeric trap is a <em>metric</em> trap: reporting “agents deployed” and “cost per call” hides the retry tax, because an agent task that fails still costs money. The number a senior computes live is <strong>cost per successful task</strong> — the per-attempt cost divided by the success rate — and it is the one the vanity dashboard never shows. We compute it with the back-of-envelope toolkit from Chapter 33 (<a href="33-sd-interview-framework.html#sec-ch33-loops" class="quarto-xref"><span>Section 33.5</span></a>), importing its loop-cost calculator rather than rebuilding it.</p>
+<div id="635ff20c" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> importlib.util</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_chapter(chapter: <span class="bu">str</span>, name: <span class="bu">str</span>):</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Import a committed chapter's tangled module under an explicit name."""</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    spec <span class="op">=</span> importlib.util.spec_from_file_location(name, Path(<span class="st">"code"</span>) <span class="op">/</span> chapter <span class="op">/</span> <span class="st">"_generated.py"</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    module <span class="op">=</span> importlib.util.module_from_spec(spec)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    sys.modules[name] <span class="op">=</span> module</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    spec.loader.exec_module(module)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> module</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>sd <span class="op">=</span> load_chapter(<span class="st">"ch33"</span>, <span class="st">"ch40_sd"</span>)   <span class="co"># the back-of-envelope toolkit from Chapter 33</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>price <span class="op">=</span> sd.TokenPrice(input_per_million<span class="op">=</span><span class="fl">3.00</span>, output_per_million<span class="op">=</span><span class="fl">15.00</span>,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>                      cached_input_per_million<span class="op">=</span><span class="fl">0.30</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># a representative governed business-action task: an 8-step loop over a hot prompt cache</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>attempt <span class="op">=</span> sd.loop_cost(<span class="dv">8</span>, <span class="dv">2_500</span>, <span class="dv">700</span>, <span class="dv">250</span>, price, cached_resend<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>success_rate <span class="op">=</span> <span class="fl">0.70</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>per_success <span class="op">=</span> attempt <span class="op">/</span> success_rate</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"cost per task attempt          : $</span><span class="sc">{</span>attempt<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"cost per SUCCESSFUL task       : $</span><span class="sc">{</span>per_success<span class="sc">:.4f}</span><span class="ss">   &lt;- the unit that matters"</span>)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"retry tax the vanity metric hides: </span><span class="sc">{</span>(per_success <span class="op">/</span> attempt <span class="op">-</span> <span class="dv">1</span>) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.0f}</span><span class="ss">%"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>cost per task attempt          : $0.0619
+cost per SUCCESSFUL task       : $0.0884   &lt;- the unit that matters
+retry tax the vanity metric hides: 43%</code></pre>
+</div>
+</div>
+<p>At a 70% success rate the true unit cost is 43% above the per-attempt number — a platform billed and capacity-planned on cost-per-call is undercounting by nearly half, and the fix costs one spoken sentence. That unit scales to a fleet, and two more anchor numbers size the platform’s blast radius and its paved-path health. The prices, volumes, and rates here are illustrative teaching constants chosen for round arithmetic, not quotes.</p>
+<div id="87dd16f0" class="cell" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>tasks_per_day <span class="op">=</span> <span class="dv">50</span> <span class="op">*</span> <span class="dv">4_000</span>                 <span class="co"># 50 teams x ~4k successful tasks/team/day</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>cells <span class="op">=</span> <span class="dv">8</span>                                  <span class="co"># capacity partitioned into failure domains</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>releases, on_escape_hatch <span class="op">=</span> <span class="dv">320</span>, <span class="dv">26</span>        <span class="co"># live releases; those on a reviewed exception</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"fleet spend/day at </span><span class="sc">{</span>tasks_per_day<span class="sc">:,}</span><span class="ss"> successful tasks : $</span><span class="sc">{</span>per_success <span class="op">*</span> tasks_per_day<span class="sc">:,.0f}</span><span class="ss">"</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"blast radius, one cell of </span><span class="sc">{</span>cells<span class="sc">}</span><span class="ss">              : </span><span class="sc">{</span><span class="dv">1</span> <span class="op">/</span> cells <span class="op">*</span> <span class="dv">100</span><span class="sc">:.0f}</span><span class="ss">% of the fleet"</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"runs on the supported (paved) path        : </span><span class="sc">{</span>(<span class="dv">1</span> <span class="op">-</span> on_escape_hatch <span class="op">/</span> releases) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.0f}</span><span class="ss">%"</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"open escape-hatch exceptions              : </span><span class="sc">{</span>on_escape_hatch<span class="sc">}</span><span class="ss">  (each carries an owner + an age)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>fleet spend/day at 200,000 successful tasks : $17,674
+blast radius, one cell of 8              : 12% of the fleet
+runs on the supported (paved) path        : 92%
+open escape-hatch exceptions              : 26  (each carries an owner + an age)</code></pre>
+</div>
+</div>
+<p>Four numbers in five minutes: a five-figure daily fleet bill that per-call accounting would misstate, an eight-cell partition that caps any single failure at an eighth of the fleet, and a paved-path adoption rate with a countable exception debt. The last two are the platform’s real health indicators — not “agents deployed.” <a href="#fig-ch40-cost" class="quarto-xref">Figure&nbsp;<span>40.1</span></a> draws the trap directly: how the true unit cost pulls away from the per-call number as success rates fall.</p>
+<div id="cell-fig-ch40-cost" class="cell" data-execution_count="3">
+<details class="code-fold">
+<summary>Show the code that draws this figure</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>rates <span class="op">=</span> [r <span class="op">/</span> <span class="dv">100</span> <span class="cf">for</span> r <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">40</span>, <span class="dv">101</span>, <span class="dv">2</span>)]</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>true_cost <span class="op">=</span> [attempt <span class="op">/</span> r <span class="cf">for</span> r <span class="kw">in</span> rates]</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.6</span>, <span class="fl">3.4</span>))</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>ax.plot([r <span class="op">*</span> <span class="dv">100</span> <span class="cf">for</span> r <span class="kw">in</span> rates], true_cost, color<span class="op">=</span><span class="st">"#b13f3f"</span>, label<span class="op">=</span><span class="st">"cost per successful task"</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>ax.axhline(attempt, ls<span class="op">=</span><span class="st">"--"</span>, color<span class="op">=</span><span class="st">"#2a7f9e"</span>, label<span class="op">=</span><span class="st">"cost per attempt (the vanity number)"</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>ax.axvline(success_rate <span class="op">*</span> <span class="dv">100</span>, ls<span class="op">=</span><span class="st">":"</span>, color<span class="op">=</span><span class="st">"0.4"</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>ax.text(success_rate <span class="op">*</span> <span class="dv">100</span> <span class="op">+</span> <span class="dv">1</span>, attempt <span class="op">*</span> <span class="fl">1.55</span>, <span class="st">"70</span><span class="sc">% s</span><span class="st">uccess"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"0.4"</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"task success rate (%)"</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"cost per task (USD)"</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-ch40-cost" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch40-cost-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="40-sd-agent-platform_files/figure-html/fig-ch40-cost-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;40.1: What does one governed task really cost? The flat line is the per-attempt cost a vanity dashboard reports; the curve is cost per successful task. The gap is the retry tax, and it widens fast as success rates fall."><img src="40-sd-agent-platform_files/figure-html/fig-ch40-cost-output-1.svg" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch40-cost-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;40.1: What does one governed task really cost? The flat line is the per-attempt cost a vanity dashboard reports; the curve is cost per successful task. The gap is the retry tax, and it widens fast as success rates fall.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-ch40-skeleton" class="level2" data-number="40.3">
+<h2 data-number="40.3" class="anchored" data-anchor-id="sec-ch40-skeleton"><span class="header-section-number">40.3</span> The contract and the four-plane skeleton</h2>
+<p>The caller here is a team, not a browser, so the contract is a publishing surface, not a request-response API. A team ships an <strong>immutable release bundle</strong> — code and graph digest, pinned prompt, model, tool, and skill versions, MCP schema digests, the policy version, eval results, and a risk tier — to a registry, which admits it and returns an <strong>alias</strong>; the alias, never a mutable name, is what production points at, so a rollback is a pointer flip (<a href="26-production-platform.html#sec-ch26-versioning" class="quarto-xref"><span>Section 26.7</span></a>). Runs then enter through one idempotent boundary, whether the trigger is a webhook, a schedule, or a chat turn. The platform SLOs are the substrate’s: control-plane availability, admission and queue delay, and restore time — measured as error-budget burn, not a green average (<a href="27-operating-agents.html#sec-ch27-slos" class="quarto-xref"><span>Section 27.4</span></a>). Task success stays a product SLO.</p>
+<p>Now the boxes, and the reason to draw the platform as <strong>four planes</strong> is that each holds a different kind of authority, and the one rule that keeps them honest is the direction of authority: the control plane publishes <em>downward</em> into the request path, and the evidence plane records what happened but must never gate the hot path (<a href="26-production-platform.html#sec-ch26-planes" class="quarto-xref"><span>Section 26.1</span></a>). <a href="#fig-ch40-planes" class="quarto-xref">Figure&nbsp;<span>40.2</span></a> locates them.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-ch40-planes" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch40-planes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch40-planes">flowchart LR
+    TEAM["50 teams&lt;br/&gt;publish release bundles"] --&gt; BUILD["Build plane&lt;br/&gt;code · graph · evals · risk tier"]
+    BUILD --&gt; CONTROL["Control plane&lt;br/&gt;registry · policy · alias · budgets"]
+    CONTROL --&gt;|"atomic alias pointer"| RUN["Run plane&lt;br/&gt;identity · admit · checkpoint · effect"]
+    TRIG["webhook · schedule · chat"] --&gt; RUN
+    RUN &lt;--&gt; DATA[("Data plane&lt;br/&gt;checkpoints · effect ledger · receipts")]
+    RUN -. "traces · usage" .-&gt; EVID[("Evidence plane&lt;br/&gt;metrics · traces · audit · evals")]
+    RUN -. "authoritative receipt" .-&gt; EVID
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch40-planes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;40.2: Who owns task logic, reproducibility, orchestration, and durable state — and which way does authority flow? The control plane publishes downward; the evidence plane records but never gates the hot path.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The <strong>build plane</strong> owns task logic and turns a repo into a candidate bundle with eval results and a declared risk tier. The <strong>control plane</strong> owns discovery and admission: the registry stores bundles and resolves aliases, the policy gate decides tier-appropriate controls, and budgets are published ahead of traffic. The <strong>run plane</strong> owns one journey — it authenticates to a trusted identity, admits against quota and deadline, resolves the alias to a pinned bundle, checkpoints, proposes, authorizes, and invokes effects through the ledger (<a href="26-production-platform.html#sec-ch26-ledger" class="quarto-xref"><span>Section 26.5</span></a>). The <strong>data plane</strong> holds what outlives a request. The <strong>evidence plane</strong> records four sources of truth and is deliberately powerless over the hot path.</p>
+<p>Two pipelines connect these planes, and <a href="#fig-ch40-pipelines" class="quarto-xref">Figure&nbsp;<span>40.3</span></a> draws them: a change reaches production through the <strong>release pipeline</strong>, and every trigger enters through the <strong>run pipeline’s</strong> one idempotent boundary. Neither a webhook nor a chat turn gains tool authority by arriving — authority comes only from the resolved identity, which we design next.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-ch40-pipelines" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch40-pipelines-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch40-pipelines">flowchart LR
+    subgraph REL ["release pipeline"]
+        T["tests"] --&gt; EV["evals"] --&gt; PG["policy gate&lt;br/&gt;risk tier"] --&gt; AD["registry admission"] --&gt; CN["canary"] --&gt; AL["alias promotion"]
+    end
+    subgraph RUNP ["run pipeline"]
+        TR["webhook · schedule · chat"] --&gt; IDEM["idempotent boundary&lt;br/&gt;dedup run"] --&gt; RID["resolve identity&lt;br/&gt;+ release"] --&gt; ADM["admit&lt;br/&gt;quota · deadline"] --&gt; CP["checkpoint → propose&lt;br/&gt;authorize → effect"]
+    end
+    AL -. "alias points at digest" .-&gt; RID
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch40-pipelines-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;40.3: What is the deployable unit, and how do a webhook, a schedule, and a chat turn all enter without gaining tool authority? The release pipeline admits an immutable bundle behind an alias; the run pipeline funnels every trigger through one idempotent boundary.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-ch40-gateway" class="level2" data-number="40.4">
+<h2 data-number="40.4" class="anchored" data-anchor-id="sec-ch40-gateway"><span class="header-section-number">40.4</span> Deep dive: the LLM gateway</h2>
+<p>The interviewer forks first into the shared gateway, because it is the box every team’s traffic crosses. Its identity rule is the platform’s spine: a client header saying <code>tenant=bank-a</code> is <em>data</em>, not identity; the gateway issues a virtual key and resolves it server-side to a <strong>four-dimensional identity</strong> — actor, workload, release, and tool audience — and authorization is the <em>intersection</em> of the four plus a resource-server check, never a credential handed to the model (<a href="26-production-platform.html#sec-ch26-gateway" class="quarto-xref"><span>Section 26.2</span></a>). Registration in the registry is discovery, not trust: a tool being listed does not authorize any actor to call it.</p>
+<p>The dive the interviewer actually wants is routing. Four operations look alike and are not, and confusing them is a production bug (<a href="26-production-platform.html#sec-ch26-gateway" class="quarto-xref"><span>Section 26.2</span></a>): <strong>routing</strong> picks a deployment <em>before</em> the call; a <strong>cascade</strong> tries a cheap model and escalates <em>after</em> a grader judges it insufficient; a <strong>fallback</strong> switches provider <em>after</em> an operational failure to preserve availability; a <strong>hedge</strong> fires a redundant attempt <em>before</em> the first returns, to cut tail latency. <a href="#fig-ch40-gateway" class="quarto-xref">Figure&nbsp;<span>40.4</span></a> separates them by when they fire.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-ch40-gateway" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch40-gateway-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch40-gateway">flowchart TD
+    REQ["Resolved identity&lt;br/&gt;actor · workload · release · audience"] --&gt; ROUTE{"Route&lt;br/&gt;before the call"}
+    ROUTE --&gt;|"cheap"| SMALL["small model"]
+    ROUTE --&gt;|"hard"| LARGE["large model"]
+    SMALL --&gt; GRADE{"grader&lt;br/&gt;sufficient?"}
+    GRADE --&gt;|"no"| LARGE
+    SMALL -.-&gt;|"operational failure"| FB{"legal fallback set&lt;br/&gt;same residency · policy · capability"}
+    FB --&gt;|"in-policy peer"| ALT["eligible deployment"]
+    FB --&gt;|"none eligible"| SHED["shed / degrade"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch40-gateway-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;40.4: Four operations that look alike: which fires before the call, which after a grader, which after a failure — and which fallbacks are legal? A fallback is constrained by policy, not just health.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The senior point, the one that separates deciding from reciting, is <strong>fallback legality</strong>. A fallback is not “any healthy deployment that can answer” — it is any deployment that also satisfies the <em>same</em> residency, policy, and capability constraints as the primary. A technically-available fallback that violates residency is illegal, not available.</p>
+<p><em>When the interviewer pushes</em> — “your EU-only endpoint is down; fail over to the US region?” — the answer is no: crossing the residency boundary to preserve availability trades a five-minute outage for a reportable compliance breach. The fallback set is filtered by policy before it is filtered by health; if it comes up empty, the correct behaviour is to shed or degrade the workload, and the run’s residency constraint is a field in its release bundle’s policy version, so the gateway can enforce it mechanically rather than trusting an operator under pressure.</p>
+</section>
+<section id="sec-ch40-evidence" class="level2" data-number="40.5">
+<h2 data-number="40.5" class="anchored" data-anchor-id="sec-ch40-evidence"><span class="header-section-number">40.5</span> Deep dive: trace versus audit</h2>
+<p>The second fork is the evidence plane, and the trap is treating it as one logging system. It is at least two, with conflicting reliability needs. A <strong>trace</strong> is sampled diagnostic telemetry that answers <em>why did this run behave this way</em> — it deliberately over-retains errors and drops most successes, which makes it superb for debugging and useless for counting. An <strong>audit</strong> is an unsampled, append-only, tamper-evident record of governed effects that answers <em>who authorized this, under which policy, with what receipt</em>. A run fans out to four channels joined by stable identities — unsampled metrics for rates, sampled traces for trajectory, an unsampled usage ledger for money, and an append-only effect audit for consequences — and no single channel answers billing, debugging, alerting, and audit at once (<a href="27-operating-agents.html#sec-ch27-fanout" class="quarto-xref"><span>Section 27.2</span></a>). <a href="#fig-ch40-evidence" class="quarto-xref">Figure&nbsp;<span>40.5</span></a> draws the split.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-ch40-evidence" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch40-evidence-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch40-evidence">flowchart LR
+    RUN["Agent run&lt;br/&gt;run · attempt · release · tenant"] --&gt; TRACE[("Sampled trace&lt;br/&gt;trajectory · timing&lt;br/&gt;short retention · mutable")]
+    RUN --&gt; AUDIT[("Append-only audit&lt;br/&gt;policy · approval · receipt&lt;br/&gt;unsampled · tamper-evident")]
+    TRACE -. "diagnose: why did it behave this way" .-&gt; ENG["engineer debugging"]
+    AUDIT -. "hold accountable: who authorized it" .-&gt; GOV["governance · reconciliation"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch40-evidence-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;40.5: Which evidence answers ‘why did this run?’ and which answers ‘who authorized this effect?’ Sampled traces diagnose; an unsampled append-only audit holds accountable — and they must not be the same store.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><em>When the interviewer pushes</em> — “why not just query the traces to find out who authorized a refund?” — the answer names two failures: the trace is <em>sampled</em>, so the exact run you need may never have been recorded, and it is short-retention and mutable, so it cannot be evidence in a dispute. The audit is the authoritative channel for effects, and it reconciles against the usage ledger and the metrics so that <em>evidence is absent</em> is distinguishable from <em>the event is absent</em> (<a href="27-operating-agents.html#sec-ch27-fanout" class="quarto-xref"><span>Section 27.2</span></a>). Replay lives on the trace side and must route every write through a no-effect adapter, or diagnosing a refund becomes a second refund (<a href="27-operating-agents.html#sec-ch27-tracing" class="quarto-xref"><span>Section 27.1</span></a>).</p>
+</section>
+<section id="sec-ch40-tradeoffs" class="level2" data-number="40.6">
+<h2 data-number="40.6" class="anchored" data-anchor-id="sec-ch40-tradeoffs"><span class="header-section-number">40.6</span> Tradeoffs and failure</h2>
+<p>Every platform decision buys something and costs something; the table names the exchange, the risk, and the control that bounds it.</p>
+<div id="tbl-ch40-tradeoffs" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ch40-tradeoffs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;40.2: The platform tradeoffs, each with the control that makes its risk survivable.
+</figcaption>
+<div aria-describedby="tbl-ch40-tradeoffs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Choice</th>
+<th>Cost</th>
+<th>Buys</th>
+<th>Risk</th>
+<th>Control</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Opinionated paved path</td>
+<td>constrains unusual teams</td>
+<td>consistency · fleet queries · smaller incident surface</td>
+<td>shadow platforms</td>
+<td>self-service + reviewed escape hatch, exception debt measured</td>
+</tr>
+<tr class="even">
+<td>Immutable release bundle</td>
+<td>build overhead</td>
+<td>reproducible rollback = alias flip</td>
+<td>version sprawl</td>
+<td>registry lifecycle + deprecation</td>
+</tr>
+<tr class="odd">
+<td>Cells by tenant / risk / region</td>
+<td>capacity fragmentation</td>
+<td>bounded blast radius</td>
+<td>under-utilization</td>
+<td>size cells to failure domains</td>
+</tr>
+<tr class="even">
+<td>Registry = discovery only</td>
+<td>extra authz step per call</td>
+<td>no fleet-wide confused deputy</td>
+<td>perceived friction</td>
+<td>runtime authorizes actor · workload · release · audience · resource</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>Now walk the design as an adversary and an accountant. The failure with no partial credit is a <strong>cross-tenant leak</strong> — one team’s data reachable from another’s run — which cells and negative isolation tests in the release gate exist to prevent, and which pages a human on the first occurrence. A <strong>control-plane outage</strong> must not take down running agents: because the control plane only publishes downward, the run plane keeps serving on the last-resolved alias, and a trace-collector outage degrades observability, not availability (<a href="26-production-platform.html#sec-ch26-planes" class="quarto-xref"><span>Section 26.1</span></a>). A <strong>compromised MCP server</strong> is answered by the registry-as-dependency-graph: one query returns every live release that depends on it, and each is deprecated by alias flip.</p>
+<p>The 2026 defaults close the pass. <em>Cost is an attack surface</em>: a runaway loop in one tenant is denial-of-wallet, so per-tenant budgets, a hard step cap, and backpressure at every boundary — one propagated deadline, autoscaling on queue delay rather than CPU — bound the bill (<a href="33-sd-interview-framework.html#sec-ch33-loops" class="quarto-xref"><span>Section 33.5</span></a>). <em>Credentials never enter model-visible context</em>: the four-dimensional identity is resolved at the gateway and carried out of band, so an injected instruction cannot exfiltrate a key the model never held (<a href="24-agent-security.html" class="quarto-xref"><span>Chapter 24</span></a>).</p>
+</section>
+<section id="sec-ch40-evolution" class="level2" data-number="40.7">
+<h2 data-number="40.7" class="anchored" data-anchor-id="sec-ch40-evolution"><span class="header-section-number">40.7</span> Evolution: build order and the changed requirement</h2>
+<p>Build the boring substrate first, because it is what every workload needs and what teams most want to skip. The order is an evidence-gathering sequence: (1) one idempotent run boundary plus virtual-key identity and a registry with immutable bundles and alias promotion — the minimum paved path; (2) durable execution with checkpoints and an effect ledger, so a crash mid-refund does not double-charge (<a href="26-production-platform.html#sec-ch26-durable" class="quarto-xref"><span>Section 26.6</span></a>); (3) the evidence plane’s trace/audit split and the platform SLOs; (4) risk-tiered mandatory controls with the reviewed escape hatch, operated through the AIMS loop (<a href="28-products-people-organizations.html#sec-ch28-aims" class="quarto-xref"><span>Section 28.8</span></a>). Measure two things first: cost per successful task, and the fraction of runs on the supported path — the paved road is only real if teams stay on it.</p>
+<p>Then the interviewer flips one requirement: <em>“a new regulation requires EU tenant data to stay in-region.”</em> The senior answer is the delta, not a redraw. Residency becomes a field in the bundle’s policy version; cells gain a region dimension; the gateway’s fallback set is already filtered by policy, so fallback legality now enforces region for free (<a href="#sec-ch40-gateway" class="quarto-xref"><span>Section 40.4</span></a>). The four planes, the two pipelines, the registry, the effect ledger, and five of the six anchor numbers do not move. What changes is one field and one cell dimension; what survives is the architecture — which is the point of having built it as reasoned decisions rather than a picture.</p>
+</section>
+<section id="sec-ch40-probes" class="level2" data-number="40.8">
+<h2 data-number="40.8" class="anchored" data-anchor-id="sec-ch40-probes"><span class="header-section-number">40.8</span> Interviewer probes</h2>
+<p><strong>“A vendor silently changes a remote MCP tool’s description overnight. What happens on your platform?”</strong> A remote tool-description change is a change to the model’s prompt surface, so it must re-gate every dependent, exactly like a code change (<a href="19-protocols-frameworks.html#sec-ch19-poisoning" class="quarto-xref"><span>Section 19.4</span></a>). We pin tool definitions by hash in the release bundle; a description that no longer matches its pinned digest fails admission and the affected releases do not silently absorb the new text. The registry answers <em>which live releases depend on this server</em> in one query, so the rug-pull’s blast radius is known, not discovered during an incident. Token-passthrough to the tool’s own audience is banned; the confused-deputy defense is that authority comes from the resolved four-dimensional identity, not from whoever the tool trusts (<a href="19-protocols-frameworks.html#sec-ch19-security" class="quarto-xref"><span>Section 19.3</span></a>).</p>
+<p><strong>“Who decides a release is high-risk, and what does the tier actually buy?”</strong> The risk tier is declared in the immutable bundle and validated at the policy gate, not asserted in a launch meeting. The tier <em>selects the mandatory control set</em> — a read-only assistant may need only eval coverage and tracing, while an approval-gated business action requires the effect ledger, human review, and a stricter eval gate. The AIMS loop maps purpose and impact, measures the evidence, and treats residual risk through an authorized owner (<a href="28-products-people-organizations.html#sec-ch28-aims" class="quarto-xref"><span>Section 28.8</span></a>); the escape hatch is a reviewed exception with an owner and an age, so bypassing a control is possible, visible, and debt — never silent.</p>
+<p><strong>“Fifty teams means fifty ways to route around you. How do you keep the paved path from becoming shadow platforms?”</strong> By making the paved path the cheapest path: self-service publishing, fast canary, and rollback-by-alias-flip beat rebuilding durability and audit from scratch. Discover value before demanding autonomy, and measure adoption — the fraction of runs on the supported path and the exception-debt count — as first-class metrics (<a href="28-products-people-organizations.html#sec-ch28-discovery" class="quarto-xref"><span>Section 28.4</span></a>). A rising escape-hatch count is the early signal that the paved road is too narrow; the response is to widen the road, not to forbid the exception.</p>
+</section>
+<section id="sec-ch40-family" class="level2" data-number="40.9">
+<h2 data-number="40.9" class="anchored" data-anchor-id="sec-ch40-family"><span class="header-section-number">40.9</span> The platform family</h2>
+<p>The same four-plane bones — control plane as product, an immutable versioned unit behind an alias, four-dimensional identity, registry-as-discovery, and risk-tiered controls with a reviewed escape hatch — re-instantiate across the family. What changes is the unit being governed, and that one change flips specific decisions.</p>
+<div id="tbl-ch40-family" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ch40-family-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;40.3: The platform family — same bones, one changed constraint, a different decision each time.
+</figcaption>
+<div aria-describedby="tbl-ch40-family-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Sibling prompt</th>
+<th>The changed constraint</th>
+<th>What flips</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>This chapter</strong> — multi-tenant agent platform</td>
+<td>mixed workloads with real effects</td>
+<td>full four planes; effect ledger + audit are central</td>
+</tr>
+<tr class="even">
+<td><strong>Internal MCP-tool registry / gateway</strong></td>
+<td>the governed unit is a <em>tool</em>, not an agent</td>
+<td>registry keys on tool + schema digest; the deprecation / rug-pull path (<a href="19-protocols-frameworks.html#sec-ch19-poisoning" class="quarto-xref"><span>Section 19.4</span></a>) is the main event; no run plane</td>
+</tr>
+<tr class="odd">
+<td><strong>HITL review platform</strong></td>
+<td>the product is <em>human decisions</em>, not autonomy</td>
+<td>the evidence plane and a review queue (<a href="27-operating-agents.html#sec-ch27-hitl" class="quarto-xref"><span>Section 27.8</span></a>) become the product; SLO is reviewer latency and inter-rater agreement, not task success</td>
+</tr>
+<tr class="even">
+<td><strong>Agent CI/CD platform</strong></td>
+<td>the unit ships <em>code + evals</em>, no live runs</td>
+<td>the release pipeline is the whole product; the gate is eval coverage; no run plane or effect ledger, but rollback-by-alias survives</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>Naming which bone dominates before drawing is the transfer skill: a tool registry is this platform with the run plane deleted, a review platform is this platform with the evidence plane promoted, and a CI/CD platform is this platform with the release pipeline as the only surface. None is a new language.</p>
+</section>
+<section id="summary" class="level2" data-number="40.10">
+<h2 data-number="40.10" class="anchored" data-anchor-id="summary"><span class="header-section-number">40.10</span> Summary</h2>
+<p>The platform family designs the control plane as the product: fifty teams stop rebuilding identity, durability, evals, and incidents because the platform makes the paved path the cheapest path. We restated the prompt with numbers, computed the family’s real unit — cost per successful task, not per call — and drew four planes whose authority flows downward while evidence never gates the hot path. The gateway resolves a four-dimensional identity and enforces fallback legality; the evidence plane splits sampled traces from an append-only audit. Mandatory controls are risk-tiered with a reviewed escape hatch, and a residency flip moves one field, not the architecture.</p>
+</section>
+<section id="exercises" class="level2" data-number="40.11">
+<h2 data-number="40.11" class="anchored" data-anchor-id="exercises"><span class="header-section-number">40.11</span> Exercises</h2>
+<ol type="1">
+<li><strong>Recompute the headline unit.</strong> Using the toolkit’s <code>loop_cost</code>, hold the 8-step task fixed but drop the success rate to 55%; report the new cost per successful task and the retry tax. Then find the success rate at which the true unit cost is exactly double the per-attempt cost, and explain in one sentence why “agents deployed” is a worse platform metric than either.</li>
+<li><strong>Size the cells.</strong> The fleet must survive any single failure touching at most 10% of tenants. How many cells does that require, and what does the answer cost in capacity utilization if each cell must hold warm headroom? State the tradeoff-table row this exercises.</li>
+<li><strong>Fallback legality.</strong> Write the predicate a gateway applies to build a <em>legal</em> fallback set from a pool of healthy deployments, given a run’s residency, policy, and capability constraints. Then give one concrete case where the legal set is empty and name what the run should do instead of failing over.</li>
+<li><strong>Trace versus audit, in anger.</strong> A dispute requires proving who authorized a specific refund six months ago. Explain why querying the trace store can fail even though the run “definitely happened,” and list the three properties the audit channel must have that the trace channel deliberately lacks (recall <a href="27-operating-agents.html#sec-ch27-fanout" class="quarto-xref"><span>Section 27.2</span></a>).</li>
+<li><strong>The changed requirement, worked twice.</strong> (a) The interviewer swaps the residency flip for <em>“one team’s agents must never call another team’s tools.”</em> Name exactly which box enforces it and why registration alone does not. (b) Now the flip is <em>“a regulator demands a single reproducible record of every governed action for seven years.”</em> Which plane owns it, and which anchor numbers change?</li>
+<li><strong>Escape-hatch debt.</strong> Open exceptions have grown from 26 to 80 over a quarter while the fleet is flat. Argue from <a href="28-products-people-organizations.html#sec-ch28-discovery" class="quarto-xref"><span>Section 28.4</span></a> whether the correct response is to tighten the gate or widen the paved path, and name the one metric that would settle it.</li>
+<li><strong>Redraw for a sibling.</strong> Take the MCP-tool-registry sibling from <a href="#tbl-ch40-family" class="quarto-xref">Table&nbsp;<span>40.3</span></a>. Draw its skeleton by deleting and relabeling boxes from <a href="#fig-ch40-planes" class="quarto-xref">Figure&nbsp;<span>40.2</span></a>, then state which deep dive (gateway or trace-versus-audit) becomes the interview’s center of gravity and why.</li>
+</ol>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/39-sd-deep-research.html" class="pagination-link" aria-label="Designing a Multi-Agent Deep-Research System">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Designing a Multi-Agent Deep-Research System</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../appendices/a-bridge.html" class="pagination-link" aria-label="The Bridge: Math, Decisions, Planning, RL, Control, and Systems">
+        <span class="nav-page-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

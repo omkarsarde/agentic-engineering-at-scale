@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="The orchestration family worked as one interview: a multi-agent deep-research system that turns open-ended questions into cited briefs in minutes, priced in dollars per task — where the whole design hangs on whether coordination earns its token multiplier.">
+
+<title>39&nbsp; Designing a Multi-Agent Deep-Research System – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/40-sd-agent-platform.html" rel="next">
+<link href="../chapters/38-sd-memory-system.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/33-sd-interview-framework.html">Part IX — The Agentic System-Design Interview</a></li><li class="breadcrumb-item"><a href="../chapters/39-sd-deep-research.html"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Designing a Multi-Agent Deep-Research System</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent-to-UI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Orchestrator-Workers, Failure Modes, and Economics</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Conversational, Computer Use, Data, and Deep Research</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation: From Traces to a Release Gate</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with Reinforcement Learning</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and Privacy Ops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IX — The Agentic System-Design Interview</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/33-sd-interview-framework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">The Interview Framework: Seven Moves and a Toolkit</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/34-sd-enterprise-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Enterprise RAG: The Retrieval-Heavy Family</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/35-sd-support-agent.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Designing an Acting Support Agent</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/36-sd-serving-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Model Infra: An LLM Serving Platform</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/37-sd-eval-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">The Eval Platform: A Number Someone Will Trust</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/38-sd-memory-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">Designing Cross-Session Memory</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/39-sd-deep-research.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Designing a Multi-Agent Deep-Research System</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/40-sd-agent-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">Platform Design: A Multi-Tenant Agent Platform</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch39-scope" id="toc-sec-ch39-scope" class="nav-link active" data-scroll-target="#sec-ch39-scope"><span class="header-section-number">39.1</span> The prompt, and scoping it</a></li>
+  <li><a href="#sec-ch39-numbers" id="toc-sec-ch39-numbers" class="nav-link" data-scroll-target="#sec-ch39-numbers"><span class="header-section-number">39.2</span> The numbers first</a></li>
+  <li><a href="#sec-ch39-skeleton" id="toc-sec-ch39-skeleton" class="nav-link" data-scroll-target="#sec-ch39-skeleton"><span class="header-section-number">39.3</span> The contract and the skeleton</a></li>
+  <li><a href="#sec-ch39-boundary" id="toc-sec-ch39-boundary" class="nav-link" data-scroll-target="#sec-ch39-boundary"><span class="header-section-number">39.4</span> Deep dive: what crosses the worker boundary</a></li>
+  <li><a href="#sec-ch39-merge" id="toc-sec-ch39-merge" class="nav-link" data-scroll-target="#sec-ch39-merge"><span class="header-section-number">39.5</span> Deep dive: the single-writer merge and citation integrity</a></li>
+  <li><a href="#sec-ch39-tradeoffs" id="toc-sec-ch39-tradeoffs" class="nav-link" data-scroll-target="#sec-ch39-tradeoffs"><span class="header-section-number">39.6</span> Tradeoffs, failure, and cost as an attack</a></li>
+  <li><a href="#sec-ch39-evolution" id="toc-sec-ch39-evolution" class="nav-link" data-scroll-target="#sec-ch39-evolution"><span class="header-section-number">39.7</span> Evolution: build order and the flip</a></li>
+  <li><a href="#sec-ch39-probes" id="toc-sec-ch39-probes" class="nav-link" data-scroll-target="#sec-ch39-probes"><span class="header-section-number">39.8</span> Interviewer probes</a></li>
+  <li><a href="#sec-ch39-family" id="toc-sec-ch39-family" class="nav-link" data-scroll-target="#sec-ch39-family"><span class="header-section-number">39.9</span> The family skeleton</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span class="header-section-number">39.10</span> Summary</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises"><span class="header-section-number">39.11</span> Exercises</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/33-sd-interview-framework.html">Part IX — The Agentic System-Design Interview</a></li><li class="breadcrumb-item"><a href="../chapters/39-sd-deep-research.html"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Designing a Multi-Agent Deep-Research System</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch39" class="quarto-section-identifier"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Designing a Multi-Agent Deep-Research System</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>The system in this chapter answers a question no index can answer directly — <em>what has been written across everything we can read, and what should we conclude</em> — by spending a small team of language models on it and returning a cited brief in a few minutes. It is the orchestration family from <a href="33-sd-interview-framework.html#sec-ch33-families" class="quarto-xref"><span>Section 33.2</span></a>: the work exceeds one context window and one agent’s clock, so the design is a plan step and a merge boundary, and the whole thing turns on one question — does the coordination earn its token multiplier? We run the seven moves of <a href="33-sd-interview-framework.html" class="quarto-xref"><span>Chapter 33</span></a> on it at interview depth, importing that chapter’s back-of-envelope toolkit rather than rebuilding it, and citing <a href="20-multi-agent-systems.html" class="quarto-xref"><span>Chapter 20</span></a> for the economics it already teaches. The parts, in order: scope and the family fork, the numbers, the contract and skeleton, two deep dives (what crosses the worker boundary, and how a single writer keeps the brief honest), the tradeoff and failure pass with cost treated as an attack, the evolution flip, and the family skeleton that carries the design to its siblings.</p>
+<section id="sec-ch39-scope" class="level2" data-number="39.1">
+<h2 data-number="39.1" class="anchored" data-anchor-id="sec-ch39-scope"><span class="header-section-number">39.1</span> The prompt, and scoping it</h2>
+<p>The interviewer states it the way interviewers do, underspecified: <em>“Our analysts ask open-ended research questions over the web and our internal corpora. Build them something that reads widely and comes back in a few minutes with a written brief that cites its sources. Watch the cost.”</em> No corpus size, no freshness bar, no budget number — the gaps are the interview.</p>
+<p>Three clarifiers change the architecture, and I ask only those. First, the family fork (<a href="33-sd-interview-framework.html#sec-ch33-families" class="quarto-xref"><span>Section 33.2</span></a>): <strong>is the work read-parallel or write-coupled?</strong> If the task is breadth-first reading — many independent sub-questions whose answers combine — it parallelizes across workers. If the deliverable is one evolving artifact where each edit depends on the last (a codebase, a single argued document), it does not, and the honest design collapses to a single agent with compaction (<a href="13-prompting-context-engineering.html#sec-ch13-compaction" class="quarto-xref"><span>Section 13.8</span></a>). This prompt is read-parallel: gather evidence on independent facets, then synthesize. Second, <strong>is the budget cents or dollars per task?</strong> A research task that reads dozens of sources is priced in dollars, not the cents a chat turn costs, and that number decides whether a team is affordable at all. Third, <strong>web, internal, or both — and are workers permission-scoped?</strong> Internal corpora force per-worker access control (<a href="15-agentic-retrieval.html#sec-ch15-security" class="quarto-xref"><span>Section 15.9</span></a>); the open web forces provenance and poisoning defenses (<a href="24-agent-security.html" class="quarto-xref"><span>Chapter 24</span></a>). <a href="#fig-ch39-fork" class="quarto-xref">Figure&nbsp;<span>39.1</span></a> draws the fork that dominates.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-ch39-fork" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch39-fork-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch39-fork">flowchart TD
+    P["Deep-research prompt"] --&gt; Q{"Read-parallel&lt;br/&gt;or write-coupled?"}
+    Q --&gt;|"independent sub-questions,&lt;br/&gt;answers combine"| M["Orchestrator + isolated workers&lt;br/&gt;→ single-writer brief"]
+    Q --&gt;|"one evolving artifact,&lt;br/&gt;each edit depends on the last"| S["Single agent + compaction&lt;br/&gt;(Ch 13) — refuse the team"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch39-fork-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;39.1: The one question that decides whether this is a multi-agent problem at all: is the work read-parallel, or coupled to a single evolving artifact? Only the left branch justifies an orchestrator and workers.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Restated with numbers, and a non-goal said aloud: tens of gigabytes of internal documents plus web search; open-ended queries; a cited brief of one to three thousand words; a per-task budget near two dollars with a hard ceiling; time-to-brief in minutes, not seconds; a handful of concurrent analyst tasks, not consumer QPS. Out of scope, stated: sub-minute freshness, taking any action or writing back, and consumer-scale throughput. <a href="#tbl-ch39-reqs" class="quarto-xref">Table&nbsp;<span>39.1</span></a> fixes the requirements.</p>
+<div id="tbl-ch39-reqs" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ch39-reqs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;39.1: Requirements for the deep-research system, each numbered clarifier carrying its design consequence.
+</figcaption>
+<div aria-describedby="tbl-ch39-reqs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Requirement</th>
+<th>Value</th>
+<th>Consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Query type</td>
+<td>open-ended, multi-facet</td>
+<td>fan-out to workers, not one call</td>
+</tr>
+<tr class="even">
+<td>Deliverable</td>
+<td>cited brief, 1–3k words</td>
+<td>single-writer synthesis + citation check</td>
+</tr>
+<tr class="odd">
+<td>Latency</td>
+<td>p95 time-to-brief &lt; 5 min</td>
+<td>parallel workers; no TTFT SLO</td>
+</tr>
+<tr class="even">
+<td>Cost</td>
+<td>~$2/task, hard ceiling ~$5</td>
+<td>dollars-per-task economics; spawn caps</td>
+</tr>
+<tr class="odd">
+<td>Throughput</td>
+<td>tens of concurrent tasks</td>
+<td>queue, not a serving fleet</td>
+</tr>
+<tr class="even">
+<td>Correctness</td>
+<td>every claim cited + verifiable; abstain if thin</td>
+<td>typed findings + cite-check phase</td>
+</tr>
+<tr class="odd">
+<td>Out of scope</td>
+<td>real-time freshness, write-back, consumer QPS</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="sec-ch39-numbers" class="level2" data-number="39.2">
+<h2 data-number="39.2" class="anchored" data-anchor-id="sec-ch39-numbers"><span class="header-section-number">39.2</span> The numbers first</h2>
+<p>Numbers before boxes. The anchors here are a token total, a dollar cost per task, a multiplier against a stated baseline, and a wall-clock time — and the family’s numeric trap is that every one of them depends on a choice you must say aloud. We import the committed toolkit from <a href="33-sd-interview-framework.html" class="quarto-xref"><span>Chapter 33</span></a> and price the design phase by phase.</p>
+<p>The key modeling move: a worker is not one call, it is an internal retrieval loop (<a href="15-agentic-retrieval.html#sec-ch15-loop" class="quarto-xref"><span>Section 15.3</span></a>), and its cost is the resend-quadratic <code>loop_cost</code> from the toolkit — each step re-sends the growing context, so a four-step worker’s input tokens are not four times the base but the triangular sum. That is where the reported “~30k tokens per subagent” comes from; it is a consequence of the loop, not a guess.</p>
+<div id="5865427d" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> importlib.util</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_chapter(chapter: <span class="bu">str</span>, name: <span class="bu">str</span>):</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Import a committed chapter's tangled module under an explicit name."""</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    spec <span class="op">=</span> importlib.util.spec_from_file_location(name, Path(<span class="st">"code"</span>) <span class="op">/</span> chapter <span class="op">/</span> <span class="st">"_generated.py"</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    module <span class="op">=</span> importlib.util.module_from_spec(spec)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    sys.modules[name] <span class="op">=</span> module</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    spec.loader.exec_module(module)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> module</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>tk <span class="op">=</span> load_chapter(<span class="st">"ch33"</span>, <span class="st">"ch33_generated"</span>)  <span class="co"># the BoE toolkit from Chapter 33</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>price <span class="op">=</span> tk.TokenPrice(input_per_million<span class="op">=</span><span class="fl">3.00</span>, output_per_million<span class="op">=</span><span class="fl">15.00</span>,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>                      cached_input_per_million<span class="op">=</span><span class="fl">0.30</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># One worker = a 4-step retrieval loop: base 3k, +3k evidence/step, 500 out/step.</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>worker_cost <span class="op">=</span> tk.loop_cost(<span class="dv">4</span>, <span class="dv">3_000</span>, <span class="dv">3_000</span>, <span class="dv">500</span>, price)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>worker_tokens <span class="op">=</span> <span class="dv">4</span> <span class="op">*</span> <span class="dv">3_000</span> <span class="op">+</span> <span class="dv">3_000</span> <span class="op">*</span> <span class="dv">4</span> <span class="op">*</span> <span class="dv">3</span> <span class="op">//</span> <span class="dv">2</span> <span class="op">+</span> <span class="dv">4</span> <span class="op">*</span> <span class="dv">500</span>     <span class="co"># resend-quadratic input + output</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>findings_typed, findings_raw <span class="op">=</span> <span class="dv">4</span> <span class="op">*</span> <span class="dv">2_000</span>, <span class="dv">4</span> <span class="op">*</span> <span class="dv">30_000</span>          <span class="co"># what the lead re-reads at merge</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>n <span class="op">=</span> <span class="dv">4</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>lead <span class="op">=</span> tk.cost_per_query(<span class="dv">5_000</span>, <span class="dv">1_000</span>, price)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>merge_typed <span class="op">=</span> tk.cost_per_query(<span class="dv">4_000</span> <span class="op">+</span> findings_typed, <span class="dv">3_000</span>, price)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>merge_raw <span class="op">=</span> tk.cost_per_query(<span class="dv">4_000</span> <span class="op">+</span> findings_raw, <span class="dv">3_000</span>, price)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>cite <span class="op">=</span> tk.cost_per_query(<span class="dv">8_000</span>, <span class="dv">1_000</span>, price)</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>team_cost <span class="op">=</span> lead <span class="op">+</span> n <span class="op">*</span> worker_cost <span class="op">+</span> merge_typed <span class="op">+</span> cite</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>team_tokens <span class="op">=</span> <span class="dv">6_000</span> <span class="op">+</span> n <span class="op">*</span> worker_tokens <span class="op">+</span> (<span class="dv">4_000</span> <span class="op">+</span> findings_typed <span class="op">+</span> <span class="dv">3_000</span>) <span class="op">+</span> <span class="dv">9_000</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="co"># The multiplier is a ratio, so its denominator is a choice we must state:</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>single_chat, single_research <span class="op">=</span> <span class="dv">10_000</span>, <span class="dv">42_000</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>latency <span class="op">=</span> {<span class="st">"plan"</span>: <span class="dv">20</span>, <span class="st">"worker"</span>: <span class="dv">90</span>, <span class="st">"merge"</span>: <span class="dv">40</span>, <span class="st">"cite"</span>: <span class="dv">20</span>}     <span class="co"># seconds</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>parallel <span class="op">=</span> <span class="bu">sum</span>(latency.values())                                  <span class="co"># workers overlap</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>serial <span class="op">=</span> latency[<span class="st">"plan"</span>] <span class="op">+</span> n <span class="op">*</span> latency[<span class="st">"worker"</span>] <span class="op">+</span> latency[<span class="st">"merge"</span>] <span class="op">+</span> latency[<span class="st">"cite"</span>]</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"one worker         : </span><span class="sc">{</span>worker_tokens<span class="sc">:&gt;7,}</span><span class="ss"> tokens   $</span><span class="sc">{</span>worker_cost<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"merge re-reads     : </span><span class="sc">{</span>findings_typed<span class="sc">:&gt;7,}</span><span class="ss"> typed  $</span><span class="sc">{</span>merge_typed<span class="sc">:.3f}</span><span class="ss">   "</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"vs </span><span class="sc">{</span>findings_raw<span class="sc">:,}</span><span class="ss"> raw  $</span><span class="sc">{</span>merge_raw<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"whole task (</span><span class="sc">{</span>n<span class="sc">}</span><span class="ss"> subs) : </span><span class="sc">{</span>team_tokens<span class="sc">:&gt;7,}</span><span class="ss"> tokens   $</span><span class="sc">{</span>team_cost<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"multiplier vs chat / vs single research agent : "</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"</span><span class="sc">{</span>team_tokens<span class="op">/</span>single_chat<span class="sc">:.1f}</span><span class="ss">x  /  </span><span class="sc">{</span>team_tokens<span class="op">/</span>single_research<span class="sc">:.1f}</span><span class="ss">x"</span>)</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"wall-clock          : </span><span class="sc">{</span>parallel<span class="op">/</span><span class="dv">60</span><span class="sc">:.1f}</span><span class="ss"> min parallel  vs  </span><span class="sc">{</span>serial<span class="op">/</span><span class="dv">60</span><span class="sc">:.1f}</span><span class="ss"> min serial"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>one worker         :  32,000 tokens   $0.120
+merge re-reads     :   8,000 typed  $0.081   vs 120,000 raw  $0.417
+whole task (4 subs) : 158,000 tokens   $0.63
+multiplier vs chat / vs single research agent : 15.8x  /  3.8x
+wall-clock          : 2.8 min parallel  vs  7.3 min serial</code></pre>
+</div>
+</div>
+<p>Two dollars was the budget; sixty-three cents is the priced task, so the shape fits — <em>because</em> the workers return compressed findings. The merge line is the deep dive previewed as arithmetic: a merge over four 2k typed findings costs eight cents, while re-reading the workers’ raw 120k of pages would cost forty-two cents and, more to the point, would not fit a merge window.</p>
+<p>The trap is the multiplier, and it is a trap because it is a ratio and a ratio has a denominator. Against a single chat turn the team is about sixteen times the tokens — which is the shape of the widely quoted “~15x” figure that <a href="20-multi-agent-systems.html#sec-ch20-economics" class="quarto-xref"><span>Section 20.5</span></a> tracks and labels as a <em>reported</em> measurement of one system, not a universal constant. Against a single agent that actually does the research with compaction, the same team is only about four times. Nothing changed but the baseline. The senior move is to name it: “the multiplier you quote depends entirely on what you compare against; against a chat turn it is ~15x, against a competent single agent it is ~4x, and the design question is whether the parallelism is worth <em>that</em> four, not the fifteen.” The wall-clock line makes the case parallelism actually wins: four workers are four times the token <em>work</em> but roughly one times the wall-clock of the slowest (<a href="20-multi-agent-systems.html#sec-ch20-latency" class="quarto-xref"><span>Section 20.4</span></a>) — 2.8 minutes instead of 7.3. <a href="#fig-ch39-budget" class="quarto-xref">Figure&nbsp;<span>39.2</span></a> stacks where the tokens go.</p>
+<div id="cell-fig-ch39-budget" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>Show the code that draws this figure</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>phases <span class="op">=</span> [(<span class="st">"lead plan"</span>, <span class="dv">6_000</span>, <span class="st">"#4f5d75"</span>), (<span class="st">"4 workers"</span>, n <span class="op">*</span> worker_tokens, <span class="st">"#2a7f9e"</span>),</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>          (<span class="st">"merge"</span>, <span class="dv">4_000</span> <span class="op">+</span> findings_typed <span class="op">+</span> <span class="dv">3_000</span>, <span class="st">"#b7791f"</span>), (<span class="st">"cite-check"</span>, <span class="dv">9_000</span>, <span class="st">"#3e7a52"</span>)]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">7.0</span>, <span class="fl">1.9</span>))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>left <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> name, width, color <span class="kw">in</span> phases:</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    ax.barh(<span class="dv">0</span>, width, left<span class="op">=</span>left, color<span class="op">=</span>color, edgecolor<span class="op">=</span><span class="st">"white"</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    ax.text(left <span class="op">+</span> width <span class="op">/</span> <span class="dv">2</span>, <span class="dv">0</span>, <span class="ss">f"</span><span class="sc">{</span>name<span class="sc">}</span><span class="ch">\n</span><span class="sc">{</span>width<span class="op">/</span><span class="dv">1000</span><span class="sc">:.0f}</span><span class="ss">k"</span>, ha<span class="op">=</span><span class="st">"center"</span>, va<span class="op">=</span><span class="st">"center"</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>            fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"white"</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    left <span class="op">+=</span> width</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>ax.set_xlim(<span class="dv">0</span>, left)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>ax.set_yticks([])</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"tokens per task"</span>)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-ch39-budget" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch39-budget-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="39-sd-deep-research_files/figure-html/fig-ch39-budget-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;39.2: Where do a task’s ~150k tokens go? The four parallel workers dominate; the lead’s plan, merge, and cite-check are a thin coordination tax — which is exactly why worker count is the cost lever and the attack surface."><img src="39-sd-deep-research_files/figure-html/fig-ch39-budget-output-1.svg" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch39-budget-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;39.2: Where do a task’s ~150k tokens go? The four parallel workers dominate; the lead’s plan, merge, and cite-check are a thin coordination tax — which is exactly why worker count is the cost lever and the attack surface.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="landscape-2026 callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Landscape 2026 — the constants in this design
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The token prices ($3.00 and $15.00 per million, cached at a tenth), the per-worker loop shape, the phase latencies, and the $2 per-task budget are <strong>illustrative teaching constants</strong> chosen for round arithmetic; the ~15x multiplier is a <strong>reported</strong> figure for one vendor’s system, not a law. The formulas hold; the numbers move with every pricing page and model generation. <strong>Verify live:</strong> your provider’s pricing, your own measured per-task token and latency distributions, and the current multi-agent economics reports before quoting any of these. Checked 2026-07-20.</p>
+</div>
+</div>
+</section>
+<section id="sec-ch39-skeleton" class="level2" data-number="39.3">
+<h2 data-number="39.3" class="anchored" data-anchor-id="sec-ch39-skeleton"><span class="header-section-number">39.3</span> The contract and the skeleton</h2>
+<p>The caller sees an asynchronous job, not a request-response call. One endpoint — <code>research(question, corpus_scope, effort_hint)</code> — returns a job id and streams progress, and the terminal result is a brief, a citation list, a confidence, and, as a first-class outcome, <code>insufficient_evidence</code> when the corpus cannot support an answer (abstention is a feature, recall <a href="15-agentic-retrieval.html#sec-ch15-crag" class="quarto-xref"><span>Section 15.5</span></a>). The SLOs are the two the numbers forced: a <strong>time-to-brief</strong> target (p95 under five minutes) and a <strong>cost-per-task</strong> budget (p95 under two dollars, hard-killed at five), plus a <strong>citation-integrity</strong> rate measured on a golden set — every claim in a shipped brief must resolve to a source that supports it. There is no TTFT here, and saying so is the point: this family’s SLO is completion and dollars, and pricing it per call in cents hides the per-task reality in dollars.</p>
+<p>Now the boxes, and they were mostly chosen already. <a href="#fig-ch39-skeleton" class="quarto-xref">Figure&nbsp;<span>39.3</span></a> is the orchestration skeleton: a lead plans and spawns isolated workers, each worker reads under its own budget and returns a compressed typed finding set, and a single writer merges those into the brief before a cite-check gate lets it out.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-ch39-skeleton" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch39-skeleton-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch39-skeleton">flowchart TD
+    U["analyst question"] --&gt; L["&lt;b&gt;lead&lt;/b&gt;: decompose,&lt;br/&gt;set effort + spawn cap"]
+    L --&gt;|"brief + tool budget"| W1["worker 1&lt;br/&gt;isolated context"]
+    L --&gt;|"brief + tool budget"| W2["worker 2&lt;br/&gt;isolated context"]
+    L --&gt;|"brief + tool budget"| W3["worker N&lt;br/&gt;isolated context"]
+    W1 --&gt;|"typed findings"| MG["&lt;b&gt;single writer&lt;/b&gt;:&lt;br/&gt;merge + synthesize"]
+    W2 --&gt;|"typed findings"| MG
+    W3 --&gt;|"typed findings"| MG
+    MG --&gt; CC{"cite-check:&lt;br/&gt;each claim&lt;br/&gt;entailed by source?"}
+    CC --&gt;|"pass"| B["cited brief"]
+    CC --&gt;|"fail"| MG
+    subgraph CTRL ["control plane"]
+        BUD["per-task \$ budget · spawn cap · effort rules"]
+    end
+    BUD -.-&gt; L
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch39-skeleton-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;39.3: The orchestrator-worker skeleton for deep research: where does parallel reading happen, and where does the one writer turn findings into a cited brief? Every worker is isolated; only the lead writes.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Each box has one responsibility. The <strong>lead</strong> decomposes the question, decides how much effort it warrants, and enforces the spawn cap — it plans, it does not research. Each <strong>worker</strong> owns an isolated context (<a href="20-multi-agent-systems.html#sec-ch20-context" class="quarto-xref"><span>Section 20.2</span></a>): its own window, its own tool budget, and an output contract that says what a finding looks like. The <strong>single writer</strong> is the only component that composes prose; workers contribute intelligence, never sentences. The <strong>cite-check</strong> gate re-verifies citations before release. Beside the data path sits a thin <strong>control plane</strong> carrying the per-task budget, the spawn cap, and the effort rules — the machinery that keeps the family’s economics from becoming its failure mode.</p>
+</section>
+<section id="sec-ch39-boundary" class="level2" data-number="39.4">
+<h2 data-number="39.4" class="anchored" data-anchor-id="sec-ch39-boundary"><span class="header-section-number">39.4</span> Deep dive: what crosses the worker boundary</h2>
+<p>The interviewer forks here first, because it is where multi-agent designs quietly fail. <strong>The decision: a worker returns a bounded, typed finding set — claims, each with a source id, a supporting span, and an uncertainty — not its raw reading.</strong> A finding is one to two thousand tokens; the worker’s thirty thousand tokens of pages stay inside the worker and die with it. <a href="#fig-ch39-boundary" class="quarto-xref">Figure&nbsp;<span>39.4</span></a> draws the contrast.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-ch39-boundary" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch39-boundary-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch39-boundary">flowchart LR
+    subgraph WK ["inside one worker (dies at return)"]
+        R["30k tokens of&lt;br/&gt;fetched pages + tool logs"]
+    end
+    R --&gt; C["compress to typed findings:&lt;br/&gt;claim · source_id · span · uncertainty"]
+    C --&gt;|"~2k tokens"| L["lead's bounded&lt;br/&gt;merge context"]
+    R -. "raw dump&lt;br/&gt;(rejected)" .-&gt; X["120k into merge:&lt;br/&gt;window blows, ~5x cost,&lt;br/&gt;no citation handle"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch39-boundary-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;39.4: What should a worker hand back? Raw pages overwhelm the lead’s window and cost ~5x to re-read; typed findings keep the merge bounded and make citation-checking possible. The compression is the architecture.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The alternative — let the lead read everything the workers read — is what a mid-level design does, and it fails twice. It costs roughly five times as much at merge (the forty-two-cents-versus-eight line from the numbers), and it defeats the entire reason for isolated contexts: the lead’s window fills with undigested pages and its reasoning rots (<a href="20-multi-agent-systems.html#sec-ch20-context" class="quarto-xref"><span>Section 20.2</span></a>). Compression also <em>creates</em> the handle citation-checking needs — a claim tagged with a source id and a span is a thing you can verify; a paragraph of synthesized prose is not.</p>
+<p><strong>When the interviewer pushes</strong> — “isn’t the digest lossy? what if the worker compresses away the decisive detail?” — the honest answer is yes, and the control is the finding <em>schema</em>, not more tokens. A finding carries its uncertainty and its span, so the writer can tell a hedged claim from a firm one and can pull the exact quoted evidence without re-reading the page. If a facet genuinely needs deep context that will not compress, that facet is the tell that the work was write-coupled after all, and it belongs to a single agent with compaction — which is the family fork reasserting itself inside a dive.</p>
+</section>
+<section id="sec-ch39-merge" class="level2" data-number="39.5">
+<h2 data-number="39.5" class="anchored" data-anchor-id="sec-ch39-merge"><span class="header-section-number">39.5</span> Deep dive: the single-writer merge and citation integrity</h2>
+<p>The second fork is coordination correctness. <strong>The decision: exactly one component writes the artifact.</strong> Workers propose findings; the lead alone composes the brief. The reason is that two writers make contradictory <em>implicit</em> decisions — one worker’s “the vendor is X” and another’s “the incumbent is Y” become a brief that asserts both — and no amount of prompt discipline prevents it, because neither worker can see the other’s prose. Concentrating the write is the structural fix (<a href="20-multi-agent-systems.html#sec-ch20-orchestrator" class="quarto-xref"><span>Section 20.3</span></a>); the toolkit’s <code>context_budget</code> is what keeps that single writer affordable, since it is absorbing 8k of findings, not 120k of pages.</p>
+<p>Citation integrity is the merge boundary’s real product, and it is a two-part control. First, the typed finding makes a claim inseparable from its source id and span, so a claim without provenance cannot enter the brief by construction. Second, a <strong>cite-check</strong> phase re-fetches each cited span and verifies that it entails the claim before the writer ships it — the same self-correcting-retrieval move as <a href="15-agentic-retrieval.html#sec-ch15-crag" class="quarto-xref"><span>Section 15.5</span></a>, applied to the team’s output rather than one agent’s. A claim that fails the check is dropped or flagged, never silently merged. This is also where the web’s hazards land: retrieved text is data, not instructions (<a href="24-agent-security.html" class="quarto-xref"><span>Chapter 24</span></a>), and a poisoned source that plants a false “finding” (<a href="15-agentic-retrieval.html#sec-ch15-security" class="quarto-xref"><span>Section 15.9</span></a>) is caught only if the cite-check verifies entailment against the actual source rather than trusting the worker’s summary.</p>
+<p><strong>When the interviewer pushes</strong> — “your frontier lead is expensive; can the workers be a cheaper model?” — yes, and it is a good cost lever precisely because the single-writer rule contains the risk: cheap workers produce more variable findings, but every finding is validated against its provenance at the merge gate before it can reach the brief, so worker quality degrades coverage, not correctness. That is the fourth row of the tradeoff table, and it is the strongest argument for the whole shape.</p>
+</section>
+<section id="sec-ch39-tradeoffs" class="level2" data-number="39.6">
+<h2 data-number="39.6" class="anchored" data-anchor-id="sec-ch39-tradeoffs"><span class="header-section-number">39.6</span> Tradeoffs, failure, and cost as an attack</h2>
+<p><a href="#tbl-ch39-tradeoffs" class="quarto-xref">Table&nbsp;<span>39.2</span></a> is the design walked as an accountant: each choice, what it costs, what it buys, the risk it carries, and the control that makes the risk survivable.</p>
+<div id="tbl-ch39-tradeoffs" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ch39-tradeoffs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;39.2: The four decisions that define a deep-research team, priced as choices with controls.
+</figcaption>
+<div aria-describedby="tbl-ch39-tradeoffs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Choice</th>
+<th>Cost</th>
+<th>Buys</th>
+<th>Risk</th>
+<th>Control</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Multi-agent vs single</td>
+<td>~15x tokens (vs chat)</td>
+<td>parallel coverage + context isolation</td>
+<td>over-spawning</td>
+<td>effort rules + hard spawn cap</td>
+</tr>
+<tr class="even">
+<td>Isolated worker contexts</td>
+<td>lossy digests</td>
+<td>bounded lead context</td>
+<td>worker context rot</td>
+<td>cap worker steps; artifact refs, not raw pages</td>
+</tr>
+<tr class="odd">
+<td>Parallel spawn</td>
+<td>4x token work</td>
+<td>~1x wall-clock</td>
+<td>merge conflicts</td>
+<td>single-writer rule</td>
+</tr>
+<tr class="even">
+<td>Frontier lead, cheap workers</td>
+<td>quality variance</td>
+<td>cost control</td>
+<td>weak findings</td>
+<td>validate claims vs provenance pre-merge</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>The failures that page a human are three. A <strong>merge conflict</strong> — two findings that cannot both be true — is contained by the single-writer rule and surfaced by the cite-check; the writer must abstain or flag, not average. <strong>Worker context rot</strong> — a long worker loop drifting off its brief — is bounded by a hard step cap and compaction (<a href="13-prompting-context-engineering.html#sec-ch13-compaction" class="quarto-xref"><span>Section 13.8</span></a>), and caught by the same failure-attribution move <a href="20-multi-agent-systems.html#sec-ch20-failure" class="quarto-xref"><span>Section 20.7</span></a> teaches: find the earliest decisive step, because later workers amplify an error they did not originate. And <strong>citation fabrication</strong> — a confident claim whose source does not support it — is the one with no partial credit, caught by the cite-check gate, and a leak of an unverified claim into a shipped brief is a defect that pages someone.</p>
+<p>Cost is the attack surface this family is defined by, and it has a name: <strong>denial-of-wallet</strong>. An uncapped orchestrator, or one an adversarial query can talk into deep decomposition, spends real money at machine speed. The controls are all arithmetic, and the toolkit prices them.</p>
+<div id="18b53e93" class="cell" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> team_cost_n(k: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Price a task with k subagents; merge and cite-check grow with findings."""</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    merge_k <span class="op">=</span> tk.cost_per_query(<span class="dv">4_000</span> <span class="op">+</span> k <span class="op">*</span> <span class="dv">2_000</span>, <span class="dv">3_000</span>, price)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    cite_k <span class="op">=</span> tk.cost_per_query(<span class="dv">2_000</span> <span class="op">+</span> k <span class="op">*</span> <span class="dv">1_500</span>, <span class="dv">1_000</span>, price)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> lead <span class="op">+</span> k <span class="op">*</span> worker_cost <span class="op">+</span> merge_k <span class="op">+</span> cite_k</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>budget <span class="op">=</span> <span class="fl">2.00</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>max_subs <span class="op">=</span> <span class="bu">max</span>(k <span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">200</span>) <span class="cf">if</span> team_cost_n(k) <span class="op">&lt;=</span> budget)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"cost at 4 / 20 / 50 subs : $</span><span class="sc">{</span>team_cost_n(<span class="dv">4</span>)<span class="sc">:.2f}</span><span class="ss"> / $</span><span class="sc">{</span>team_cost_n(<span class="dv">20</span>)<span class="sc">:.2f}</span><span class="ss"> / $</span><span class="sc">{</span>team_cost_n(<span class="dv">50</span>)<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"most subs a $</span><span class="sc">{</span>budget<span class="sc">:.0f}</span><span class="ss"> budget allows : </span><span class="sc">{</span>max_subs<span class="sc">}</span><span class="ss">  ($</span><span class="sc">{</span>team_cost_n(max_subs)<span class="sc">:.2f}</span><span class="ss">)"</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co"># uncapped recursive spawning: each of 4 workers spawns 3, and so on</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> depth <span class="kw">in</span> (<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>):</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    workers <span class="op">=</span> <span class="bu">sum</span>(<span class="dv">4</span> <span class="op">*</span> <span class="dv">3</span> <span class="op">**</span> d <span class="cf">for</span> d <span class="kw">in</span> <span class="bu">range</span>(depth))</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"recursive depth </span><span class="sc">{</span>depth<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>workers<span class="sc">:&gt;2}</span><span class="ss"> workers  $</span><span class="sc">{</span>team_cost_n(workers)<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># a worker's own loop is capped by a sub-budget, via the toolkit</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"worker steps a $0.20 sub-budget allows : "</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"</span><span class="sc">{</span>tk<span class="sc">.</span>max_affordable_steps(<span class="fl">0.20</span>, <span class="dv">3_000</span>, <span class="dv">3_000</span>, <span class="dv">500</span>, price)<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>cost at 4 / 20 / 50 subs : $0.63 / $2.72 / $6.63
+most subs a $2 budget allows : 14  ($1.94)
+recursive depth 1:  4 workers  $0.63
+recursive depth 2: 16 workers  $2.20
+recursive depth 3: 52 workers  $6.89
+worker steps a $0.20 sub-budget allows : 5</code></pre>
+</div>
+</div>
+<p>Fifty subagents cost more than three times the budget, and an <em>uncapped</em> design where workers recursively spawn their own workers reaches fifty-two workers and $6.89 by depth three — past the hard ceiling, for one query. The four controls, each a line in the code above: an <strong>effort rule</strong> that classifies query complexity before spawning (a lookup gets zero subagents), a <strong>hard spawn cap</strong> the orchestrator enforces, a <strong>per-task dollar budget</strong> that kills the task and returns a partial brief at the ceiling, and a <strong>worker sub-budget</strong> — <code>max_affordable_steps</code> says a twenty-cent worker affords five loop steps, so a runaway worker cannot silently 10x its reading. The fifth control is operational: alert on the spawned-per-query distribution, because a shift in that histogram is a denial-of-wallet attack or a prompt regression before it is a bill (<a href="26-production-platform.html#sec-ch26-cost" class="quarto-xref"><span>Section 26.3</span></a>). <a href="#fig-ch39-dow" class="quarto-xref">Figure&nbsp;<span>39.5</span></a> makes the budget the ceiling it is.</p>
+<div id="cell-fig-ch39-dow" class="cell" data-execution_count="4">
+<details class="code-fold">
+<summary>Show the code that draws this figure</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>ks <span class="op">=</span> <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">51</span>))</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>costs <span class="op">=</span> [team_cost_n(k) <span class="cf">for</span> k <span class="kw">in</span> ks]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.6</span>, <span class="fl">3.3</span>))</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>ax.plot(ks, costs, color<span class="op">=</span><span class="st">"#2a7f9e"</span>, label<span class="op">=</span><span class="st">"fan-out (capped)"</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> depth <span class="kw">in</span> (<span class="dv">2</span>, <span class="dv">3</span>):</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    w <span class="op">=</span> <span class="bu">sum</span>(<span class="dv">4</span> <span class="op">*</span> <span class="dv">3</span> <span class="op">**</span> d <span class="cf">for</span> d <span class="kw">in</span> <span class="bu">range</span>(depth))</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> w <span class="op">&lt;=</span> <span class="dv">50</span>:</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        ax.plot(w, team_cost_n(w), <span class="st">"o"</span>, color<span class="op">=</span><span class="st">"#b13f3f"</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        ax.annotate(<span class="ss">f"recursive</span><span class="ch">\n</span><span class="ss">depth </span><span class="sc">{</span>depth<span class="sc">}</span><span class="ss">"</span>, (w, team_cost_n(w)), fontsize<span class="op">=</span><span class="dv">7</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                    textcoords<span class="op">=</span><span class="st">"offset points"</span>, xytext<span class="op">=</span>(<span class="op">-</span><span class="dv">4</span>, <span class="dv">8</span>), color<span class="op">=</span><span class="st">"#b13f3f"</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>ax.axhline(budget, ls<span class="op">=</span><span class="st">"--"</span>, color<span class="op">=</span><span class="st">"0.4"</span>)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>ax.text(<span class="fl">1.5</span>, budget <span class="op">+</span> <span class="fl">0.15</span>, <span class="st">"per-task budget"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"0.4"</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"subagents spawned"</span>)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"cost per task (USD)"</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>ax.legend(loc<span class="op">=</span><span class="st">"lower right"</span>, fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-ch39-dow" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch39-dow-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="39-sd-deep-research_files/figure-html/fig-ch39-dow-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;39.5: How does cost grow with subagent count, and where does the budget cap it? Fan-out is near-linear; uncapped recursive spawning (marked points) blows past the ceiling. The cap is the security control made visible."><img src="39-sd-deep-research_files/figure-html/fig-ch39-dow-output-1.svg" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch39-dow-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;39.5: How does cost grow with subagent count, and where does the budget cap it? Fan-out is near-linear; uncapped recursive spawning (marked points) blows past the ceiling. The cap is the security control made visible.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-ch39-evolution" class="level2" data-number="39.7">
+<h2 data-number="39.7" class="anchored" data-anchor-id="sec-ch39-evolution"><span class="header-section-number">39.7</span> Evolution: build order and the flip</h2>
+<p>Build the cheap thing first and let the numbers justify the team. Start with a single agent plus compaction (<a href="13-prompting-context-engineering.html#sec-ch13-compaction" class="quarto-xref"><span>Section 13.8</span></a>) and measure two things: whether it saturates its window on real questions, and whether those questions actually decompose into independent facets. Only when both hold — the four-condition test of <a href="20-multi-agent-systems.html#sec-ch20-mistake" class="quarto-xref"><span>Section 20.1</span></a>, which this family passes exactly when the work parallelizes, needs more than one window, merges without conflict, and is worth the multiplier — do you split into orchestrator and workers. Add the cite-check gate before you trust a single brief in front of an analyst; add the spawn cap and per-task budget before you expose it to anyone who can phrase a hostile query. What to measure first is the spawned-per-query distribution and the cost-per-task, because those two cap everything downstream.</p>
+<p>Then the interviewer flips the requirement, and for this family the sharpest flip moves the fork itself: <em>“the deliverable is no longer a one-shot brief but a single living report the team maintains and re-runs weekly.”</em> That makes the writing write-coupled — each run edits a persistent artifact whose current state every decision depends on. The answer is the delta, in two sentences. The reading plane is unchanged: workers still fan out and return typed findings, because gathering evidence is still read-parallel. But the merge boundary gains a supersede-or-append decision against the previous artifact (the ADD/UPDATE/DELETE logic of <a href="18-memory-experiential-learning.html" class="quarto-xref"><span>Chapter 18</span></a>), the living report becomes a cached stable prefix rather than a rebuild (<a href="13-prompting-context-engineering.html#sec-ch13-prefix" class="quarto-xref"><span>Section 13.7</span></a>), and if the editing genuinely cannot be concentrated in one writer, the fork has tipped and the honest move is to say so — the team survives for reading and collapses to a single agent for writing.</p>
+</section>
+<section id="sec-ch39-probes" class="level2" data-number="39.8">
+<h2 data-number="39.8" class="anchored" data-anchor-id="sec-ch39-probes"><span class="header-section-number">39.8</span> Interviewer probes</h2>
+<p><strong>“An adversarial analyst crafts a query engineered to look like it needs deep decomposition. How do you stop it from spending five hundred dollars?”</strong> Cost is an attack surface, so the defenses are structural, not vibes. An effort rule classifies the query before any spawn and refuses to fan out a shallow one; a hard spawn cap and a per-task dollar budget bound the task regardless of what the query claims to need, killing it at the ceiling with a partial brief rather than an unbounded bill; each worker carries its own sub-budget so it cannot silently deepen its own loop; and I alert on the spawned-per-query distribution so an induced shift shows up as an incident before it shows up on the invoice (<a href="26-production-platform.html#sec-ch26-cost" class="quarto-xref"><span>Section 26.3</span></a>). The arithmetic from the numbers section is the justification I quote — fifty subagents is already three budgets.</p>
+<p><strong>“A subagent returns a confident claim with a citation that does not actually support it. How does that not reach the brief?”</strong> Because the boundary carries typed findings, not prose: a claim arrives welded to a source id and a span, so a claim without provenance cannot enter by construction, and the cite-check phase re-fetches the cited span and verifies entailment before the single writer includes it (<a href="15-agentic-retrieval.html#sec-ch15-crag" class="quarto-xref"><span>Section 15.5</span></a>). An unverifiable claim is dropped or flagged, never averaged in. This is also the poisoning defense — a hostile web source that plants a false finding (<a href="15-agentic-retrieval.html#sec-ch15-security" class="quarto-xref"><span>Section 15.9</span></a>) is caught only because the check verifies against the actual source, treating retrieved text as data, not as the worker’s trustworthy word (<a href="24-agent-security.html" class="quarto-xref"><span>Chapter 24</span></a>).</p>
+<p><strong>“When would you refuse to build this as multi-agent at all?”</strong> When the work is write-coupled. The four-condition test (<a href="20-multi-agent-systems.html#sec-ch20-mistake" class="quarto-xref"><span>Section 20.1</span></a>) is a conjunction: the task must parallelize, exceed one window, merge without conflict, and be worth the multiplier — and a single evolving artifact, a codebase migration, or a tightly coupled multi-hop chain fails the merge clause. There I collapse to one agent with compaction and say the multiplier out loud as the reason: paying ~4x over a competent single agent buys wall-clock and coverage, and if the work will not merge, it buys neither.</p>
+</section>
+<section id="sec-ch39-family" class="level2" data-number="39.9">
+<h2 data-number="39.9" class="anchored" data-anchor-id="sec-ch39-family"><span class="header-section-number">39.9</span> The family skeleton</h2>
+<p>The orchestration bones — a plan step, a fan-out, isolated workers, and a merge boundary — recur across the family; what flips from sibling to sibling is <em>what the merge boundary produces</em> and whether the lead survives at all. <a href="#tbl-ch39-family" class="quarto-xref">Table&nbsp;<span>39.3</span></a> re-instantiates the same skeleton across three siblings.</p>
+<div id="tbl-ch39-family" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ch39-family-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;39.3: The orchestration family: same fan-out bones, and the one constraint that flips the merge boundary.
+</figcaption>
+<div aria-describedby="tbl-ch39-family-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Sibling prompt</th>
+<th>Changed constraint</th>
+<th>What flips</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Deep research (this)</td>
+<td>open-ended, read-parallel, cited brief</td>
+<td>baseline: lead + workers + single-writer prose + cite-check</td>
+<td><a href="20-multi-agent-systems.html" class="quarto-xref"><span>Chapter 20</span></a>, <a href="15-agentic-retrieval.html" class="quarto-xref"><span>Chapter 15</span></a></td>
+</tr>
+<tr class="even">
+<td>Parallel code-migration fleet</td>
+<td>output is code, verifier is the test suite</td>
+<td>merge boundary becomes the CI/merge queue; findings become diffs gated by tests, not prose</td>
+<td><a href="20-multi-agent-systems.html" class="quarto-xref"><span>Chapter 20</span></a>, <a href="21-agent-applications.html" class="quarto-xref"><span>Chapter 21</span></a></td>
+</tr>
+<tr class="odd">
+<td>Batch document processing</td>
+<td>items are independent, no synthesis</td>
+<td>the lead disappears — a work queue with a per-item budget replaces the orchestrator (map, no reduce)</td>
+<td><a href="21-agent-applications.html" class="quarto-xref"><span>Chapter 21</span></a></td>
+</tr>
+<tr class="even">
+<td>Eval-fleet orchestration</td>
+<td>the product is a trusted number</td>
+<td>merge becomes a paired statistical gate; the “brief” is a release verdict</td>
+<td><a href="22-evaluation.html" class="quarto-xref"><span>Chapter 22</span></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>The lesson the table teaches is where the family’s design pressure lives. The fan-out is the easy part and it survives everywhere; the decision that defines each system is the merge — prose synthesis under a cite-check here, a test-gated merge queue for code, nothing at all for an embarrassingly parallel batch, a statistical gate for evals. Identify the merge boundary and you have identified the design.</p>
+</section>
+<section id="summary" class="level2" data-number="39.10">
+<h2 data-number="39.10" class="anchored" data-anchor-id="summary"><span class="header-section-number">39.10</span> Summary</h2>
+<p>A deep-research system is the orchestration family: a lead plans, isolated workers read in parallel and return typed compressed findings, and a single writer synthesizes a cited brief behind a cite-check gate. The fork is read-parallel versus write-coupled: only parallel reading earns an orchestrator. Costs are priced in dollars per task, not cents per call, and the token multiplier is a ratio whose baseline you must name aloud (~15x versus a chat turn, ~4x versus a competent single agent). Cost is the attack surface, so spawn caps and per-task budgets are denial-of-wallet defenses; citation integrity is enforced at the merge boundary. Chapter 40 turns to the platform family.</p>
+</section>
+<section id="exercises" class="level2" data-number="39.11">
+<h2 data-number="39.11" class="anchored" data-anchor-id="exercises"><span class="header-section-number">39.11</span> Exercises</h2>
+<ol type="1">
+<li><strong>Re-run the fork.</strong> The interviewer changes the deliverable to “a single maintained wiki page updated nightly.” Using <a href="#sec-ch39-scope" class="quarto-xref"><span>Section 39.1</span></a>’s fork, decide whether this is still a multi-agent problem, name which plane survives and which collapses, and state the two boxes that change from <a href="#fig-ch39-skeleton" class="quarto-xref">Figure&nbsp;<span>39.3</span></a>.</li>
+<li><strong>Move the multiplier.</strong> Using the numbers cell, (a) recompute the multiplier against a <em>single research agent</em> baseline of 25k, 42k, and 80k tokens and state what a “correct” multiplier even means; (b) change worker findings from 2k to 8k tokens and report what happens to the merge cost and to the whole-task total.</li>
+<li><strong>Price the cap.</strong> With <code>team_cost_n</code>, find the largest spawn cap that keeps p95 cost under $1.50, then under $3.00. Which analyst-visible quality knob does each cap trade away, and how would you measure the loss?</li>
+<li><strong>Break the wallet.</strong> Model an adversarial query that induces recursive spawning to depth 4 (each worker spawns 3). Compute the worker count and cost, then design the single control from <a href="#sec-ch39-tradeoffs" class="quarto-xref"><span>Section 39.6</span></a> that most cheaply bounds it, and justify the choice with one sentence of arithmetic.</li>
+<li><strong>Defend a citation.</strong> A worker returns the claim “revenue fell 12% in Q3” citing a source whose span says “revenue rose 12% in Q2.” Trace how the merge boundary (<a href="#sec-ch39-merge" class="quarto-xref"><span>Section 39.5</span></a>) and cite-check catch it, and name the one worker-side schema field that makes the catch possible.</li>
+<li><strong>Swap the family sibling.</strong> Take the eval-fleet row of <a href="#tbl-ch39-family" class="quarto-xref">Table&nbsp;<span>39.3</span></a> and draw its skeleton: keep the fan-out, replace the merge with a paired statistical gate (<a href="22-evaluation.html" class="quarto-xref"><span>Chapter 22</span></a>), and state which two boxes from <a href="#fig-ch39-skeleton" class="quarto-xref">Figure&nbsp;<span>39.3</span></a> you delete and which one you add.</li>
+<li><strong>Set the SLO honestly.</strong> This family has no TTFT. Write the two SLOs it does have, compute the time-to-brief from the phase latencies at 8 workers instead of 4, and explain in one sentence why adding workers past a point stops improving wall-clock (recall <a href="20-multi-agent-systems.html#sec-ch20-latency" class="quarto-xref"><span>Section 20.4</span></a>).</li>
+<li><strong>Cost-matched, for real.</strong> Give a single agent the whole team’s token budget (158k) and the same question, per the discipline in <a href="20-multi-agent-systems.html#sec-ch20-economics" class="quarto-xref"><span>Section 20.5</span></a>. Argue what the extra budget does and does not buy the single agent, and state the one measurement that would settle whether the team was worth it.</li>
+</ol>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/38-sd-memory-system.html" class="pagination-link" aria-label="Designing Cross-Session Memory">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">Designing Cross-Session Memory</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/40-sd-agent-platform.html" class="pagination-link" aria-label="Platform Design: A Multi-Tenant Agent Platform">
+        <span class="nav-page-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">Platform Design: A Multi-Tenant Agent Platform</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="The retrieval-heavy family worked at interview depth: enterprise RAG over ten million ACL-scoped documents at sub-2s TTFT and pennies a query, with the freshness fork, the permissions-before-search dive, and the flip that turns this design into its nearest neighbor.">
+
+<title>34&nbsp; Enterprise RAG: The Retrieval-Heavy Family – Agentic Engineering at Scale</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/35-sd-support-agent.html" rel="next">
+<link href="../chapters/33-sd-interview-framework.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-39d72d2d8fc74c86a6f3fad29307908e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-3acd1a9e0a36fa73befe01192217db1c.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b9ce1e79266fe95fb70b9acb8b1f4a3a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-e94989928d39e61d43d880557c51d124.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/33-sd-interview-framework.html">Part IX — The Agentic System-Design Interview</a></li><li class="breadcrumb-item"><a href="../chapters/34-sd-enterprise-rag.html"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Enterprise RAG: The Retrieval-Heavy Family</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Agentic Engineering at Scale</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+    <div id="quarto-search" class="quarto-navigation-tool px-1" title="Search"></div>
+</div>
+    </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Agentic Engineering at Scale</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part I — The On-Ramp and Model Foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/01-operational-on-ramp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Operational On-Ramp: What a Model Is to Its Caller, and When to Agent</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-transformer-first-principles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">The Transformer from First Principles</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-attention-position-long-context.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Attention, Position, and Long Context</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-moe-efficient-architectures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Mixture-of-Experts, Efficient Architectures, and the 2026 Landscape [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part II — Training and Post-Training</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-scaling-laws-pretraining-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Scaling Laws and Pretraining Data [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-distributed-frontier-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Distributed and Frontier Training [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-post-training.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Post-Training: SFT, Preferences, RLHF/DPO, and Behavior Specs [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-reasoning-test-time-compute.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Reasoning: Test-Time Compute and RLVR [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part III — Inference, Serving, and Customization</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-inference-behavior.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Inference Anatomy and Model Behavior: Sampling, Hallucination, and Abstention [F]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-serving-at-scale.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Serving at Scale: Engines, Caching, Quantization, and Production Test-Time Compute [F+S]</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-customization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S]</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IV — Programming with Models and Retrieval</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part V — Building Agents</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent-to-UI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Orchestrator-Workers, Failure Modes, and Economics</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Conversational, Computer Use, Data, and Deep Research</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VI — Evaluation, Agent RL, Security, and Governance</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-evaluation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Evaluation: From Traces to a Release Gate</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-training-agents-rl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Training Agents with Reinforcement Learning</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-agent-security.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Agent Security</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-alignment-interpretability-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Alignment, Interpretability, and Governance</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VII — Production, Operations, and Organizations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-production-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">The Production Platform: Gateways, Cost, Durable Execution, and Delivery</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-operating-agents.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Operating Agents: Observability, SLOs, Incidents, and Privacy Ops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-products-people-organizations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Agent Products, People, and Organizations</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part VIII — The Frontier and the Capstone</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-multimodal-vlm-documents-gui.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Multimodal Agents I: VLMs, Documents, and GUI Perception</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-multimodal-voice-video-media.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Multimodal Agents II: Voice, Video, and Generative Media</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-world-models-vla-embodied.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">World Models, VLA, and Embodied Agents</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Capstone: From One Model Call to a Defended Deployment</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Part IX — The Agentic System-Design Interview</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/33-sd-interview-framework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">The Interview Framework: Seven Moves and a Toolkit</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/34-sd-enterprise-rag.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Enterprise RAG: The Retrieval-Heavy Family</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/35-sd-support-agent.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Designing an Acting Support Agent</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/36-sd-serving-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Model Infra: An LLM Serving Platform</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/37-sd-eval-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">The Eval Platform: A Number Someone Will Trust</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/38-sd-memory-system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">Designing Cross-Session Memory</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/39-sd-deep-research.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">Designing a Multi-Agent Deep-Research System</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/40-sd-agent-platform.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">Platform Design: A Multi-Tenant Agent Platform</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/a-bridge.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">The Bridge: Math, Decisions, Planning, RL, Control, and Systems</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/b-artifacts-workbook.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Artifacts, Worksheets, and the Senior Design Workbook</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/c-landscape-2026.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Landscape 2026: A Living, Dated Registry</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-ch34-scope" id="toc-sec-ch34-scope" class="nav-link active" data-scroll-target="#sec-ch34-scope"><span class="header-section-number">34.1</span> Scoping the problem</a></li>
+  <li><a href="#sec-ch34-boe" id="toc-sec-ch34-boe" class="nav-link" data-scroll-target="#sec-ch34-boe"><span class="header-section-number">34.2</span> The numbers first</a></li>
+  <li><a href="#sec-ch34-contract" id="toc-sec-ch34-contract" class="nav-link" data-scroll-target="#sec-ch34-contract"><span class="header-section-number">34.3</span> The contract and the skeleton</a></li>
+  <li><a href="#sec-ch34-acl" id="toc-sec-ch34-acl" class="nav-link" data-scroll-target="#sec-ch34-acl"><span class="header-section-number">34.4</span> Deep dive: permissions before search</a></li>
+  <li><a href="#sec-ch34-rerank" id="toc-sec-ch34-rerank" class="nav-link" data-scroll-target="#sec-ch34-rerank"><span class="header-section-number">34.5</span> Deep dive: rerank, recall, and the cache</a></li>
+  <li><a href="#sec-ch34-failure" id="toc-sec-ch34-failure" class="nav-link" data-scroll-target="#sec-ch34-failure"><span class="header-section-number">34.6</span> Tradeoffs and failure</a></li>
+  <li><a href="#sec-ch34-evolution" id="toc-sec-ch34-evolution" class="nav-link" data-scroll-target="#sec-ch34-evolution"><span class="header-section-number">34.7</span> Evolution: the freshness flip</a></li>
+  <li><a href="#sec-ch34-probes" id="toc-sec-ch34-probes" class="nav-link" data-scroll-target="#sec-ch34-probes"><span class="header-section-number">34.8</span> Interviewer probes</a></li>
+  <li><a href="#sec-ch34-family" id="toc-sec-ch34-family" class="nav-link" data-scroll-target="#sec-ch34-family"><span class="header-section-number">34.9</span> The retrieval-heavy family</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span class="header-section-number">34.10</span> Summary</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises"><span class="header-section-number">34.11</span> Exercises</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/33-sd-interview-framework.html">Part IX — The Agentic System-Design Interview</a></li><li class="breadcrumb-item"><a href="../chapters/34-sd-enterprise-rag.html"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Enterprise RAG: The Retrieval-Heavy Family</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch34" class="quarto-section-identifier"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Enterprise RAG: The Retrieval-Heavy Family</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>The retrieval-heavy family is where most agentic system-design rounds begin, because almost every enterprise assistant is a search problem wearing a chat interface. This chapter runs that family at full depth on the prompt Chapter 33 previewed in miniature (<a href="33-sd-interview-framework.html#sec-ch33-run" class="quarto-xref"><span>Section 33.7</span></a>): question answering over ten million internal documents, cited, permissioned, fast, and cheap. We work all seven moves (<a href="33-sd-interview-framework.html#sec-ch33-moves" class="quarto-xref"><span>Section 33.1</span></a>) — scope, numbers, contract, skeleton, dives, failure, evolution — but here the section titles are the work rather than the labels, and every anchor number is computed live from the toolkit Chapter 33 tangled. By the end we have a defensible design, five numbers we produced at the whiteboard, two deep dives with their alternatives, and the one requirement flip that turns this design into its nearest neighbor.</p>
+<p>The move that decides the round is the first: naming the clarifier that forks the architecture rather than merely scaling it. For this family that clarifier is freshness — do the documents change nightly or hourly? — because the answer chooses between two indexing architectures, not two settings of one. We take nightly as the baseline and flip it back to hourly in the evolution move, so the reader leaves with both the design and its derivative.</p>
+<section id="sec-ch34-scope" class="level2" data-number="34.1">
+<h2 data-number="34.1" class="anchored" data-anchor-id="sec-ch34-scope"><span class="header-section-number">34.1</span> Scoping the problem</h2>
+<p>The interviewer states it the way interviewers do — underspecified, with the hard parts hidden in adjectives:</p>
+<blockquote class="blockquote">
+<p>“We have about ten million internal documents — wikis, tickets, PDFs, code. Build question answering over them. Answers must cite their sources, respect each user’s permissions, feel instant, and cost pennies.”</p>
+</blockquote>
+<p>The first five minutes buy information, and the discipline is to ask only questions whose answers change the design. Four clarifiers earn their place. <em>Do documents change nightly or hourly?</em> — the family fork: nightly permits a rebuild-and-swap index, hourly forces an incremental plane with a freshness watermark. <em>Is the assistant read-only, or does it also file tickets?</em> — write-back imports the approval-and-effect machinery of the acting-agent family (<a href="35-sd-support-agent.html" class="quarto-xref"><span>Chapter 35</span></a>), a different design center; we take read-only. <em>How fine are permissions — a handful of groups, or can a user see two percent of the corpus?</em> — coarse permissions survive filtering after search, fine-grained ones do not, as we prove in <a href="#sec-ch34-acl" class="quarto-xref"><span>Section 34.4</span></a>. <em>Does “instant” bound the first token or the whole answer?</em> — the two are set by different mechanisms and only one of them is keepable at “sub-two-seconds,” which the numbers move settles.</p>
+<p>A senior closes scope by restating the problem with numbers and naming a non-goal aloud. <a href="#tbl-ch34-reqs" class="quarto-xref">Table&nbsp;<span>34.1</span></a> is that restatement; “no cross-tenant search, no write-back, nothing fresher than a day” is the non-goal, and saying it is a signal the rubric rewards (<a href="33-sd-interview-framework.html#sec-ch33-grading" class="quarto-xref"><span>Section 33.6</span></a>).</p>
+<div id="tbl-ch34-reqs" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ch34-reqs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;34.1: The prompt restated with numbers: functional requirements on top, the non-functional envelope below. Out of scope, said aloud: cross-tenant search, write-back, sub-day freshness.
+</figcaption>
+<div aria-describedby="tbl-ch34-reqs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Requirement</th>
+<th>Value</th>
+<th>Why it forks the design</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Cite every claim; abstain when support is thin</td>
+<td><code>answerable=false</code> is a first-class result</td>
+<td>grounding and abstention, not just generation (<a href="14-embeddings-rag.html#sec-ch14-grounding" class="quarto-xref"><span>Section 14.8</span></a>)</td>
+</tr>
+<tr class="even">
+<td>Enforce per-user permissions strictly</td>
+<td>fine-grained; a user may see ~2% of docs</td>
+<td>filter <em>before</em> search, not after</td>
+</tr>
+<tr class="odd">
+<td>Corpus</td>
+<td>10M docs ≈ 30M chunks</td>
+<td>size the index from chunks, not docs</td>
+</tr>
+<tr class="even">
+<td>Peak load</td>
+<td>~50 QPS</td>
+<td>fleet sizing, not architecture</td>
+</tr>
+<tr class="odd">
+<td>p99 time-to-first-token</td>
+<td>&lt; 900 ms</td>
+<td>set by the query pipeline waterfall</td>
+</tr>
+<tr class="even">
+<td>Completion</td>
+<td>&lt; 6 s at a 250-token cap</td>
+<td>set by the output cap, not retrieval</td>
+</tr>
+<tr class="odd">
+<td>Cost</td>
+<td>≈ $0.02 / query</td>
+<td>prefix caching is the lever</td>
+</tr>
+<tr class="even">
+<td>Freshness (baseline)</td>
+<td>≤ 24 h</td>
+<td>nightly rebuild is legal</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="sec-ch34-boe" class="level2" data-number="34.2">
+<h2 data-number="34.2" class="anchored" data-anchor-id="sec-ch34-boe"><span class="header-section-number">34.2</span> The numbers first</h2>
+<p>Numbers before boxes. We import the back-of-envelope toolkit Chapter 33 built and tangled — <code>index_bytes</code>, <code>completion_ms</code>, <code>cost_per_query</code>, <code>context_budget</code> — rather than re-deriving anything, and drive it with this prompt’s shape. The prices, per-stage latencies, the three-chunks-per-document ratio, and the 1024-dimension embedding are illustrative teaching constants carrying the same caveat as Chapter 33’s toolkit (<a href="33-sd-interview-framework.html#sec-ch33-cost" class="quarto-xref"><span>Section 33.3</span></a>); the formulas, not the constants, are the lesson.</p>
+<div id="53ea5a7f" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> importlib.util</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_chapter(chapter: <span class="bu">str</span>, name: <span class="bu">str</span>):</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Import a committed chapter's tangled module under an explicit name."""</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    spec <span class="op">=</span> importlib.util.spec_from_file_location(name, Path(<span class="st">"code"</span>) <span class="op">/</span> chapter <span class="op">/</span> <span class="st">"_generated.py"</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    module <span class="op">=</span> importlib.util.module_from_spec(spec)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    sys.modules[name] <span class="op">=</span> module</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    spec.loader.exec_module(module)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> module</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>boe <span class="op">=</span> load_chapter(<span class="st">"ch33"</span>, <span class="st">"ch33_boe"</span>)     <span class="co"># the back-of-envelope toolkit from Chapter 33</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>chunks <span class="op">=</span> <span class="dv">10_000_000</span> <span class="op">*</span> <span class="dv">3</span>                      <span class="co"># ~3 chunks per document — not one</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> label, width <span class="kw">in</span> ((<span class="st">"fp32"</span>, <span class="dv">4</span>), (<span class="st">"int8"</span>, <span class="dv">1</span>)):</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    total <span class="op">=</span> boe.index_bytes(chunks, dim<span class="op">=</span><span class="dv">1024</span>, bytes_per_dim<span class="op">=</span>width, overhead<span class="op">=</span><span class="fl">1.5</span>, replicas<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>total <span class="op">/</span> <span class="fl">1e9</span><span class="sc">:6.1f}</span><span class="ss"> GB / 2 replicas  (</span><span class="sc">{</span>total <span class="op">/</span> <span class="dv">2</span> <span class="op">/</span> <span class="fl">1e9</span><span class="sc">:.0f}</span><span class="ss"> GB per copy)"</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>pack <span class="op">=</span> boe.context_budget(<span class="dv">32_000</span>, system<span class="op">=</span><span class="dv">400</span>, history<span class="op">=</span><span class="dv">600</span>, retrieval<span class="op">=</span><span class="dv">2_500</span>, output_reserve<span class="op">=</span><span class="dv">300</span>)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"packed query context:"</span>, pack)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>fp32:  368.6 GB / 2 replicas  (184 GB per copy)
+int8:   92.2 GB / 2 replicas  (46 GB per copy)
+packed query context: {'system': 400, 'history': 600, 'retrieval': 2500, 'output_reserve': 300, 'free': 28200}</code></pre>
+</div>
+</div>
+<p>Two lessons land here. First, the family’s quiet numeric trap: sizing from <em>documents</em> (ten million) instead of <em>chunks</em> (thirty million) understates the index threefold. Thirty million chunks at fp32 is 369 GB — shard it or quantize it; int8 brings one copy to 46 GB, a single memory-heavy node. Second, the packed query is about 3,500 input tokens (system, a little history, five 500-token chunks) inside a comfortable window: for RAG the context window is <em>not</em> the binding constraint, so retrieval width — how many chunks we pack — is the cost lever, not window pressure. Now the latency and the bill:</p>
+<div id="66655c7a" class="cell" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>stages <span class="op">=</span> {<span class="st">"embed query"</span>: <span class="fl">20.0</span>, <span class="st">"ACL prefilter"</span>: <span class="fl">30.0</span>, <span class="st">"ANN top-100"</span>: <span class="fl">50.0</span>,</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>          <span class="st">"rerank top-5"</span>: <span class="fl">150.0</span>, <span class="st">"queue + prefill"</span>: <span class="fl">400.0</span>}</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>ttft <span class="op">=</span> <span class="bu">sum</span>(stages.values())</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"TTFT budget (sum of stages): </span><span class="sc">{</span>ttft<span class="sc">:.0f}</span><span class="ss"> ms"</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> cap <span class="kw">in</span> (<span class="dv">250</span>, <span class="dv">60</span>):</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"completion at a </span><span class="sc">{</span>cap<span class="sc">:3d}</span><span class="ss">-token cap, 20 ms/token: "</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>          <span class="ss">f"</span><span class="sc">{</span>boe<span class="sc">.</span>completion_ms(ttft, cap, <span class="fl">20.0</span>) <span class="op">/</span> <span class="dv">1000</span><span class="sc">:.2f}</span><span class="ss"> s"</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>price <span class="op">=</span> boe.TokenPrice(input_per_million<span class="op">=</span><span class="fl">3.00</span>, output_per_million<span class="op">=</span><span class="fl">15.00</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>                       cached_input_per_million<span class="op">=</span><span class="fl">0.30</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>cold <span class="op">=</span> boe.cost_per_query(<span class="dv">3_500</span>, <span class="dv">250</span>, price)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>warm <span class="op">=</span> boe.cost_per_query(<span class="dv">3_500</span>, <span class="dv">250</span>, price, cached_input_tokens<span class="op">=</span><span class="dv">2_500</span>)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"cost / query: $</span><span class="sc">{</span>cold<span class="sc">:.4f}</span><span class="ss"> cold cache   $</span><span class="sc">{</span>warm<span class="sc">:.4f}</span><span class="ss"> warm prefix"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>TTFT budget (sum of stages): 650 ms
+completion at a 250-token cap, 20 ms/token: 5.63 s
+completion at a  60-token cap, 20 ms/token: 1.83 s
+cost / query: $0.0143 cold cache   $0.0075 warm prefix</code></pre>
+</div>
+</div>
+<p>The waterfall totals 650 ms against a 900 ms TTFT budget — 250 ms of margin, defensible under p99 tail. But completion at the 250-token cap is 5.6 seconds, and this is the family’s second trap, the one to say aloud: <em>“instant” cannot mean sub-two-seconds to completion.</em> Only a 60-token answer completes in under two seconds, and a 60-token answer cannot cite a paragraph. The keepable promise is a TTFT SLO with margin plus a completion SLO at a stated output cap — never a single “sub-2s.” On cost, the warm-prefix query is three-quarters of a cent, comfortably inside “pennies,” and it is warm only because a stable system-and-tool prefix caches (<a href="10-serving-at-scale.html#sec-ch10-prefix-cache" class="quarto-xref"><span>Section 10.6</span></a>); the cold-cache query costs nearly double. <a href="#fig-ch34-waterfall" class="quarto-xref">Figure&nbsp;<span>34.1</span></a> draws the split.</p>
+<div id="cell-fig-ch34-waterfall" class="cell" data-execution_count="3">
+<details class="code-fold">
+<summary>Show the code that draws this figure</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">7.2</span>, <span class="fl">2.6</span>))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>colors <span class="op">=</span> [<span class="st">"#2a7f9e"</span>, <span class="st">"#b13f3f"</span>, <span class="st">"#3e7a52"</span>, <span class="st">"#7356a8"</span>, <span class="st">"#b7791f"</span>]</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>left <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (name, width), color <span class="kw">in</span> <span class="bu">zip</span>(stages.items(), colors):</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    ax.barh(<span class="dv">1</span>, width, left<span class="op">=</span>left, color<span class="op">=</span>color, edgecolor<span class="op">=</span><span class="st">"white"</span>, label<span class="op">=</span>name)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    left <span class="op">+=</span> width</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>ax.barh(<span class="dv">0</span>, left, color<span class="op">=</span><span class="st">"0.85"</span>, edgecolor<span class="op">=</span><span class="st">"white"</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>ax.barh(<span class="dv">0</span>, boe.completion_ms(left, <span class="dv">250</span>, <span class="fl">20.0</span>) <span class="op">-</span> left, left<span class="op">=</span>left, color<span class="op">=</span><span class="st">"#4f5d75"</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        edgecolor<span class="op">=</span><span class="st">"white"</span>, label<span class="op">=</span><span class="st">"decode, 250 tokens"</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>ax.axvline(<span class="dv">900</span>, ls<span class="op">=</span><span class="st">"--"</span>, color<span class="op">=</span><span class="st">"0.3"</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>ax.text(<span class="dv">930</span>, <span class="fl">1.35</span>, <span class="st">"TTFT budget 900 ms"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"0.3"</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>ax.axvline(<span class="dv">2000</span>, ls<span class="op">=</span><span class="st">":"</span>, color<span class="op">=</span><span class="st">"0.5"</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>ax.text(<span class="dv">2030</span>, <span class="fl">0.35</span>, <span class="st">"the 'sub-2s' ask"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"0.5"</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>ax.set_yticks([<span class="dv">1</span>, <span class="dv">0</span>])<span class="op">;</span> ax.set_yticklabels([<span class="st">"TTFT"</span>, <span class="st">"completion"</span>])</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"milliseconds"</span>)<span class="op">;</span> ax.legend(loc<span class="op">=</span><span class="st">"lower right"</span>, fontsize<span class="op">=</span><span class="dv">7</span>, ncol<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-ch34-waterfall" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch34-waterfall-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="34-sd-enterprise-rag_files/figure-html/fig-ch34-waterfall-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;34.1: Can this design promise ‘instant’? As TTFT, yes — 650 ms with a 250 ms margin under the 900 ms budget. As a 250-token completion, never: decode pushes it to 5.6 s. The SLO must name which latency it bounds."><img src="34-sd-enterprise-rag_files/figure-html/fig-ch34-waterfall-output-1.svg" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch34-waterfall-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;34.1: Can this design promise ‘instant’? As TTFT, yes — 650 ms with a 250 ms margin under the 900 ms budget. As a 250-token completion, never: decode pushes it to 5.6 s. The SLO must name which latency it bounds.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Five anchor numbers in five minutes: 30M chunks, 46 GB int8 per copy, 650 ms TTFT with margin, 5.6 s completion at the cap, three-quarters of a cent warm. Each is one sentence of narration, and the two traps — chunks not documents, TTFT not completion — are the ones a junior misses.</p>
+</section>
+<section id="sec-ch34-contract" class="level2" data-number="34.3">
+<h2 data-number="34.3" class="anchored" data-anchor-id="sec-ch34-contract"><span class="header-section-number">34.3</span> The contract and the skeleton</h2>
+<p>The contract is one endpoint: a streamed answer with an inline citation list, and <code>answerable=false</code> returned as a real outcome rather than a confabulated paragraph (abstention is a feature; <a href="14-embeddings-rag.html#sec-ch14-grounding" class="quarto-xref"><span>Section 14.8</span></a> owns the mechanism). The SLOs are the two computed above, stated as a pair. Success is measured, not asserted: groundedness and citation precision on a pinned golden set, weekly, with the abstention rate watched alongside so the system cannot buy groundedness by refusing everything.</p>
+<p>Now the boxes — late, because the numbers and the contract have already chosen most of them. The retrieval-heavy skeleton is two planes sharing one index (<a href="#fig-ch34-planes" class="quarto-xref">Figure&nbsp;<span>34.2</span></a>). An <strong>indexing plane</strong> runs asynchronously: chunk, embed, build, validate, publish a <em>versioned</em> index. An <strong>online query plane</strong> runs inside the 650 ms budget: embed the query, filter by ACL, ANN-search, rerank, pack, generate with citations, validate or abstain. The planes meet only at the index — a versioned artifact — so a bad build rolls back by flipping a pointer, never by rebuilding under fire. Confusing the two planes, or letting the online path do work the offline path already did, is the classic mid-level error.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-ch34-planes" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch34-planes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch34-planes">flowchart LR
+    subgraph IDX ["indexing plane — async, nightly"]
+        S["sources&lt;br/&gt;wiki · tickets · PDF · code"] --&gt; CH["chunk + embed"] --&gt; BV["build + validate"]
+    end
+    BV --&gt; IX[("versioned ANN index&lt;br/&gt;+ metadata / ACL store")]
+    subgraph QRY ["query plane — online, 650 ms budget"]
+        Q["query"] --&gt; E["embed"] --&gt; F["ACL prefilter"] --&gt; A["ANN top-100"]
+        A --&gt; RR["rerank top-5"] --&gt; PK["pack (reserve output)"] --&gt; G["generate + cite"] --&gt; V["validate / abstain"]
+    end
+    IX -. allow-predicate .-&gt; F
+    IX --&gt; A
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch34-planes-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;34.2: Where does work happen off the hot path, and where must every online millisecond be defended? The two planes share only a versioned index and an ACL store; they meet at a pointer swap, so a bad build rolls back instantly.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Each stage in the query plane is a funnel that narrows the corpus to the five chunks the model reads, and one stage caps the quality of everything downstream. <a href="#fig-ch34-funnel" class="quarto-xref">Figure&nbsp;<span>34.3</span></a> makes the narrowing visible: thirty million chunks become the user’s visible subset, then a hundred candidates, then five. The stage that caps quality is retrieval recall — if the right chunk is not in the top-100, no reranker and no prompt can recover it (<a href="14-embeddings-rag.html#sec-ch14-metrics" class="quarto-xref"><span>Section 14.3</span></a> owns this measurement, and it is why recall is the first thing we instrument in the evolution move).</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-ch34-funnel" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch34-funnel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch34-funnel">flowchart LR
+    C["corpus&lt;br/&gt;30M chunks"] --&gt; F["ACL-visible&lt;br/&gt;~2% for this user"]
+    F --&gt; N["ANN&lt;br/&gt;top-100"] --&gt; R["cross-encoder&lt;br/&gt;top-5"] --&gt; P["packed context&lt;br/&gt;5 × 500 tok"] --&gt; O["cited answer"]
+    N -.-&gt;|"recall ceiling&lt;br/&gt;lives here"| N
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch34-funnel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;34.3: What are the swappable stages, and which one caps quality? Each stage narrows the corpus; recall at the ANN stage is the ceiling — a chunk missed here cannot be reranked back.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-ch34-acl" class="level2" data-number="34.4">
+<h2 data-number="34.4" class="anchored" data-anchor-id="sec-ch34-acl"><span class="header-section-number">34.4</span> Deep dive: permissions before search</h2>
+<p>The fork the interviewer pushes on first is permissions, and the decision is a single sentence with an alternative and a reason: <strong>the ACL filter runs before the vector search, not after.</strong> Post-filtering — search first, then drop what the user cannot see — is simpler and perfectly fine when permissions are coarse. It breaks when they are fine-grained, and the break is arithmetic, not taste:</p>
+<div id="c746bccb" class="cell" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>visible <span class="op">=</span> <span class="fl">0.02</span>          <span class="co"># this user can see 2% of the corpus</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>topk <span class="op">=</span> <span class="dv">100</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"post-filter top-</span><span class="sc">{</span>topk<span class="sc">}</span><span class="ss">: ~</span><span class="sc">{</span>topk <span class="op">*</span> visible<span class="sc">:.0f}</span><span class="ss"> of </span><span class="sc">{</span>topk<span class="sc">}</span><span class="ss"> candidates survive the ACL check"</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"P(a post-filtered top-10 returns nothing visible) = </span><span class="sc">{</span>(<span class="dv">1</span> <span class="op">-</span> visible) <span class="op">**</span> <span class="dv">10</span><span class="sc">:.0%}</span><span class="ss">"</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"to expect 5 usable results post-filter, you must fetch top-</span><span class="sc">{</span>math<span class="sc">.</span>ceil(<span class="dv">5</span> <span class="op">/</span> visible)<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>post-filter top-100: ~2 of 100 candidates survive the ACL check
+P(a post-filtered top-10 returns nothing visible) = 82%
+to expect 5 usable results post-filter, you must fetch top-250</code></pre>
+</div>
+</div>
+<p>A user who can see two percent of the corpus gets about two usable results from a post-filtered top-100, and a post-filtered top-10 returns <em>nothing they can see</em> eighty-two percent of the time. Recovering five results means fetching the top-250, which blows the ANN latency budget — and post-filtering leaks document existence besides, because response timing and result counts reveal that hidden documents matched. Pre-filtering fixes both: we hand the ANN index an allow-predicate — a per-principal reachable-set maintained as a bitmap and intersected at query time — so the search only ever traverses visible vectors (<a href="15-agentic-retrieval.html#sec-ch15-security" class="quarto-xref"><span>Section 15.9</span></a> owns permission-aware retrieval and its failure modes). <strong>When the interviewer pushes</strong> on cost: the bitmap is built in the indexing plane and refreshed with the index, so the online cost is one intersection, the 30 ms <code>ACL prefilter</code> stage already in the waterfall; and a permission <em>revocation</em> is an index update, not a query-time special case — which is exactly the seam the freshness flip reopens in <a href="#sec-ch34-evolution" class="quarto-xref"><span>Section 34.7</span></a>.</p>
+</section>
+<section id="sec-ch34-rerank" class="level2" data-number="34.5">
+<h2 data-number="34.5" class="anchored" data-anchor-id="sec-ch34-rerank"><span class="header-section-number">34.5</span> Deep dive: rerank, recall, and the cache</h2>
+<p>The second fork is the query plane’s two quality knobs — the reranker and the cache — and both are decisions owned by a measured curve, not a preference. A cross-encoder reranker buys precision@5 by scoring all hundred candidates jointly with the query, at a cost of 150 ms and a device (<a href="14-embeddings-rag.html#sec-ch14-encoders" class="quarto-xref"><span>Section 14.5</span></a> owns bi- versus cross-encoders). The alternative is to skip it and pack a wider top-k directly — cheaper, and worse: it spends context tokens on lower-precision chunks and dilutes the evidence. The decision is not “always rerank” but “rerank until the recall-versus-precision curve stops paying,” and <strong>when the interviewer pushes on tail latency</strong> the answer is a shed path: under burst, drop to no-rerank mode, which degrades precision <em>measurably</em> instead of degrading availability.</p>
+<p>The semantic cache is the cost lever with a correctness trap. Returning a stored answer for a near-duplicate query removes 30–40% of model calls on FAQ-heavy traffic — real money at the day-rates the cost cell implied. Its risk is serving a stale or wrongly-scoped answer, and the control is the cache key: it <strong>must</strong> include the ACL scope and the index version, never the query text alone. A cache keyed on text alone will hand user B an answer computed from documents only user A could see — a permission leak dressed as a performance win. Invalidate on index swap; scope on every read. This is the point where cost and correctness are the same decision.</p>
+</section>
+<section id="sec-ch34-failure" class="level2" data-number="34.6">
+<h2 data-number="34.6" class="anchored" data-anchor-id="sec-ch34-failure"><span class="header-section-number">34.6</span> Tradeoffs and failure</h2>
+<p>Every major choice trades something measurable for something else, and a senior states the whole row — cost, benefit, risk, and the control that bounds the risk (<a href="#tbl-ch34-tradeoffs" class="quarto-xref">Table&nbsp;<span>34.2</span></a>).</p>
+<div id="tbl-ch34-tradeoffs" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ch34-tradeoffs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;34.2: The retrieval-heavy tradeoff table: what each decision costs, buys, risks, and how the risk is bounded.
+</figcaption>
+<div aria-describedby="tbl-ch34-tradeoffs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Choice</th>
+<th>Cost</th>
+<th>Buys</th>
+<th>Risk</th>
+<th>Control</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ANN (not exact) search</td>
+<td>~5% recall loss (illustrative)</td>
+<td>latency inside budget</td>
+<td>miss the right chunk</td>
+<td>widen top-k + cross-encoder rerank; measure recall@k</td>
+</tr>
+<tr class="even">
+<td>Nightly rebuild (not incremental)</td>
+<td>up to 24 h staleness</td>
+<td>simpler, cheaper indexing</td>
+<td>stale answers</td>
+<td>fork to the incremental plane if freshness is demanded</td>
+</tr>
+<tr class="odd">
+<td>Cross-encoder rerank</td>
+<td>+150 ms, one device</td>
+<td>precision@5</td>
+<td>tail latency under burst</td>
+<td>small reranker; cap candidates at 100; shed to no-rerank</td>
+</tr>
+<tr class="even">
+<td>Semantic cache</td>
+<td>staleness / false hits</td>
+<td>30–40% fewer model calls</td>
+<td>wrong-scope answer reuse</td>
+<td>key on ACL scope + index version; invalidate on swap</td>
+</tr>
+<tr class="odd">
+<td>Filter before search</td>
+<td>per-principal bitmap upkeep</td>
+<td>correct top-k under fine ACL</td>
+<td>index-time complexity</td>
+<td>maintain reachable-sets in the indexing plane</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>Three failure modes carry the security-and-cost pass. <strong>The reranker saturates under burst</strong> — control: shed to no-rerank, trading precision for availability, and page only if recall-at-5 on live traffic drops below the golden-set floor. <strong>A poisoned document carries injected instructions</strong> — retrieved text is data, not commands, so it is delimited and provenance-tagged before it reaches the model (<a href="24-agent-security.html" class="quarto-xref"><span>Chapter 24</span></a> owns the architecture; PoisonedRAG and hostile evidence are worked in <a href="15-agentic-retrieval.html#sec-ch15-security" class="quarto-xref"><span>Section 15.9</span></a>). <strong>A mis-scoped ACL entry leaks a document</strong> — this is the one failure with no partial credit: it is caught by negative isolation tests in CI (assert principal X <em>cannot</em> retrieve document Y), and a leak in production pages a human immediately. Cost is the last attack surface: an adversary submitting long, expensive, cache-busting queries is a denial-of-wallet vector, so query length is capped, per-user rate limits are enforced, and the day-rate arithmetic from the cost cell is the number that justifies both.</p>
+</section>
+<section id="sec-ch34-evolution" class="level2" data-number="34.7">
+<h2 data-number="34.7" class="anchored" data-anchor-id="sec-ch34-evolution"><span class="header-section-number">34.7</span> Evolution: the freshness flip</h2>
+<p>Build order is an evidence-gathering sequence, not a feature list: ship the nightly-rebuild index with plain top-k, <em>no</em> reranker and <em>no</em> cache, and measure retrieval recall first — it caps everything downstream, so tuning generation before recall is measuring the wrong thing (<a href="14-embeddings-rag.html#sec-ch14-metrics" class="quarto-xref"><span>Section 14.3</span></a> is the lesson). Add the reranker when the recall curve says candidates are there but mis-ordered; add the semantic cache when the traffic histogram shows a fat FAQ head. Each addition is justified by a measurement the previous stage produced.</p>
+<p>Then the interviewer flips the fork: <strong>documents now change hourly.</strong> The senior answer is the delta, not a redraw. The indexing plane becomes incremental — upsert changed chunks, tombstone deleted ones, and publish a monotonically increasing <strong>freshness watermark</strong> that the query plane reads so a caller can be told how current the answer is (<a href="#fig-ch34-freshness" class="quarto-xref">Figure&nbsp;<span>34.4</span></a>). Crucially, an ACL <em>revocation</em> is also a tombstone: a document a user lost access to must disappear from their results within the freshness SLA, which makes freshness a security property here, not merely a UX one. What survives the flip is almost everything — the query plane, the contract, the two SLOs, and five of the six anchor numbers are untouched; only the indexing plane and the cache-invalidation trigger change. And if a <em>second</em> requirement flips — the assistant must now file tickets — the retrieval design still holds: the query plane becomes the context-assembly step of an acting agent, with <code>validate → authorize → effect</code> bolted on after generation, which is the acting-agent family and its own chapter (<a href="35-sd-support-agent.html" class="quarto-xref"><span>Chapter 35</span></a>).</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-ch34-freshness" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ch34-freshness-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-ch34-freshness">flowchart TB
+    subgraph NIGHT ["nightly (baseline)"]
+        N1["rebuild full index"] --&gt; N2["validate"] --&gt; N3["swap pointer"]
+    end
+    subgraph HOUR ["hourly (the flip)"]
+        H1["upsert changed chunks"] --&gt; H2["tombstone deletes + ACL revocations"]
+        H2 --&gt; H3["advance freshness watermark"]
+    end
+    H3 -. "query plane reads watermark,&lt;br/&gt;everything else unchanged" .-&gt; QP["query plane"]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ch34-freshness-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;34.4: What changes when freshness goes from nightly to hourly? Only the indexing plane: a rebuild-and-swap becomes upsert-plus-tombstone with a watermark the query plane checks. The query plane and the contract do not move.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-ch34-probes" class="level2" data-number="34.8">
+<h2 data-number="34.8" class="anchored" data-anchor-id="sec-ch34-probes"><span class="header-section-number">34.8</span> Interviewer probes</h2>
+<p><strong>“Your ANN misses the one relevant document. How would you even know?”</strong> Recall@k measured offline against a golden set is how — ANN trades a few points of recall for latency, and the loss is invisible unless instrumented (<a href="14-embeddings-rag.html#sec-ch14-metrics" class="quarto-xref"><span>Section 14.3</span></a>). Two controls claw it back and one catches the residual: widen top-k and rerank to recover mis-ordered results, and let abstention catch the rest — an answer with thin support returns <code>answerable=false</code> rather than confabulating, which turns a silent retrieval miss into a visible, measurable refusal.</p>
+<p><strong>“A user’s permissions change mid-session and the cache serves them a document they can no longer see.”</strong> That is a leak, not a staleness bug, and it is prevented by construction: the cache key carries the ACL scope and the index version, so a revocation that advances the version for affected principals misses the stale entry entirely. The revocation itself is a tombstone in the indexing plane, and a negative isolation test in CI asserts the principal can no longer retrieve the document. The incident to page on is the leak, never the cache miss.</p>
+<p><strong>“Why not skip retrieval entirely and put all ten million documents in a long-context model?”</strong> Three reasons, priced. Cost: even at cached rates the token bill and prefill latency for a multi-million-token context are untenable at 50 QPS — the cost cell’s day-rate arithmetic makes that concrete. Latency: prefill over that context blows the TTFT budget by orders of magnitude. And permissions: a long-context model cannot enforce per-user ACLs without filtering the evidence at retrieval time anyway (<a href="15-agentic-retrieval.html#sec-ch15-longcontext" class="quarto-xref"><span>Section 15.8</span></a> weighs long-context against RAG). Retrieval is the permission boundary, not just a cost trick.</p>
+</section>
+<section id="sec-ch34-family" class="level2" data-number="34.9">
+<h2 data-number="34.9" class="anchored" data-anchor-id="sec-ch34-family"><span class="header-section-number">34.9</span> The retrieval-heavy family</h2>
+<p>The bones we just built — two planes, an evidence funnel with a recall ceiling, permissions enforced before search, evidence assembled before generation — are the family skeleton. Its siblings keep the skeleton and flip one constraint, and naming which decision flips is the transfer skill the round grades (<a href="#tbl-ch34-family" class="quarto-xref">Table&nbsp;<span>34.3</span></a>).</p>
+<div id="tbl-ch34-family" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ch34-family-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;34.3: The retrieval-heavy family skeleton: same bones, one changed constraint, one flipped decision.
+</figcaption>
+<div aria-describedby="tbl-ch34-family-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Sibling prompt</th>
+<th>The constraint that changes</th>
+<th>The decision that flips</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>This design</strong> — text RAG, fine ACL, nightly</td>
+<td>—</td>
+<td>filter-before-search; cross-encoder rerank; rebuild-and-swap</td>
+<td><a href="14-embeddings-rag.html" class="quarto-xref"><span>Chapter 14</span></a>, <a href="15-agentic-retrieval.html" class="quarto-xref"><span>Chapter 15</span></a></td>
+</tr>
+<tr class="even">
+<td><strong>Visual-document RAG</strong> (ColPali-class)</td>
+<td>evidence is page <em>images</em>, not extracted text</td>
+<td>late-interaction MaxSim over patch embeddings replaces single-vector ANN; multi-vector index blows up; OCR becomes optional</td>
+<td><a href="29-multimodal-vlm-documents-gui.html#sec-ch29-visual-rag" class="quarto-xref"><span>Section 29.5</span></a></td>
+</tr>
+<tr class="odd">
+<td><strong>Analytics agent over a warehouse</strong></td>
+<td>evidence is <em>rows behind a schema</em>, not chunks</td>
+<td>text-to-SQL + a semantic layer replaces embedding search; verify against live DB state; the rigor band (units, leakage, p-hacking) replaces recall@k</td>
+<td><a href="21-agent-applications.html#sec-ch21-rigor" class="quarto-xref"><span>Section 21.6</span></a>, <a href="15-agentic-retrieval.html#sec-ch15-structured" class="quarto-xref"><span>Section 15.7</span></a></td>
+</tr>
+<tr class="even">
+<td><strong>Code search</strong> over a repo</td>
+<td>evidence has <em>exact symbols and structure</em></td>
+<td>lexical grep / AST search beats embeddings for exact identifiers; embeddings serve only fuzzy “where is X handled”</td>
+<td><a href="15-agentic-retrieval.html#sec-ch15-structured" class="quarto-xref"><span>Section 15.7</span></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>The pattern across the row: the two-plane shape and the evidence-before-generation discipline survive every sibling, while the <em>retrieval primitive</em> and the <em>quality metric</em> flip with the evidence type — single-vector ANN and recall@k for text, MaxSim and patch recall for images, SQL and a rigor band for warehouses, lexical match for code. Identify the evidence type in the first minute and the primitive follows.</p>
+</section>
+<section id="summary" class="level2" data-number="34.10">
+<h2 data-number="34.10" class="anchored" data-anchor-id="summary"><span class="header-section-number">34.10</span> Summary</h2>
+<p>Enterprise RAG is the retrieval-heavy family’s flagship, and it is a search problem before it is a language problem. We scoped it around one forking clarifier — freshness — computed five anchor numbers live (30M chunks, 46 GB int8, 650 ms TTFT, sub-cent warm queries), and let two traps set the design: size from chunks not documents, and bound TTFT not completion. The skeleton is two planes sharing a versioned index; the load-bearing dive is filtering permissions <em>before</em> search, because post-filtering collapses under fine-grained ACLs. The freshness flip changes only the indexing plane. Chapter 35 takes the acting-agent family, where the system changes external state.</p>
+</section>
+<section id="exercises" class="level2" data-number="34.11">
+<h2 data-number="34.11" class="anchored" data-anchor-id="exercises"><span class="header-section-number">34.11</span> Exercises</h2>
+<ol type="1">
+<li><strong>Re-run the design with freshness required.</strong> Documents now change every fifteen minutes. Redraw only the indexing plane, define the freshness watermark the query plane checks, and state which of the five anchor numbers move and which do not. What new failure mode does the incremental plane introduce that the nightly rebuild did not?</li>
+<li><strong>Push the cost model.</strong> Using <code>cost_per_query</code> and the chapter’s illustrative prices: (a) the product wants ten cited chunks instead of five — recompute the input tokens and the warm-cache cost, and say which term now dominates; (b) find the cached-input fraction at which the query drops below half a cent; (c) at 50 QPS, quantify the daily saving from a semantic cache that removes 35% of calls.</li>
+<li><strong>Work the ACL collapse both ways.</strong> For a user who can see 5% of the corpus, recompute the expected usable results from a post-filtered top-100 and the top-k needed to expect five. Then argue, in two sentences, why pre-filtering also closes the existence-leak side channel that post-filtering opens.</li>
+<li><strong>The interviewer swaps the reranker for a bigger ANN.</strong> They propose dropping the cross-encoder and packing the top-20 directly. Draw the recall-versus-precision argument, name the metric that decides it, and state the one traffic condition under which their proposal is correct.</li>
+<li><strong>Size the index for a different corpus.</strong> Ten million documents become one hundred million, chunk size doubles (halving chunk count per document), and the embedding dimension drops to 384. Recompute the int8 index size with <code>index_bytes</code>, decide single-node versus sharded, and name the anchor number a junior would get wrong.</li>
+<li><strong>Turn the design into a sibling.</strong> Take the visual-document RAG row of <a href="#tbl-ch34-family" class="quarto-xref">Table&nbsp;<span>34.3</span></a> and write its version of <a href="#tbl-ch34-reqs" class="quarto-xref">Table&nbsp;<span>34.1</span></a>: which requirements are identical, which change, and what replaces “recall@k” as the quality metric (<a href="29-multimodal-vlm-documents-gui.html#sec-ch29-visual-rag" class="quarto-xref"><span>Section 29.5</span></a>).</li>
+<li><strong>Absorb a second flip.</strong> The assistant must now also file a ticket when it cannot answer. Name the boxes you add to the query plane, cite the family that owns the new machinery, and state the one anchor number from this chapter that becomes irrelevant and the one new number you must now compute.</li>
+<li><strong>Run the clock cold.</strong> Set a 45-minute timer and run all seven moves on this prompt from scratch without rereading the chapter, scoring yourself with Appendix B’s 0–4 scale. Log the minute each move actually started against <a href="33-sd-interview-framework.html#fig-ch33-clock" class="quarto-xref">Figure&nbsp;<span>33.1</span></a>, and route your weakest layer to its owning chapter.</li>
+</ol>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/33-sd-interview-framework.html" class="pagination-link" aria-label="The Interview Framework: Seven Moves and a Toolkit">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">The Interview Framework: Seven Moves and a Toolkit</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/35-sd-support-agent.html" class="pagination-link" aria-label="Designing an Acting Support Agent">
+        <span class="nav-page-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Designing an Acting Support Agent</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Built as an open, executable textbook.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Durable mechanisms in the spine; dated facts in Appendix C.</p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
