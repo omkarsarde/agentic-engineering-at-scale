@@ -95,6 +95,49 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -438,25 +481,25 @@ div.csl-indent {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./chapters/12-api-surface.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling [F]</span></span></a>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">The API Surface: Messages, Structured Outputs, and Tool Calling</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./chapters/13-prompting-context-engineering.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering [F+S]</span></span></a>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Prompting and Context Engineering</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./chapters/14-embeddings-rag.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems [F+S]</span></span></a>
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Embeddings and RAG Systems</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./chapters/15-agentic-retrieval.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval [S]</span></span></a>
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Advanced and Agentic Retrieval</span></span></a>
   </div>
 </li>
       </ul>
@@ -473,37 +516,37 @@ div.csl-indent {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./chapters/16-agent-anatomy.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns [F]</span></span></a>
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Anatomy of an Agent: The Loop, Tools, and Workflow Patterns</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./chapters/17-tool-harness-engineering.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design [F+S]</span></span></a>
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Tool Engineering and Harness Design</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./chapters/18-memory-experiential-learning.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning [F+S]</span></span></a>
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Agent Memory and Experiential Learning</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./chapters/19-protocols-frameworks.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent↔︎UI [S]</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Protocols and Frameworks: MCP, A2A, and Agent-to-UI</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./chapters/20-multi-agent-systems.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Architectures, Failure Modes, and Economics [F+S]</span></span></a>
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Multi-Agent Systems: Orchestrator-Workers, Failure Modes, and Economics</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./chapters/21-agent-applications.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Deep Research, and Computer Use [S]</span></span></a>
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">Agent Applications: Coding, Conversational, Computer Use, Data, and Deep Research</span></span></a>
   </div>
 </li>
       </ul>
@@ -674,6 +717,12 @@ div.csl-indent {
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-agrawal2025gepa" class="csl-entry" role="listitem">
+<span class="nocase">Agrawal, Lakshya A. et al.</span> 2025.
+<span>“<span>GEPA</span>: Reflective Prompt Evolution Can Outperform
+Reinforcement Learning.”</span> <em>arXiv Preprint
+arXiv:2507.19457</em>.
+</div>
 <div id="ref-ainslie2023gqa" class="csl-entry" role="listitem">
 Ainslie, Joshua, James Lee-Thorp, Michiel de Jong, Yury Zemlyanskiy,
 Federico Lebrón, and Sumit Sanghai. 2023. <span>“GQA: Training
@@ -681,30 +730,172 @@ Generalized Multi-Query Transformer Models from Multi-Head
 Checkpoints.”</span> <em>Proceedings of the Conference on Empirical
 Methods in Natural Language Processing</em>.
 </div>
+<div id="ref-anthropic2024effectiveagents" class="csl-entry" role="listitem">
+Anthropic. 2024a. <em>Building Effective Agents</em>. <a href="https://www.anthropic.com/research/building-effective-agents" class="uri">Https://www.anthropic.com/research/building-effective-agents</a>.
+</div>
+<div id="ref-anthropic2024mcp" class="csl-entry" role="listitem">
+Anthropic. 2024b. <em>Introducing the Model Context Protocol</em>. <a href="https://modelcontextprotocol.io" class="uri">Https://modelcontextprotocol.io</a>.
+</div>
+<div id="ref-asai2023selfrag" class="csl-entry" role="listitem">
+Asai, Akari, Zeqiu Wu, Yizhong Wang, Avirup Sil, and Hannaneh
+Hajishirzi. 2024. <span>“Self-RAG: Learning to Retrieve, Generate, and
+Critique Through Self-Reflection.”</span> <em>International Conference
+on Learning Representations</em>.
+</div>
+<div id="ref-barnett2024sevenfailures" class="csl-entry" role="listitem">
+Barnett, Scott, Stefanus Kurniawan, Srikanth Thudumu, Zach Brannelly,
+and Mohamed Abdelrazek. 2024. <em>Seven Failure Points When Engineering
+a Retrieval Augmented Generation System</em>. <a href="https://arxiv.org/abs/2401.05856">https://arxiv.org/abs/2401.05856</a>.
+</div>
+<div id="ref-bourtoule2021sisa" class="csl-entry" role="listitem">
+Bourtoule, Lucas, Varun Chandrasekaran, Christopher A. Choquette-Choo,
+et al. 2021. <span>“Machine Unlearning.”</span> <em>IEEE Symposium on
+Security and Privacy</em>.
+</div>
+<div id="ref-brown2020language" class="csl-entry" role="listitem">
+<span class="nocase">Brown, Tom B., Benjamin Mann, Nick Ryder, et
+al.</span> 2020. <span>“Language Models Are Few-Shot Learners.”</span>
+<em>Advances in Neural Information Processing Systems (NeurIPS)</em>.
+</div>
+<div id="ref-cemri2025mast" class="csl-entry" role="listitem">
+Cemri, Mert, Melissa Z. Pan, Shuyi Yang, et al. 2025. <span>“Why Do
+Multi-Agent LLM Systems Fail?”</span> <em>arXiv Preprint
+arXiv:2503.13657</em>.
+</div>
+<div id="ref-chan2024cag" class="csl-entry" role="listitem">
+Chan, Brian J., Chao-Ting Chen, Jui-Hung Cheng, and Hen-Hsen Huang.
+2024. <span>“Don’t Do RAG: When Cache-Augmented Generation Is All You
+Need for Knowledge Tasks.”</span> <em>arXiv Preprint
+arXiv:2412.15605</em>.
+</div>
 <div id="ref-chen2023pi" class="csl-entry" role="listitem">
 Chen, Shouyuan, Sherman Wong, Liangjian Chen, and Yuandong Tian. 2023.
 <span>“Extending Context Window of Large Language Models via Positional
 Interpolation.”</span> <em>arXiv Preprint arXiv:2306.15595</em>.
+</div>
+<div id="ref-chhikara2025mem0" class="csl-entry" role="listitem">
+<span class="nocase">Chhikara, Prateek et al.</span> 2025.
+<span>“<span>Mem0</span>: Building Production-Ready <span>AI</span>
+Agents with Scalable Long-Term Memory.”</span> <em>arXiv Preprint
+arXiv:2504.19413</em>.
+</div>
+<div id="ref-chroma2025contextrot" class="csl-entry" role="listitem">
+Chroma Research. 2025. <em>Context Rot: How Increasing Input Tokens
+Impacts <span>LLM</span> Performance</em>. Chroma. <a href="https://www.trychroma.com/research/context-rot">https://www.trychroma.com/research/context-rot</a>.
+</div>
+<div id="ref-cormack2009rrf" class="csl-entry" role="listitem">
+Cormack, Gordon V., Charles L. A. Clarke, and Stefan Buettcher. 2009.
+<span>“Reciprocal Rank Fusion Outperforms Condorcet and Individual Rank
+Learning Methods.”</span> <em>Proceedings of the 32nd International ACM
+SIGIR Conference on Research and Development in Information
+Retrieval</em>, 758–59.
 </div>
 <div id="ref-deepseekv2" class="csl-entry" role="listitem">
 DeepSeek-AI. 2024. <span>“DeepSeek-V2: A Strong, Economical, and
 Efficient Mixture-of-Experts Language Model.”</span> <em>arXiv Preprint
 arXiv:2405.04434</em>.
 </div>
+<div id="ref-deerwester1990lsa" class="csl-entry" role="listitem">
+Deerwester, Scott, Susan T. Dumais, George W. Furnas, Thomas K.
+Landauer, and Richard Harshman. 1990. <span>“Indexing by Latent Semantic
+Analysis.”</span> <em>Journal of the American Society for Information
+Science</em> 41 (6): 391–407.
+</div>
+<div id="ref-dong2024xgrammar" class="csl-entry" role="listitem">
+Dong, Yixin, Charlie F. Ruan, Yaxing Cai, et al. 2024. <em>XGrammar:
+Flexible and Efficient Structured Generation Engine for Large Language
+Models</em>. <a href="https://arxiv.org/abs/2411.15100">https://arxiv.org/abs/2411.15100</a>.
+</div>
+<div id="ref-du2025deepresearchbench" class="csl-entry" role="listitem">
+<span class="nocase">Du, Mingxuan et al.</span> 2025.
+<span>“<span>DeepResearch Bench</span>: A Comprehensive Benchmark for
+Deep Research Agents.”</span> <em>arXiv Preprint arXiv:2506.11763</em>.
+</div>
+<div id="ref-du2023debate" class="csl-entry" role="listitem">
+Du, Yilun, Shuang Li, Antonio Torralba, Joshua B. Tenenbaum, and Igor
+Mordatch. 2023. <span>“Improving Factuality and Reasoning in Language
+Models Through Multiagent Debate.”</span> <em>arXiv Preprint
+arXiv:2305.14325</em>.
+</div>
+<div id="ref-edge2024graphrag" class="csl-entry" role="listitem">
+Edge, Darren, Ha Trinh, Newman Cheng, et al. 2024. <span>“From Local to
+Global: A Graph RAG Approach to Query-Focused Summarization.”</span>
+<em>arXiv Preprint arXiv:2404.16130</em>.
+</div>
+<div id="ref-es2024ragas" class="csl-entry" role="listitem">
+Es, Shahul, Jithin James, Luis Espinosa-Anke, and Steven Schockaert.
+2023. <em>RAGAS: Automated Evaluation of Retrieval Augmented
+Generation</em>. <a href="https://arxiv.org/abs/2309.15217">https://arxiv.org/abs/2309.15217</a>.
+</div>
 <div id="ref-farquhar2024semantic" class="csl-entry" role="listitem">
 Farquhar, Sebastian, Jannik Kossen, Lorenz Kuhn, and Yarin Gal. 2024.
 <span>“Detecting Hallucinations in Large Language Models Using Semantic
 Entropy.”</span> <em>Nature</em>.
+</div>
+<div id="ref-geng2025jsonschemabench" class="csl-entry" role="listitem">
+<span class="nocase">Geng, Saibo, Hudson Cooper, Michael Moss, Cameron
+Ross, Luca Beurer-Kellner, et al.</span> 2025. <em>Generating Structured
+Outputs from Language Models: Benchmark and Studies</em>. <a href="https://arxiv.org/abs/2501.10868">https://arxiv.org/abs/2501.10868</a>.
+</div>
+<div id="ref-google2025a2a" class="csl-entry" role="listitem">
+Google. 2025. <em>Agent2Agent (A2A) Protocol Specification</em>. <a href="https://a2a-protocol.org" class="uri">Https://a2a-protocol.org</a>.
+</div>
+<div id="ref-greshake2023injection" class="csl-entry" role="listitem">
+Greshake, Kai, Sahar Abdelnabi, Shailesh Mishra, Christoph Endres,
+Thorsten Holz, and Mario Fritz. 2023. <span>“Not What You’ve Signed up
+for: Compromising Real-World LLM-Integrated Applications with Indirect
+Prompt Injection.”</span> <em>Proceedings of the 16th ACM Workshop on
+Artificial Intelligence and Security</em>.
+</div>
+<div id="ref-hardy1988confused" class="csl-entry" role="listitem">
+Hardy, Norm. 1988. <span>“The Confused Deputy: (Or Why Capabilities
+Might Have Been Invented).”</span> <em>ACM SIGOPS Operating Systems
+Review</em> 22 (4): 36–38.
 </div>
 <div id="ref-holtzman2020curious" class="csl-entry" role="listitem">
 Holtzman, Ari, Jan Buys, Li Du, Maxwell Forbes, and Yejin Choi. 2020.
 <span>“The Curious Case of Neural Text Degeneration.”</span>
 <em>International Conference on Learning Representations</em>.
 </div>
+<div id="ref-horthy2025twelvefactor" class="csl-entry" role="listitem">
+Horthy, Dex. 2025. <em>12-Factor Agents: Patterns of Reliable LLM
+Applications</em>. <a href="https://github.com/humanlayer/12-factor-agents" class="uri">Https://github.com/humanlayer/12-factor-agents</a>.
+</div>
 <div id="ref-hsieh2024ruler" class="csl-entry" role="listitem">
 Hsieh, Cheng-Ping, Simeng Sun, Samuel Kriman, et al. 2024. <span>“RULER:
 What’s the Real Context Size of Your Long-Context Language
 Models?”</span> <em>arXiv Preprint arXiv:2404.06654</em>.
+</div>
+<div id="ref-jeong2024adaptiverag" class="csl-entry" role="listitem">
+Jeong, Soyeong, Jinheon Baek, Sukmin Cho, Sung Ju Hwang, and Jong C.
+Park. 2024. <span>“Adaptive-RAG: Learning to Adapt Retrieval-Augmented
+Large Language Models Through Question Complexity.”</span>
+<em>Proceedings of NAACL-HLT</em>.
+</div>
+<div id="ref-manus2025context" class="csl-entry" role="listitem">
+Ji, Yichao. 2025. <em>Context Engineering for <span>AI</span> Agents:
+Lessons from Building Manus</em>. Manus engineering blog. <a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus">https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus</a>.
+</div>
+<div id="ref-jimenez2024swebench" class="csl-entry" role="listitem">
+<span class="nocase">Jimenez, Carlos E., John Yang, et al.</span> 2024.
+<span>“<span class="nocase">SWE-bench</span>: Can Language Models
+Resolve Real-World <span>GitHub</span> Issues?”</span> <em>International
+Conference on Learning Representations</em>.
+</div>
+<div id="ref-jin2025searchr1" class="csl-entry" role="listitem">
+Jin, Bowen, Hansi Zeng, Zhenrui Yue, Dong Wang, Hamed Zamani, and Jiawei
+Han. 2025. <span>“Search-R1: Training LLMs to Reason and Leverage Search
+Engines with Reinforcement Learning.”</span> <em>arXiv Preprint
+arXiv:2503.09516</em>.
+</div>
+<div id="ref-kapoor2024agents" class="csl-entry" role="listitem">
+Kapoor, Sayash, Benedikt Stroebl, Zachary S. Siegel, Nitya Nadgir, and
+Arvind Narayanan. 2024. <span>“AI Agents That Matter.”</span> <em>arXiv
+Preprint arXiv:2407.01502</em>.
+</div>
+<div id="ref-karpukhin2020dpr" class="csl-entry" role="listitem">
+Karpukhin, Vladimir, Barlas Oğuz, Sewon Min, et al. 2020. <em>Dense
+Passage Retrieval for Open-Domain Question Answering</em>. <a href="https://arxiv.org/abs/2004.04906">https://arxiv.org/abs/2004.04906</a>.
 </div>
 <div id="ref-kazemnejad2023nope" class="csl-entry" role="listitem">
 Kazemnejad, Amirhossein, Inkit Padhi, Karthikeyan Natesan Ramamurthy,
@@ -712,11 +903,32 @@ Payel Das, and Siva Reddy. 2023. <span>“The Impact of Positional
 Encoding on Length Generalization in Transformers.”</span> <em>Advances
 in Neural Information Processing Systems</em>.
 </div>
+<div id="ref-khattab2024dspy" class="csl-entry" role="listitem">
+Khattab, Omar, Arnav Singhvi, Paridhi Maheshwari, et al. 2024.
+<span>“<span>DSPy</span>: Compiling Declarative Language Model Calls
+into Self-Improving Pipelines.”</span> <em>International Conference on
+Learning Representations (ICLR)</em>.
+</div>
+<div id="ref-khattab2020colbert" class="csl-entry" role="listitem">
+Khattab, Omar, and Matei Zaharia. 2020. <em>ColBERT: Efficient and
+Effective Passage Search via Contextualized Late Interaction over
+BERT</em>. <a href="https://arxiv.org/abs/2004.12832">https://arxiv.org/abs/2004.12832</a>.
+</div>
+<div id="ref-kusupati2022matryoshka" class="csl-entry" role="listitem">
+Kusupati, Aditya, Gantavya Bhatt, Aniket Rege, et al. 2022.
+<em>Matryoshka Representation Learning</em>. <a href="https://arxiv.org/abs/2205.13147">https://arxiv.org/abs/2205.13147</a>.
+</div>
 <div id="ref-kwon2023vllm" class="csl-entry" role="listitem">
 <span class="nocase">Kwon, Woosuk et al.</span> 2023. <span>“Efficient
 Memory Management for Large Language Model Serving with
 PagedAttention.”</span> <em>Proceedings of the ACM SIGOPS Symposium on
 Operating Systems Principles</em>.
+</div>
+<div id="ref-lewis2020rag" class="csl-entry" role="listitem">
+<span class="nocase">Lewis, Patrick et al.</span> 2020.
+<span>“Retrieval-Augmented Generation for Knowledge-Intensive NLP
+Tasks.”</span> <em>Advances in Neural Information Processing
+Systems</em>.
 </div>
 <div id="ref-liu2024lostmiddle" class="csl-entry" role="listitem">
 <span class="nocase">Liu, Nelson F. et al.</span> 2024. <span>“Lost in
@@ -728,15 +940,41 @@ Loshchilov, Ilya, and Frank Hutter. 2019. <span>“Decoupled Weight Decay
 Regularization.”</span> <em>International Conference on Learning
 Representations</em>.
 </div>
+<div id="ref-malkov2018hnsw" class="csl-entry" role="listitem">
+Malkov, Yu A., and D. A. Yashunin. 2018. <em>Efficient and Robust
+Approximate Nearest Neighbor Search Using Hierarchical Navigable Small
+World Graphs</em>. <a href="https://arxiv.org/abs/1603.09320">https://arxiv.org/abs/1603.09320</a>.
+</div>
+<div id="ref-min2022rethinking" class="csl-entry" role="listitem">
+Min, Sewon, Xinxi Lyu, Ari Holtzman, et al. 2022. <span>“Rethinking the
+Role of Demonstrations: What Makes in-Context Learning Work?”</span>
+<em>Proceedings of the 2022 Conference on Empirical Methods in Natural
+Language Processing (EMNLP)</em>.
+</div>
 <div id="ref-modarressi2025nolima" class="csl-entry" role="listitem">
 Modarressi, Ali, Hanieh Deilamsalehy, Franck Dernoncourt, et al. 2025.
 <span>“NoLiMa: Long-Context Evaluation Beyond Literal Matching.”</span>
 <em>arXiv Preprint arXiv:2502.05167</em>.
 </div>
+<div id="ref-muennighoff2023mteb" class="csl-entry" role="listitem">
+Muennighoff, Niklas, Nouamane Tazi, Loïc Magne, and Nils Reimers. 2023.
+<em>MTEB: Massive Text Embedding Benchmark</em>. <a href="https://arxiv.org/abs/2210.07316">https://arxiv.org/abs/2210.07316</a>.
+</div>
+<div id="ref-opsahlong2024mipro" class="csl-entry" role="listitem">
+Opsahl-Ong, Krista, Michael J. Ryan, Josh Purtell, et al. 2024.
+<span>“Optimizing Instructions and Demonstrations for Multi-Stage
+Language Model Programs.”</span> <em>Proceedings of the 2024 Conference
+on Empirical Methods in Natural Language Processing (EMNLP)</em>.
+</div>
 <div id="ref-ouyang2022instructgpt" class="csl-entry" role="listitem">
 <span class="nocase">Ouyang, Long et al.</span> 2022. <span>“Training
 Language Models to Follow Instructions with Human Feedback.”</span>
 <em>Advances in Neural Information Processing Systems</em>.
+</div>
+<div id="ref-packer2023memgpt" class="csl-entry" role="listitem">
+<span class="nocase">Packer, Charles et al.</span> 2023.
+<span>“<span>MemGPT</span>: Towards <span>LLMs</span> as Operating
+Systems.”</span> <em>arXiv Preprint arXiv:2310.08560</em>.
 </div>
 <div id="ref-peng2023yarn" class="csl-entry" role="listitem">
 Peng, Bowen, Jeffrey Quesnelle, Honglu Fan, and Enrico Shippole. 2023.
@@ -754,6 +992,16 @@ Radford, Alec, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, and
 Ilya Sutskever. 2019. <span>“Language Models Are Unsupervised Multitask
 Learners.”</span> <em>OpenAI Technical Report</em>.
 </div>
+<div id="ref-rasmussen2024zep" class="csl-entry" role="listitem">
+<span class="nocase">Rasmussen, Preston et al.</span> 2025.
+<span>“<span>Zep</span>: A Temporal Knowledge Graph Architecture for
+Agent Memory.”</span> <em>arXiv Preprint arXiv:2501.13956</em>.
+</div>
+<div id="ref-robertson2009bm25" class="csl-entry" role="listitem">
+Robertson, Stephen, and Hugo Zaragoza. 2009. <span>“The Probabilistic
+Relevance Framework: BM25 and Beyond.”</span> <em>Foundations and Trends
+in Information Retrieval</em> 3 (4): 333–89.
+</div>
 <div id="ref-sennrich2016neural" class="csl-entry" role="listitem">
 Sennrich, Rico, Barry Haddow, and Alexandra Birch. 2016. <span>“Neural
 Machine Translation of Rare Words with Subword Units.”</span>
@@ -768,20 +1016,65 @@ All You Need.”</span> <em>arXiv Preprint arXiv:1911.02150</em>.
 Shazeer, Noam. 2020. <span>“GLU Variants Improve Transformer.”</span>
 <em>arXiv Preprint arXiv:2002.05202</em>.
 </div>
+<div id="ref-shinn2023reflexion" class="csl-entry" role="listitem">
+<span class="nocase">Shinn, Noah et al.</span> 2023. <span>“Reflexion:
+Language Agents with Verbal Reinforcement Learning.”</span> <em>Advances
+in Neural Information Processing Systems</em>.
+</div>
+<div id="ref-simmons2011falsepositive" class="csl-entry" role="listitem">
+Simmons, Joseph P., Leif D. Nelson, and Uri Simonsohn. 2011.
+<span>“False-Positive Psychology: Undisclosed Flexibility in Data
+Collection and Analysis Allows Presenting Anything as
+Significant.”</span> <em>Psychological Science</em> 22 (11).
+</div>
+<div id="ref-smith1980contractnet" class="csl-entry" role="listitem">
+Smith, Reid G. 1980. <span>“The Contract Net Protocol: High-Level
+Communication and Control in a Distributed Problem Solver.”</span>
+<em>IEEE Transactions on Computers</em> C-29 (12): 1104–13.
+</div>
 <div id="ref-su2021roformer" class="csl-entry" role="listitem">
 Su, Jianlin, Yu Lu, Shengfeng Pan, Ahmed Murtadha, Bo Wen, and Yunfeng
 Liu. 2021. <span>“RoFormer: Enhanced Transformer with Rotary Position
 Embedding.”</span> <em>arXiv Preprint arXiv:2104.09864</em>.
+</div>
+<div id="ref-sumers2023coala" class="csl-entry" role="listitem">
+Sumers, Theodore R., Shunyu Yao, Karthik Narasimhan, and Thomas L.
+Griffiths. 2023. <span>“Cognitive Architectures for Language
+Agents.”</span> <em>arXiv Preprint arXiv:2309.02427</em>.
+</div>
+<div id="ref-tam2024letmespeak" class="csl-entry" role="listitem">
+Tam, Zhi Rui, Cheng-Kuang Wu, Yi-Lin Tsai, Chieh-Yen Lin, Hung-yi Lee,
+and Yun-Nung Chen. 2024. <em>Let Me Speak Freely? A Study on the Impact
+of Format Restrictions on Performance of Large Language Models</em>. <a href="https://arxiv.org/abs/2408.02442">https://arxiv.org/abs/2408.02442</a>.
+</div>
+<div id="ref-dottxt2024saywhatyoumean" class="csl-entry" role="listitem">
+<span class="nocase">.txt team</span>. 2024. <em>Say What You Mean: A
+Response to <span>“Let Me Speak Freely”</span></em>. <a href="https://blog.dottxt.co/say-what-you-mean.html" class="uri">Https://blog.dottxt.co/say-what-you-mean.html</a>.
 </div>
 <div id="ref-vaswani2017attention" class="csl-entry" role="listitem">
 <span class="nocase">Vaswani, Ashish et al.</span> 2017.
 <span>“Attention Is All You Need.”</span> <em>Advances in Neural
 Information Processing Systems</em>.
 </div>
+<div id="ref-wang2023voyager" class="csl-entry" role="listitem">
+<span class="nocase">Wang, Guanzhi et al.</span> 2023. <span>“Voyager:
+An Open-Ended Embodied Agent with Large Language Models.”</span>
+<em>arXiv Preprint arXiv:2305.16291</em>.
+</div>
+<div id="ref-willard2023outlines" class="csl-entry" role="listitem">
+Willard, Brandon T., and Rémi Louf. 2023. <em>Efficient Guided
+Generation for Large Language Models</em>. <a href="https://arxiv.org/abs/2307.09702">https://arxiv.org/abs/2307.09702</a>.
+</div>
 <div id="ref-williams2009roofline" class="csl-entry" role="listitem">
 Williams, Samuel, Andrew Waterman, and David Patterson. 2009.
 <span>“Roofline: An Insightful Visual Performance Model for Multicore
 Architectures.”</span> <em>Communications of the ACM</em>.
+</div>
+<div id="ref-wu2024longmemeval" class="csl-entry" role="listitem">
+<span class="nocase">Wu, Di et al.</span> 2024.
+<span>“<span>LongMemEval</span>: Benchmarking Chat Assistants on
+Long-Term Interactive Memory.”</span> <em>arXiv Preprint
+arXiv:2410.10813</em>.
 </div>
 <div id="ref-xiao2024streaming" class="csl-entry" role="listitem">
 Xiao, Guangxuan, Yuandong Tian, Beidi Chen, Song Han, and Mike Lewis.
@@ -789,10 +1082,55 @@ Xiao, Guangxuan, Yuandong Tian, Beidi Chen, Song Han, and Mike Lewis.
 Sinks.”</span> <em>International Conference on Learning
 Representations</em>.
 </div>
+<div id="ref-yan2024crag" class="csl-entry" role="listitem">
+Yan, Shi-Qi, Jia-Chen Gu, Yun Zhu, and Zhen-Hua Ling. 2024.
+<span>“Corrective Retrieval Augmented Generation.”</span> <em>arXiv
+Preprint arXiv:2401.15884</em>.
+</div>
+<div id="ref-yang2024sweagent" class="csl-entry" role="listitem">
+Yang, John, Carlos E. Jimenez, Alexander Wettig, et al. 2024.
+<span>“<span class="nocase">SWE-agent</span>: Agent-Computer Interfaces
+Enable Automated Software Engineering.”</span> <em>Advances in Neural
+Information Processing Systems</em>.
+</div>
+<div id="ref-yao2023react" class="csl-entry" role="listitem">
+<span class="nocase">Yao, Shunyu et al.</span> 2023. <span>“ReAct:
+Synergizing Reasoning and Acting in Language Models.”</span>
+<em>International Conference on Learning Representations</em>.
+</div>
+<div id="ref-yao2024taubench" class="csl-entry" role="listitem">
+<span class="nocase">Yao, Shunyu et al.</span> 2024. <span>“<span class="nocase"><span class="math inline"><em>τ</em></span>-bench</span>:
+A Benchmark for Tool-Agent-User Interaction in Real-World
+Domains.”</span> <em>arXiv Preprint arXiv:2406.12045</em>.
+</div>
 <div id="ref-zhang2019rmsnorm" class="csl-entry" role="listitem">
 Zhang, Biao, and Rico Sennrich. 2019. <span>“Root Mean Square Layer
 Normalization.”</span> <em>Advances in Neural Information Processing
 Systems</em>.
+</div>
+<div id="ref-zhang2025ace" class="csl-entry" role="listitem">
+<span class="nocase">Zhang, Qizheng et al.</span> 2025. <span>“Agentic
+Context Engineering: Evolving Contexts for Self-Improving Language
+Models.”</span> <em>arXiv Preprint arXiv:2510.04618</em>.
+</div>
+<div id="ref-zheng2024helpful" class="csl-entry" role="listitem">
+Zheng, Mingqian, Jiaxin Pei, Lajanugen Logeswaran, Moontae Lee, and
+David Jurgens. 2024. <span>“When <span>‘a Helpful Assistant’</span> Is
+Not Really Helpful: Personas in System Prompts Do Not Improve
+Performances of Large Language Models.”</span> <em>Findings of the
+Association for Computational Linguistics: EMNLP 2024</em>.
+</div>
+<div id="ref-zhou2024webarena" class="csl-entry" role="listitem">
+<span class="nocase">Zhou, Shuyan et al.</span> 2024.
+<span>“<span>WebArena</span>: A Realistic Web Environment for Building
+Autonomous Agents.”</span> <em>International Conference on Learning
+Representations</em>.
+</div>
+<div id="ref-zou2024poisonedrag" class="csl-entry" role="listitem">
+Zou, Wei, Runpeng Geng, Binghui Wang, and Jinyuan Jia. 2025.
+<span>“PoisonedRAG: Knowledge Corruption Attacks to Retrieval-Augmented
+Generation of Large Language Models.”</span> <em>USENIX Security
+Symposium</em>.
 </div>
 </div>
 
