@@ -1,0 +1,125 @@
+project:
+  type: book
+  output-dir: _book
+  execute-dir: project
+
+book:
+  title: "Agentic Engineering at Scale"
+  subtitle: "From neural networks to dependable agent systems"
+  author: "Omkar Sarde"
+  date: last-modified
+  search:
+    location: sidebar
+    type: overlay
+  page-navigation: true
+  reader-mode: true
+  sharing: [linkedin, twitter]
+  page-footer:
+    left: "Built as an open, executable textbook."
+    right: "Durable mechanisms in the spine; dated facts in Appendix C."
+  chapters:
+    - index.qmd
+    - preface.qmd
+
+    - part: "Part I — The On-Ramp and Model Foundations"
+      chapters:
+        - chapters/01-operational-on-ramp.qmd
+        - chapters/02-transformer-first-principles.qmd
+        - chapters/03-attention-position-long-context.qmd
+        - chapters/04-moe-efficient-architectures.qmd
+
+    - part: "Part II — Training and Post-Training"
+      chapters:
+        - chapters/05-scaling-laws-pretraining-data.qmd
+        - chapters/06-distributed-frontier-training.qmd
+        - chapters/07-post-training.qmd
+        - chapters/08-reasoning-test-time-compute.qmd
+
+    - part: "Part III — Inference, Serving, and Customization"
+      chapters:
+        - chapters/09-inference-behavior.qmd
+        - chapters/10-serving-at-scale.qmd
+        - chapters/11-customization.qmd
+
+    - part: "Part IV — Programming with Models and Retrieval"
+      chapters:
+        - chapters/12-api-surface.qmd
+        - chapters/13-prompting-context-engineering.qmd
+        - chapters/14-embeddings-rag.qmd
+        - chapters/15-agentic-retrieval.qmd
+
+    - part: "Part V — Building Agents"
+      chapters:
+        - chapters/16-agent-anatomy.qmd
+        - chapters/17-tool-harness-engineering.qmd
+        - chapters/18-memory-experiential-learning.qmd
+        - chapters/19-protocols-frameworks.qmd
+        - chapters/20-multi-agent-systems.qmd
+        - chapters/21-agent-applications.qmd
+
+    - part: "Part VI — Evaluation, Agent RL, Security, and Governance"
+      chapters:
+        - chapters/22-evaluation.qmd
+        - chapters/23-training-agents-rl.qmd
+        - chapters/24-agent-security.qmd
+        - chapters/25-alignment-interpretability-governance.qmd
+
+    - part: "Part VII — Production, Operations, and Organizations"
+      chapters:
+        - chapters/26-production-platform.qmd
+        - chapters/27-operating-agents.qmd
+        - chapters/28-products-people-organizations.qmd
+
+    - part: "Part VIII — The Frontier and the Capstone"
+      chapters:
+        - chapters/29-multimodal-vlm-documents-gui.qmd
+        - chapters/30-multimodal-voice-video-media.qmd
+        - chapters/31-world-models-vla-embodied.qmd
+        - chapters/32-capstone.qmd
+
+  appendices:
+    - appendices/a-bridge.qmd
+    - appendices/b-artifacts-workbook.qmd
+    - appendices/c-landscape-2026.qmd
+    - references.qmd
+
+bibliography: references.bib
+
+crossref:
+  chapters: true
+  fig-title: "Figure"
+  tbl-title: "Table"
+  lst-title: "Listing"
+
+format:
+  html:
+    theme:
+      light: [cosmo, styles.scss]
+      dark: [darkly, styles.scss]
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-copy: true
+    code-overflow: wrap
+    code-link: true
+    anchor-sections: true
+    smooth-scroll: true
+    lightbox: true
+    fig-format: svg
+    html-math-method: katex
+  pdf:
+    documentclass: scrreprt
+    toc: true
+    number-sections: true
+    colorlinks: true
+    keep-tex: false
+  epub:
+    toc: true
+
+execute:
+  freeze: auto
+  cache: true
+  echo: true
+  warning: false
+
+lang: en

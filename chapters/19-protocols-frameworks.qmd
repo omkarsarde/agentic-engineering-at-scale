@@ -1,0 +1,471 @@
+---
+description: "Separate interoperability protocols from orchestration frameworks, build one MCP surface for two hosts, and preserve authorization, state, UI, and migration boundaries."
+---
+
+# Protocols and Frameworks: MCP, A2A, and Agent↔UI [S] {#sec-ch19}
+
+## What you need going in
+
+> **Assumed:** HTTP, JSON, typed APIs, OAuth concepts, processes, and state machines.
+>
+> **From earlier chapters:** [Chapter 16](16-agent-anatomy.qmd) supplies the proposal–gate–execute–observe kernel. [Chapter 17](17-tool-harness-engineering.qmd) owns tool contracts, workspaces, and approval binding. [Chapter 18](18-memory-experiential-learning.qmd) separates cross-session memory from run state.
+>
+> **Not required:** prior MCP, A2A, AG-UI, LangGraph, or provider SDK experience. The chapter teaches the abstraction boundaries before any framework syntax.
+
+## Contents
+
+- [Protocols stabilize boundaries; frameworks own control flow](#sec-ch19-boundaries)
+- [MCP architecture, primitives, and lifecycle](#sec-ch19-mcp)
+- [Design an interoperable MCP server](#sec-ch19-server)
+- [Authorize MCP without creating a confused deputy](#sec-ch19-security)
+- [A2A, task lifecycles, and protocol convergence](#sec-ch19-a2a)
+- [Agent↔UI events and safe generative interfaces](#sec-ch19-ui)
+- [Graph state, checkpointers, interrupts, and time travel](#sec-ch19-graphs)
+- [Select a framework without surrendering the architecture](#sec-ch19-selection)
+- [Build](#sec-ch19-build)
+- [What endures, what changes](#sec-ch19-endures)
+- [Exercises](#sec-ch19-exercises)
+- [Notes and sources](#sec-ch19-sources)
+
+## What you will build
+
+::: {.callout-tip}
+### One protocol seam, two orchestration hosts
+
+The artifact under `code/ch19/` exposes a refund-policy resource and two typed tools through a JSON-RPC-shaped protocol seam. A model-driven loop host and an explicit graph host discover and call the same surface. The graph pauses at a review interrupt, checkpoints state, resumes, and reaches the same domain outcome as the loop. A wrong-audience token is rejected and a replayed write returns the same receipt.
+
+`mcp_server.py` is a thin adapter for the official Python MCP SDK. The deterministic fixture tests the domain and protocol contract in process, so it remains runnable without a network, model key, or live host.
+:::
+
+## Protocols stabilize boundaries; frameworks own control flow {#sec-ch19-boundaries}
+
+An agent platform connects several independently changing systems: models, tools, data sources, remote agents, user interfaces, identity providers, and durable runtimes. If one framework’s object model becomes the contract between all of them, every upgrade becomes a migration of the entire platform.
+
+A **protocol** defines what crosses a boundary. A **framework** helps implement behavior on one side of that boundary.
+
+- MCP standardizes exchanges between an AI host and context or capability servers.
+- A2A standardizes exchanges with a remote, potentially opaque agent.
+- An agent–UI event protocol standardizes what a frontend observes, renders, and sends back.
+- A graph or agent SDK implements control flow, state reduction, model calls, and interrupts inside an application.
+
+These concerns can coexist. They are not alternatives in one product comparison.
+
+```{mermaid}
+%%| label: fig-ch19-boundaries
+%%| fig-cap: "Which contract should remain stable when an orchestration framework changes?"
+flowchart LR
+    UI["web / mobile UI"] <-->|"run, message, state, tool events"| Host["agent host"]
+    Host <-->|"MCP: tools, resources, prompts"| Server["capability servers"]
+    Host <-->|"A2A: messages, tasks, artifacts"| Remote["remote agent systems"]
+    subgraph Application["Replaceable application internals"]
+      Host --> Runtime["loop, graph, or workflow runtime"]
+      Runtime --> Model["model adapter"]
+      Runtime --> State["checkpointer / event store"]
+    end
+    Server --> APIs["domain APIs and data"]
+    Remote --> Other["other models, tools, and workflows"]
+```
+
+The design test is substitution. Can a second host use the same capability server? Can the application swap a model-driven loop for a graph without rewriting domain authorization? Can the frontend reconnect and rebuild state without importing a Python runtime object? Can a remote agent be replaced without revealing its internal prompts or memory?
+
+Protocols do not remove application responsibility. MCP can describe a tool; it does not decide whether the current user may call it. A2A can represent a task; it does not prove the remote agent is competent or trustworthy. An event stream can display a proposed action; it does not make the proposal safe. The host still owns policy, context assembly, user consent, observability, and the final mapping from protocol objects into model-visible content.
+
+Frameworks remain valuable. They supply reducers, retries, tracing, streaming, checkpoint adapters, graph scheduling, and model integrations. The mistake is allowing convenient framework classes to become durable business interfaces. Define small application-owned ports—`Model`, `ToolRegistry`, `CheckpointStore`, `EventSink`, `PolicyDecision`—and adapt the framework around them.
+
+A protocol also has a version lifecycle. Messages that happen to serialize as JSON are not automatically interoperable. The parties must agree on a revision, capabilities, optional extensions, error semantics, and transport behavior. Persist the negotiated revision in traces. Reject an unknown major or incompatible date instead of quietly interpreting fields under the wrong contract.
+
+## MCP architecture, primitives, and lifecycle {#sec-ch19-mcp}
+
+The [Model Context Protocol architecture](https://modelcontextprotocol.io/docs/learn/architecture) names three roles:
+
+1. The **host** is the AI application. It owns the user relationship, model, permissions, context, and consent surface.
+2. An **MCP client** is the host-side protocol component for one server connection.
+3. An **MCP server** exposes bounded capabilities or context. It may run as a local process over standard input/output or remotely over HTTP.
+
+A host can manage many clients; each client connects the host to one server. This prevents a server from receiving the full conversation or learning about other servers unless the host deliberately sends that information.
+
+```{mermaid}
+%%| label: fig-ch19-mcp-architecture
+%%| fig-cap: "Where do MCP trust, context, and capability boundaries sit?"
+flowchart TB
+    User["user"] --> Host["MCP host\nmodel + consent + context policy"]
+    subgraph HostProcess["host boundary"]
+      Host --> C1["client A"]
+      Host --> C2["client B"]
+      Registry["namespaced tool/resource registry"] --> Host
+    end
+    C1 <-->|"stdio"| Local["local filesystem server"]
+    C2 <-->|"streamable HTTP"| Remote["remote support server"]
+    Local --> Files[("granted workspace")]
+    Remote --> Gateway["domain authorization + API"]
+    Gateway --> Data[("tenant data")]
+    Local -. no ambient access .-> Data
+    Remote -. receives selected requests, not whole thread .-> Host
+```
+
+MCP’s server-side primitives express three different relationships:
+
+| Primitive | Purpose | Typical control | Representative method |
+|---|---|---|---|
+| Tool | Execute a typed operation | Model proposes; host gates | `tools/list`, `tools/call` |
+| Resource | Read addressable context | Application selects | `resources/list`, `resources/read` |
+| Prompt | Retrieve a reusable interaction template | User or host selects | `prompts/list`, `prompts/get` |
+
+Tools are not a license for arbitrary code. Their names, descriptions, JSON Schemas, annotations, results, errors, and side-effect semantics are part of the interface taught in Chapter 17. Resources use URIs and media types so the host can decide whether and how to place content into context. Prompts distribute templates; the host must still merge them under its own instruction hierarchy.
+
+The protocol also supports client-side capabilities. A server may request model sampling, user elicitation, or logging when the client declared support. This reverses the usual call direction, so the host must treat each request as a new policy decision. A server asking the host to sample is not allowed to smuggle arbitrary system instructions or spend unbounded tokens.
+
+In the stable 2025-11-25 revision used by this chapter’s fixture, a connection begins with initialization: version negotiation, capability exchange, implementation metadata, and readiness. Discovery follows, then resource reads or tool calls. Requests have correlation identifiers; notifications do not expect a response. Streamable HTTP and standard I/O carry the same data-layer meanings but have different identity, logging, and process-isolation concerns.
+
+The lifecycle can be read as five gates: negotiate a revision and capabilities; discover the permitted surface; select only relevant definitions for model context; treat the model call as a proposal subject to host policy; then route the approved call and return a bounded observation. The server reauthorizes the operation even though the host already gated it. A denial or approval interrupt ends the path before execution.
+
+Keep transport failures, protocol errors, tool-domain errors, and model-visible observations distinct. A disconnected server may be retryable. `-32602`-class invalid parameters indicate a contract mismatch. “Order not eligible” is a valid domain result. Dumping all three into a string called `error` forces the model to invent retry policy.
+
+::: {.callout-note .landscape-2026}
+### Landscape 2026 — MCP is crossing a revision boundary
+
+Verified **2026-07-19**: the current stable protocol line is 2025-11-25. The official MCP project has published a `2026-07-28` release candidate centered on a stateless core and independently negotiated extensions; Tasks and MCP Apps are part of that evolution. The [official Python SDK repository](https://github.com/modelcontextprotocol/python-sdk) still labels v1.x as stable while v2 is prerelease. This book therefore pins `mcp>=1.27,<2` and keeps the SDK adapter thin.
+
+Server metadata, registries, task wrappers, UI extensions, deprecated primitives, and lifecycle details are moving. **Verify live:** check the [official specification](https://modelcontextprotocol.io/specification/2025-11-25), SDK migration guide, negotiated revision, and host support matrix before deploying or upgrading.
+:::
+
+The enduring implementation rule is revision-aware behavior. Do not infer “latest,” and do not make a session handshake, a stateless request, or an extension available merely because one side knows its type. Negotiate or configure the contract explicitly and test both sides at the pinned boundary.
+
+## Design an interoperable MCP server {#sec-ch19-server}
+
+An MCP server should be a protocol adapter around domain services, not the new home of business logic. This keeps domain authorization, transactions, tests, and idempotency usable from a web API, background job, or future protocol.
+
+Design from the resource and action model:
+
+- Use a **resource** when the caller needs addressable, cacheable context and the host should decide whether to read it.
+- Use a **tool** when the caller requests computation or an effect.
+- Use a **prompt** when distributing an optional workflow template creates value across hosts.
+- Use an asynchronous task facility only when the operation truly outlives the request; it is not a substitute for ordinary application state.
+
+Give each tool one domain decision. Specify required and optional fields using supported JSON Schema features, add titles and descriptions that distinguish nearby tools, and make results machine-readable. Return stable resource versions, receipts, or artifact URIs. Put large payloads behind resources instead of flooding the next model turn.
+
+Names need server context. Two connected servers may both expose `search`. The host should retain server identity and namespace internally, even if it presents a friendlier label to the model. Tool changes need compatibility rules: additive optional fields are easier than repurposing an existing field; changed effect semantics deserve a new version or name.
+
+The chapter’s live adapter is intentionally thin:
+
+```python
+# mcp_server.py — the official SDK decorates application-owned handlers
+service = SupportServer()
+mcp = FastMCP("support-contracts", json_response=True)
+
+@mcp.resource("policy://refund/current")
+def current_refund_policy() -> str:
+    """Read the current refund policy resource."""
+    return service.read_resource(
+        "policy://refund/current", principal
+    )["contents"][0]["text"]
+
+@mcp.tool()
+def policy_lookup(topic: str) -> dict:
+    """Read the current refund policy for the authenticated tenant."""
+    return service.call_tool(
+        "policy_lookup", {"topic": topic}, principal
+    )["structuredContent"]
+```
+
+The local `principal` exists only to keep the offline example compact. A remote deployment obtains identity from a validated access token and request context. A standard-I/O server normally inherits a deliberately restricted environment and filesystem grants from its launching host. Neither transport should accept `tenant_id` or `user_role` from model-generated tool arguments as proof of identity.
+
+Test the server at three layers:
+
+1. **Domain tests** call handlers directly and cover transactions, invariants, idempotency, and tenancy.
+2. **Protocol conformance tests** initialize, discover, read, call, cancel where supported, and assert typed errors against a pinned SDK/spec revision.
+3. **Host compatibility tests** connect at least two real hosts or reference clients and compare discovery, content rendering, approvals, streaming, and failure behavior.
+
+The MCP Inspector helps manual development; it does not replace automated contracts. Record golden protocol transcripts with volatile identifiers normalized. Fuzz JSON Schema boundaries, oversized content, pagination cursors, duplicate request identifiers, cancellations, disconnects, and notifications arriving during a call.
+
+Discovery is a supply-chain boundary. The [official MCP Registry](https://modelcontextprotocol.io/registry/about) stores standardized public server metadata and namespace ownership; it does not certify that every published server is safe for a particular organization. Enterprise gateways should maintain an allowlist, pin package or endpoint identity, scan artifacts, attach owners and risk tiers, and expose different catalogs by tenant and role. Private registries should not leak internal capability descriptions through unauthenticated search.
+
+Server deployment follows ordinary service engineering. Remote servers need TLS, authentication, authorization, rate limits, tenancy isolation, timeouts, backpressure, bounded results, audit logs, health checks, and version rollouts. Local servers need package integrity, a minimal environment, process isolation, filesystem and network grants, output discipline, and cleanup. For standard I/O, application logs go to standard error; writing logs to standard output corrupts the protocol stream.
+
+## Authorize MCP without creating a confused deputy {#sec-ch19-security}
+
+MCP authorization protects the boundary between a host acting for a user and a resource server exposing tools or data. It does not turn model intent into user authority. The host authenticates the human or workload, obtains a token for the intended MCP resource, and asks the server to perform a specific operation. The server validates the token and independently authorizes that operation.
+
+The current [MCP authorization specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization) builds on OAuth, protected-resource metadata, authorization-server discovery, PKCE for public clients, resource indicators, and incremental scopes. For production, use maintained identity libraries rather than implementing signature verification or OAuth flows inside an agent framework.
+
+```{mermaid}
+%%| label: fig-ch19-mcp-security
+%%| fig-cap: "How do resource-bound tokens prevent an MCP proxy from becoming a confused deputy?"
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant H as MCP host/client
+    participant AS as Authorization server
+    participant S as MCP resource server
+    participant D as Downstream API
+    H->>S: request without sufficient token
+    S-->>H: protected-resource metadata + scope challenge
+    H->>U: identify client, resource, and requested scope
+    U-->>H: consent
+    H->>AS: authorization + PKCE + resource=S
+    AS-->>H: short-lived token, audience=S
+    H->>S: tools/call + token
+    S->>S: validate issuer, signature, audience, expiry, scope, tenant
+    S->>D: server's own downstream credential + delegated context
+    D-->>S: result
+    S-->>H: bounded result + audit correlation
+    Note over H,D: Never pass the user's S-audience token through to D
+```
+
+Validate at least issuer, signature, audience/resource, expiry, not-before time, required scope, subject, client, and tenant binding. The chapter fixture makes the audience check visible: a token issued for `inventory://api` cannot list tools at `support://mcp`, even if it carries similarly named scopes.
+
+**Token passthrough** is forbidden because the server would accept or forward a token not issued for it. This erases audience boundaries and audit attribution. If an MCP server calls a downstream API, it acts as an OAuth client for that API or uses a formal token-exchange/delegation mechanism. It does not relay an opaque user token and hope the downstream service interprets it safely.
+
+A **confused deputy** appears when a proxy with legitimate downstream power is tricked into using it for an unapproved client. Bind consent to the requesting client, exact redirect URI, user, downstream scopes, and MCP resource. Recheck these bindings on callback. Separate the proxy’s downstream credentials from host tokens and preserve end-user attribution in an application-controlled form.
+
+Protocol-specific supply-chain attacks need controls beyond OAuth:
+
+- **Tool poisoning:** a description or resource contains instructions to reveal secrets or call another tool. Treat all server content as untrusted data and keep policy outside it.
+- **Rug pull:** a server changes a tool after review. Pin identity and schema/version, monitor discovery changes, and require reapproval for authority-expanding diffs.
+- **Tool shadowing:** two servers use confusing names or one description claims authority over another. Preserve namespaces and do not let servers define cross-server policy.
+- **Local-server escalation:** a package runs with the host’s ambient privileges. Sandbox the process and grant filesystem, network, and credentials explicitly.
+- **SSRF through discovery or authorization metadata:** validate URLs, redirects, DNS/IP destinations, and HTTPS policy in server-side clients.
+
+An MCP gateway can centralize discovery, token validation, schema policy, rate limits, data-loss controls, approvals, and audit. It must not become an invisible superuser. Preserve caller identity, target server, original tool, exact arguments, and decision evidence end to end. Apply permission filtering before tool descriptions enter the model’s context.
+
+Chapter 24 embeds these controls in the broader agent threat model. The canonical MCP lesson here is narrower: protocol interoperability never implies transitive trust, and authorization is checked at the resource server for every operation.
+
+## A2A, task lifecycles, and protocol convergence {#sec-ch19-a2a}
+
+MCP connects a host to capabilities. A2A connects one application to a remote **agentic system** whose internal model, tools, memory, and workflow may remain opaque. The remote party may ask for clarification, work asynchronously, stream artifacts, or fail after partial progress. Treating it as one tool call loses that lifecycle.
+
+The [A2A specification](https://a2a-protocol.org/latest/specification/) centers several objects:
+
+| Object | Role |
+|---|---|
+| Agent Card | Discover identity, interfaces, capabilities, skills, and security schemes |
+| Message | One user- or agent-authored turn containing typed parts |
+| Task | A stateful unit of work with a server-issued identity and lifecycle |
+| Artifact | A typed output assembled from parts |
+| Context | A grouping identifier across related messages or tasks |
+| Extension | Negotiated behavior outside the core |
+
+An Agent Card is capability metadata, not a credential or trust certificate. Fetch it from an authenticated or well-known location, verify signatures when provided, cache it with ordinary HTTP semantics, and protect extended cards that reveal sensitive internal skills. Never embed static secrets in the card. Registry search or semantic matching can propose a remote agent; policy decides whether it is an allowed delegate.
+
+A task may progress through submitted, working, input-required, completed, failed, canceled, or rejected states, depending on the negotiated revision. Clients can poll, receive a stream, or use authenticated push notifications. Preserve task and context identifiers so reconnecting does not create duplicate work. A terminal task should not silently accept another message as if it were the same execution.
+
+Delegation needs a **task brief**: objective, relevant evidence, constraints, allowed data, required output schema, deadline, budget, and success predicate. Send the minimum context. Do not forward the parent agent’s hidden instructions, unrelated conversation, ambient credentials, or full memory. When the remote agent returns an artifact, validate its media type, schema, provenance, and content before it enters context or triggers tools.
+
+MCP and A2A can compose. A remote agent exposed through A2A may use MCP servers internally. A host may wrap a simple A2A task as a model-visible tool. The semantic boundary still matters: an MCP tool result is normally a bounded operation result; an A2A task has independent state, messages, artifacts, and cancellation.
+
+Long-running MCP task extensions and A2A tasks may look similar because both represent asynchronous work. Choose by ownership. Use the capability protocol’s task wrapper when one server operation needs deferred completion. Use A2A when delegating to an independently operated agent whose task conversation and artifacts are first-class.
+
+Agentic payment protocols add another boundary: intent, mandate, quote, authorization, fulfillment, and receipt must be distinct objects. A model may propose a purchase or negotiate a quote; a trusted application binds payer identity, limits, merchant, asset, amount, expiry, and approval. Protocol names in this area are changing quickly. Preserve those economic invariants instead of granting a remote agent a reusable payment secret.
+
+Across protocol boundaries, use correlation and provenance that survive translation: parent run, delegation task, tool call, authorization decision, external effect, and returned artifact. Without that chain, a final answer can cite an artifact but operations cannot determine which remote action produced it.
+
+## Agent↔UI events and safe generative interfaces {#sec-ch19-ui}
+
+A chat frontend needs more than token streaming once an agent can plan, call tools, pause, delegate, edit shared state, and produce interactive artifacts. The UI must know whether text is provisional, which tool call it belongs to, what the run awaits, and whether a reconnect requires a full snapshot.
+
+An event protocol should represent:
+
+- run start, finish, cancellation, and error;
+- message start, content deltas, and message end;
+- tool-call identity, streamed arguments, result, and status;
+- full state snapshots and ordered deltas;
+- activities, subagent progress, artifacts, and citations;
+- interrupts and user responses;
+- correlation, sequence, schema version, and parent identifiers.
+
+The [AG-UI event model](https://docs.ag-ui.com/concepts/events) is a useful current example: start–content–end event families for streaming content, and snapshot–delta patterns for synchronized state. The stable design lesson is transport-independent. Events are an appendable observation contract; frontend components derive views from them.
+
+```{mermaid}
+%%| label: fig-ch19-ui-trust
+%%| fig-cap: "How can a frontend stay expressive without executing model-generated authority?"
+flowchart LR
+    Agent["agent runtime"] --> Events["typed, ordered event stream"]
+    Events --> Validate["schema + run/sequence validation"]
+    Validate --> Project["frontend state projector"]
+    Project --> Catalog{"trusted component catalog"}
+    Catalog -->|known component + validated props| Render["sandboxed rendering"]
+    Catalog -->|unknown HTML/script/action| Reject["reject + safe fallback"]
+    User["user gesture"] --> Intent["typed UI intent"]
+    Intent --> HostGate["host auth, policy, approval"]
+    HostGate -->|proposal accepted| Runtime["agent/tool runtime"]
+    HostGate -->|denied| Project
+    Render -. cannot call domain API directly .-> HostGate
+```
+
+State synchronization needs recovery. Send a complete snapshot at connection or resynchronization, then ordered deltas. Give each event a stable run identifier and monotonic sequence within its stream. The frontend detects gaps or incompatible schema versions and requests a new snapshot rather than applying patches to unknown state. Make handlers idempotent so reconnect replay does not duplicate messages or approvals.
+
+Frontend tools reverse the direction: a remote agent may ask the UI to focus a panel, collect a form, or render a chart. A model request is still a proposal. The host maps a declared tool name to a trusted component or intent handler and validates every property. Unknown components, inline script, arbitrary URLs, event-handler source, and unrestricted CSS are rejected.
+
+**Generative UI** should generate data and layout within a component grammar, not executable application code by default. A trusted catalog might allow `PolicyCard`, `DataTable`, and `ApprovalForm` with bounded props. The approval form displays an application-owned preview of an exact action; clicking it sends a typed decision back through the host’s authorization path. The rendered component never holds a payment token or invokes the effect directly.
+
+MCP Apps can deliver server-provided interactive interfaces inside supporting hosts. The same trust questions apply with a sharper sandbox boundary: predeclare the UI resource, sandbox the iframe, constrain messaging, validate tool calls at the host, apply content-security policy, and do not treat server origin as automatic permission. Host support and extension versions belong in the dated landscape, not in the application’s core state model.
+
+Separate **display state** from **authoritative state**. The UI can optimistically show that an approval was submitted; the source of truth is the signed decision event and later effect receipt. On reconnect, rebuild from server state. Never let a client-side “completed” badge become evidence that an external action committed.
+
+Test event streams with fragmented deltas, reordered or duplicated events, disconnects, stale snapshots, two concurrent tool calls, nested subagents, canceled runs, malformed component props, and a user response arriving after an interrupt expired. Accessibility is part of the component contract: focus, labels, keyboard actions, and readable status changes cannot depend on model-generated prose.
+
+## Graph state, checkpointers, interrupts, and time travel {#sec-ch19-graphs}
+
+Framework checkpointers belong with orchestration because they persist the runtime’s explicit state between graph steps. They are not the cross-session memory of Chapter 18 and not the durable external-effect ledger of Chapter 26.
+
+A graph runtime represents nodes, edges, state, and reducers. A node reads one state snapshot and emits an update. Conditional edges select the next node. Reducers define how parallel updates combine. A thread identifier selects one checkpoint history. This makes control flow inspectable and places pauses at named states rather than inside an opaque `while` loop.
+
+```{mermaid}
+%%| label: fig-ch19-graph-state
+%%| fig-cap: "What does a graph checkpoint preserve, and what happens when execution resumes or forks?"
+stateDiagram-v2
+    [*] --> Discover
+    Discover --> Lookup: save checkpoint 1
+    Lookup --> Review: save checkpoint 2
+    Review --> Paused: interrupt exact proposal
+    Paused --> Tag: resume(approved)
+    Paused --> Rejected: resume(rejected)
+    Tag --> Finish: tool receipt + checkpoint 3
+    Review --> ForkedReview: fork checkpoint 2 + edited state
+    ForkedReview --> Tag: new branch approval
+    note right of Tag
+      A checkpoint can replay this node.
+      The write still needs idempotency
+      and reconciliation.
+    end note
+```
+
+An **interrupt** serializes a reviewable payload and pauses the graph. Resume uses the same thread and a typed human response. In many graph systems, the node containing the interrupt restarts from its beginning on resume. Side effects before the interrupt must therefore be absent or idempotent. The review must remain bound to exact arguments and target version as developed in Chapter 17.
+
+A **checkpointer** saves state snapshots and next-node metadata. A separate **store** may hold data shared across threads. Do not call every stored message “memory”; state that serves one thread has different retention, privacy, and retrieval semantics than a user preference shared across future runs.
+
+**Time travel** means selecting an earlier checkpoint to inspect, replay, or fork. Replay may re-execute later model calls, tools, and interrupts; it is not a video recording. Forking creates a new branch with an edited state while preserving the old history. This is useful for debugging and counterfactual evaluation, but dangerous if a replay repeats an external effect. Effect calls need stable idempotency keys and a durable result lookup.
+
+The chapter’s graph host saves immutable snapshots before and at review:
+
+```python
+# runtimes.py — explicit pause and immutable checkpoint history
+def start(self, case_id: str) -> dict[str, Any]:
+    state = {"node": "discover", "case_id": case_id, "status": "running"}
+    tools = self.client.connect()
+    state.update(node="lookup", tools=tools)
+    self.checkpoints.save(state)
+    policy = self.client.call("policy_lookup", {"topic": "refund"})
+    state.update(node="review", policy=policy, status="awaiting_approval")
+    self.checkpoints.save(state)
+    return deepcopy(state)
+```
+
+The build uses an in-memory log to expose semantics, not to claim crash recovery. A production checkpointer needs concurrency control, encryption, retention, schema migration, tenant isolation, and atomicity between checkpoint metadata and pending writes. Chapter 26 introduces a workflow/event history and effect ledger for hour- or day-long runs.
+
+Graphs are helpful when branches, joins, interrupts, or replay need names. A simple loop is often easier when the model repeatedly selects among tools and state is small. A deterministic workflow is better when the sequence is known. The artifact implements both graph and loop against the same protocol to show that orchestration choice need not change the server contract.
+
+## Select a framework without surrendering the architecture {#sec-ch19-selection}
+
+Most agent frameworks emphasize one of three paradigms:
+
+| Paradigm | Control owner | Strength | Failure pressure |
+|---|---|---|---|
+| Deterministic workflow | Application DAG or code | Predictability, throughput, ordinary testing | Rigid for underspecified tasks |
+| Explicit state graph | Application nodes plus conditional/model edges | Branches, interrupts, replay, state inspection | State and reducer complexity |
+| Model-driven loop | Model proposes the next step inside harness gates | Flexible exploration with small core | Termination, observability, and cost variance |
+
+Real systems mix them. A deterministic intake workflow may launch a model-driven research loop, then enter a graph approval node before a deterministic effect. Select at the level of a bounded subproblem rather than declaring one paradigm for the company.
+
+Evaluate a framework on mechanisms, not demo brevity:
+
+- Can the application own prompts, messages, tool schemas, and the event stream?
+- Are model, provider, storage, and protocol adapters replaceable?
+- What is checkpointed, at what boundary, and under which consistency guarantee?
+- Can interrupts bind exact action state and resume after a deployment?
+- How are parallel updates reduced and conflicts surfaced?
+- Can traces export in a vendor-neutral form with stable correlation identifiers?
+- Can tests run with deterministic models, tools, time, and failure injection?
+- What happens to running threads during state-schema and framework upgrades?
+- Which hosted features disappear if the project self-hosts or migrates?
+
+Framework tax appears as hidden messages, automatic retries, implicit context, proprietary trace schemas, serialized runtime objects, and provider-specific tool wrappers. Any one may be convenient. The risk is relying on behavior the team cannot inspect, pin, or reproduce.
+
+Create an exit seam early. Domain handlers are ordinary functions or services. Protocol servers wrap those handlers. Application state is a versioned schema rather than a framework object graph. Checkpoints use an application-owned repository interface. UI events are mapped from runtime events. Model calls go through one adapter that preserves raw provider response metadata for debugging.
+
+Run a **migration spike** before adoption: implement one representative branch, one parallel join, one tool failure, one approval interrupt, one resume, one protocol call, and one trace export. Measure code, hidden events, latency, state size, and recovery behavior. Then reimplement the same slice with the simplest custom loop or a second framework. The comparison reveals what the framework actually owns.
+
+Protocols over frameworks does not mean avoiding frameworks. It means allowing a framework to be excellent at orchestration without granting it permanent ownership of identity, business effects, memory, UI, or interoperability.
+
+## Build {#sec-ch19-build}
+
+Run the dependency-free fixture from `newbook`:
+
+```powershell
+python code/ch19/fixture.py
+python -m pytest tests/test_ch19_protocols.py -q
+```
+
+The fixture should end with:
+
+```json
+{
+  "protocol": {
+    "version": "2025-11-25",
+    "wrong_audience": "invalid token audience"
+  },
+  "loop": {
+    "status": "completed",
+    "answer": "C-41 routed to manual_review under policy v3",
+    "methods": ["initialize", "tools/list", "tools/call", "tools/call"]
+  },
+  "graph": {
+    "paused": "awaiting_approval",
+    "status": "completed",
+    "answer": "C-41 routed to manual_review under policy v3",
+    "methods": ["initialize", "tools/list", "tools/call", "tools/call"],
+    "checkpoints": 3
+  },
+  "equivalent_outcome": true
+}
+```
+
+Work through one integrated system in six passes.
+
+**1. Inspect the wire contract.** In `protocol_lab.py`, follow `initialize`, `tools/list`, and `tools/call` through `dispatch`. Change the requested version to `latest` and observe the typed rejection. Restore the pinned revision.
+
+**2. Connect two hosts.** `LoopHost` and `GraphHost` each create one `Client` for a fresh server. Compare their method transcripts. The orchestration differs; discovery and effects do not. Add a third host that only reads the policy resource without loading the write tool.
+
+**3. Filter discovery by authority.** Remove `case:write` from the principal. `tools/list` should expose only `policy_lookup`; the model never sees the unauthorized tool. Attempt a direct `tools/call` anyway and verify server-side authorization still rejects it.
+
+**4. Pause and fork graph state.** Run `GraphHost.start`, inspect its two checkpoints, and resume with `False`. Then fork the review snapshot with another case identifier and approve the branch. Confirm the original snapshot did not mutate.
+
+**5. Replay an effect.** Call `case_tag` twice with the same idempotency key. Both responses match and one receipt exists. Change the key and observe that a new operation is recorded. Chapter 26 will replace this local property with a durable effect contract.
+
+**6. Use the official adapter.** After installing the pinned requirements, run `python code/ch19/mcp_server.py` through an MCP Inspector or a compatible host using standard I/O. Connect two different hosts if available and record differences in displayed names, resource selection, approvals, structured content, and errors. Keep these compatibility notes dated.
+
+### Acceptance checks
+
+- An explicit protocol revision is negotiated; `latest` is rejected.
+- Read-only discovery does not reveal the write tool.
+- A token for another audience cannot list or call tools.
+- Loop and graph hosts reach the same domain outcome through the same method sequence.
+- The graph exposes a typed review pause and immutable checkpoints.
+- Replaying the same idempotency key produces one receipt.
+- The SDK adapter contains no independent business or authorization rules.
+
+### Honesty note
+
+The deterministic client implements only the JSON-RPC-shaped subset used in this lesson; conformance comes from the thin official SDK adapter and must be tested against the pinned MCP revision. The in-memory checkpointer is not durable. The fixture principal is not an OAuth implementation. The scripted planner is not a capability evaluation. These seams isolate protocol, authorization, and orchestration properties without claiming a production deployment.
+
+## What endures, what changes {#sec-ch19-endures}
+
+**What endures.** Protocols define cross-system meaning; frameworks implement control flow. A host owns user context, consent, policy, and model behavior. MCP tools, resources, and prompts have different control relationships. Identity comes from the transport and is reauthorized at the server. Tokens are audience-bound and never blindly passed through. Remote agent tasks have an independent lifecycle. Frontends consume typed, recoverable events and render only trusted components. Graph checkpoints, cross-session memory, and durable effects remain separate contracts. Application-owned adapters keep framework choice reversible.
+
+**What changes.** MCP lifecycle details, extensions, Tasks, Apps, server discovery, registries, SDK major versions, A2A bindings, payment protocols, UI event types, and framework APIs will evolve. Appendix C tracks pins. The stable review questions are: which boundary is crossed, which revision was negotiated, whose identity and authority apply, what state owns the lifecycle, what can be replayed, and how can either side be replaced?
+
+## Exercises {#sec-ch19-exercises}
+
+1. **Real client compatibility.** Connect `mcp_server.py` to two compatible hosts. Capture normalized transcripts for initialization, discovery, resource read, tool call, and invalid arguments. Explain every host-level difference.
+2. **Step-up authorization.** Give the initial principal only `policy:read`. Design a scope challenge and consent flow for `case:write`, including resource indicator, PKCE, expiry, denial, and token refresh.
+3. **Rug-pull defense.** Change `case_tag` so the same name accepts a new `notify_customer` field. Build a gateway rule that detects the authority-expanding schema diff and quarantines the update.
+4. **A2A translation.** Wrap the case-routing operation as an asynchronous remote-agent task with a card, message, status changes, and artifact. State which information must not be copied from the parent run.
+5. **UI recovery.** Define events for the graph pause, exact approval preview, user decision, tool receipt, and completion. Inject a missing state delta and specify how the client requests a fresh snapshot.
+6. **Replay boundary.** Replace the in-memory receipt map with a database unique constraint. Crash after the effect but before the checkpoint, resume, and prove the idempotency key prevents a duplicate tag.
+7. **Framework exit spike.** Port `GraphHost` to one graph framework, then export checkpoints into the application-owned state schema. List every field or behavior that prevents a clean round trip.
+
+## Notes and sources {#sec-ch19-sources}
+
+The MCP material follows the official [architecture overview](https://modelcontextprotocol.io/docs/learn/architecture), [2025-11-25 authorization specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization), [security best practices](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices), [server tutorial](https://modelcontextprotocol.io/docs/develop/build-server), [Python SDK](https://github.com/modelcontextprotocol/python-sdk), and [MCP Apps overview](https://modelcontextprotocol.io/extensions/apps/overview). Registry metadata and its non-certification boundary are documented by the [official MCP Registry](https://modelcontextprotocol.io/registry/about).
+
+The remote-agent lifecycle comes from the official [A2A specification](https://a2a-protocol.org/latest/specification/) and [agent discovery guidance](https://a2a-protocol.org/latest/topics/agent-discovery/). The UI discussion uses the official [AG-UI event model](https://docs.ag-ui.com/concepts/events). The framework mechanics are grounded in the current LangGraph documentation for [persistence](https://docs.langchain.com/oss/python/langgraph/persistence), [interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts), and [time travel](https://docs.langchain.com/oss/python/langgraph/use-time-travel); the chapter treats these as one worked paradigm, not a permanent dependency.

@@ -1,0 +1,116 @@
+/*-- scss:defaults --*/
+$font-family-sans-serif: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+$font-family-monospace: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+$headings-font-family: "Aptos Display", "Segoe UI", system-ui, sans-serif;
+
+/*-- scss:rules --*/
+:root {
+  --ae-model: #147d92;
+  --ae-control: #315b8a;
+  --ae-evidence: #3a7d44;
+  --ae-risk: #a33b35;
+  --ae-external: #9a6b1f;
+  --ae-muted: #647582;
+}
+
+body.quarto-dark {
+  --ae-model: #66c2d3;
+  --ae-control: #8bb8eb;
+  --ae-evidence: #91c99a;
+  --ae-risk: #f09a94;
+  --ae-external: #deb76f;
+  --ae-muted: #aebbc4;
+}
+
+body {
+  line-height: 1.68;
+}
+
+.content {
+  max-width: 78ch;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+h2 {
+  margin-top: 2.5rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(100, 117, 130, 0.18);
+}
+
+h3 {
+  margin-top: 1.8rem;
+}
+
+blockquote {
+  border-left: 0.3rem solid var(--ae-control);
+  padding: 0.8rem 1rem;
+  background: rgba(49, 91, 138, 0.06);
+}
+
+.route-b {
+  border-left: 0.35rem solid var(--ae-external);
+  background: rgba(154, 107, 31, 0.08);
+  padding: 0.9rem 1rem;
+  margin: 1.2rem 0;
+}
+
+.artifact-checkpoint table {
+  font-size: 0.93rem;
+}
+
+.figure-caption,
+figcaption {
+  color: var(--ae-muted);
+  font-size: 0.92rem;
+}
+
+.cell-output-display,
+.quarto-figure {
+  margin: 1.4rem auto;
+}
+
+pre.sourceCode {
+  border-left: 0.22rem solid rgba(49, 91, 138, 0.5);
+}
+
+code {
+  font-variant-ligatures: none;
+}
+
+.callout.callout-style-default {
+  border-radius: 0.35rem;
+}
+
+.landscape-2026 {
+  border: 1px dashed var(--ae-external);
+  background: rgba(154, 107, 31, 0.06);
+  padding: 1rem;
+  margin: 1.25rem 0;
+}
+
+.key-invariant {
+  border-left: 0.35rem solid var(--ae-evidence);
+  background: rgba(58, 125, 68, 0.07);
+  padding: 0.85rem 1rem;
+  margin: 1.1rem 0;
+}
+
+.trust-boundary {
+  border-left: 0.35rem solid var(--ae-risk);
+  background: rgba(163, 59, 53, 0.07);
+  padding: 0.85rem 1rem;
+  margin: 1.1rem 0;
+}
+
+@media (max-width: 768px) {
+  .content {
+    max-width: 100%;
+  }
+
+  table {
+    font-size: 0.88rem;
+  }
+}

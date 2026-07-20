@@ -1,0 +1,554 @@
+---
+description: "Treat prompts as measured programs and construct each model call from the smallest useful, correctly ordered, observable context."
+---
+
+# Prompting and Context Engineering [F+S] {#sec-ch13}
+
+## What you need going in {#sec-ch13-prerequisites}
+
+> **Assumed:** neural-network fundamentals, basic Python, and the API vocabulary from Chapter 12: messages, tool descriptions, output schemas, and token usage.
+>
+> **Route A:** Chapters 3, 7, 9, 10, and 12 established long-context behavior, behavior specifications, decoding, serving, and the caller-model boundary. This chapter decides what the caller should put on that boundary.
+>
+> **Not required:** a provider account, an agent framework, a vector database, or a production tokenizer. The lab is deterministic and offline; its whitespace-token proxy is stated wherever a number depends on it.
+
+::: {.callout-note title="Route B backfill — required, about seven pages"}
+Route B arrives here from Chapter 12. Before continuing, read [Chapter 10, “Prefix caching and cache economics”](10-serving-at-scale.qmd#sec-ch10-prefix-cache), about four pages, and [Chapter 3, “Advertised context is not effective context”](03-attention-position-long-context.qmd#sec-ch03-effective), about three pages. Chapter 10 supplies exact-prefix reuse and its write/read economics. Chapter 3 supplies the distinction between admitted tokens and tokens a model uses reliably. This chapter applies both facts at the caller side; it does not rederive their serving or attention mechanisms.
+:::
+
+## Contents {#sec-ch13-contents}
+
+- [Prompting becomes engineering when the change is measured](#sec-ch13-measurement)
+- [Context is a constructed input, not a transcript](#sec-ch13-constructed)
+- [Few-shot examples are data, not decoration](#sec-ch13-few-shot)
+- [Structure controls parsing, not trust](#sec-ch13-structure)
+- [Prompt optimization is search over a metric](#sec-ch13-apo)
+- [Build the context window deterministically](#sec-ch13-assembly)
+- [Write, select, compress, and isolate](#sec-ch13-four-moves)
+- [Prefix stability is an application invariant](#sec-ch13-prefix)
+- [Compact by classifying before summarizing](#sec-ch13-compaction)
+- [Load context just in time and keep a ledger](#sec-ch13-jit)
+- [Build](#sec-ch13-build)
+- [What endures, what changes](#sec-ch13-endures)
+- [Exercises](#sec-ch13-exercises)
+- [Notes and sources](#sec-ch13-sources)
+
+## Prompting becomes engineering when the change is measured {#sec-ch13-measurement}
+
+On Friday afternoon, a ticket extractor begins routing delivery problems to refunds. Its prompt changed that morning: one adjective became another in a paragraph that had been edited dozens of times. The team can show the current prompt and the current failures. It cannot show which edit caused the regression, what cases improved, which model revision ran, or whether the context around the prompt also changed. Reverting the adjective appears to help five hand-picked examples, so the team ships the revert. On Monday, another slice fails.
+
+That is not a wording problem. It is an experimental-design problem.
+
+A prompt is executable configuration applied to a particular model and input distribution. A useful prompt record is therefore not a string. It is a tuple such as
+
+$$
+P=(m,v,i,d,s,c,g),
+$$
+
+where $m$ is the exact model revision, $v$ the prompt version, $i$ the instructions, $d$ the demonstrations, $s$ the output schema, $c$ the decoding controls, and $g$ the context-assembly policy. Its quality is meaningful only relative to an evaluation distribution $D$ and metric $M$:
+
+$$
+Q(P)=\mathbb{E}_{x\sim D}[M(P,x)].
+$$
+
+Changing “precise” to “careful” changes $P$. Adding a tool, moving a timestamp, changing example order, or compacting history also changes $P$. If two variants are not run on the same versioned cases with the same scorer and model, the comparison is anecdote.
+
+This framing changes the daily workflow:
+
+1. Freeze a representative case set, including expensive edge cases.
+2. Define a scorer before editing the prompt.
+3. Change one named mechanism or search a declared candidate space.
+4. Record per-case outputs, not only the aggregate.
+5. Promote a variant only after held-out and safety checks.
+
+Exact match works for a finite label. Schema validity works for shape. Unit tests can execute generated code. A rubric grader can assess an explanation, but then the grader model, rubric, calibration cases, and disagreement rate become part of the measurement system. No scorer is “just evaluation.” It encodes what the application values.
+
+A useful failure table is more actionable than one score. Keep input ID, expected behavior, actual behavior, prompt version, model revision, context hash, and failure category. When a total rises from 82 to 86 percent, the table reveals whether four difficult cases improved or eight cases swapped correctness. Chapter 23 builds the full evaluation program. Here, the smaller lesson is enough: **prompting is measurement before it is wordsmithing.**
+
+## What you will build {#sec-ch13-will-build}
+
+::: {.callout-tip title="One context pipeline, grown by mechanism"}
+You will build [`context_pipeline.py`](../code/ch13/context_pipeline.py), a deterministic facade over three connected experiments. [`prompt_optimizer.py`](../code/ch13/prompt_optimizer.py) owns finite prompt search, [`context_assembly.py`](../code/ch13/context_assembly.py) owns typed selection and rendering, and [`context_history.py`](../code/ch13/context_history.py) owns compaction and prefix measurement.
+
+First, a miniature prompt optimizer evaluates four ticket-classification instructions against an exact-match golden set and keeps every losing trial. Second, a context assembler orders trust-labelled segments and a compactor reduces a synthetic 40-message debugging history while asserting that every decision and open question survives literally. Third, a 50-turn simulation crosses compaction on/off with a stable/broken prefix and records utilization, reusable-prefix fraction, and compaction events.
+
+[`render_metrics.py`](../code/ch13/render_metrics.py) turns that ledger into one numeric figure. The offline proxy classifier and whitespace-token counter teach control flow; their scores are not evidence about a language model. Success means a measured prompt improvement, zero lost durable-state assertions, deterministic rendering, a bounded compacted context, and four complete 50-turn ledgers.
+:::
+
+The artifact stays one public pipeline because the concept is one build, while focused modules keep each mechanism readable. There is no `prompt_v1.py`, `prompt_v2.py`, and `prompt_v3.py` progression to reconcile. Each section adds one responsibility to the same facade; tests state the invariants.
+
+## Context is a constructed input, not a transcript {#sec-ch13-constructed}
+
+Prompt engineering usually asks, “What instruction should I write?” Context engineering asks the larger question: **what should the model see on this call?** For an agentic application, a conceptual context function is
+
+$$
+C_t=f(S,T,M,R,H_t,Q_t;B),
+$$
+
+where $S$ is the system instruction, $T$ the available tool descriptions, $M$ durable remembered state, $R$ retrieved evidence, $H_t$ selected interaction history, $Q_t$ the current query, and $B$ the input budget. The semicolon matters: the budget constrains the function; it is not another source to concatenate.
+
+The context window resembles RAM only in one limited sense: it is finite working state for the current computation. Unlike ordinary RAM, its addresses are not equally reliable, and an irrelevant resident byte is usually harmless. An irrelevant token can change the model's answer. Tokens compete for attention, can contradict one another, can imitate instructions, and have position-dependent usefulness. The objective is not to fill the window. It is to choose the smallest high-signal input that makes the target behavior likely.
+
+Chapter 3 separated accepted context from effective context. A million admitted tokens do not imply uniform use of a million tokens. “Lost in the Middle” found position sensitivity on its tested multi-document QA and key-value tasks; Chroma's later context-rot experiments found that performance on tested models and tasks often degraded as input grew, even under controlled constructions. Neither result gives a universal safe percentage. Together they invalidate “send everything because it fits” as a design rule.
+
+Figure @fig-ch13-context-function shows the application boundary. The model does not fetch this state by intuition; an assembler chooses, labels, orders, and budgets it before the API call.
+
+```{mermaid}
+%%| label: fig-ch13-context-function
+%%| fig-cap: "What turns distributed application state into the one ordered input a model receives?"
+flowchart LR
+    S["System contract"] --> A["Deterministic context assembler"]
+    T["Tool descriptions"] --> A
+    M["Durable state references"] --> A
+    R["Retrieved evidence"] --> A
+    H["Selected history"] --> A
+    Q["Current query"] --> A
+    B["Token budget"] -. "constrains" .-> A
+    A --> O["Ordered, trust-labelled model input"]
+    O --> L["Context ledger"]
+```
+
+The diagram also marks an ownership boundary. Chapter 18 owns how memory is represented and updated. Chapters 14 and 15 own retrieval quality. Chapter 17 owns tool discovery and execution. This chapter consumes their outputs as typed segments and decides what enters the next call.
+
+Think in **segments**, not one growing string. Each segment should carry at least a source type, trust label, content, stability flag, and priority. Production systems often also need tenant, creation time, expiry, sensitivity, provenance, and a pointer to the full source. These fields permit explicit policy: stable developer instructions precede volatile user data; stale observations can expire; a summary can be distinguished from a verbatim tool result.
+
+## Few-shot examples are data, not decoration {#sec-ch13-few-shot}
+
+In-context learning changes behavior by conditioning the forward pass on examples; it does not update the checkpoint's weights. A demonstration communicates several things at once: the task boundary, label semantics, desired output shape, tone, and sometimes a latent decision rule. That density makes examples powerful and dangerous.
+
+Suppose a classifier has labels `refund`, `status`, and `technical`. An example pairing “tracking page crashes” with `status` teaches format and a bad precedence rule. Five redundant refund examples skew the local label distribution. A beautifully formatted example with a hidden customer identifier creates a privacy problem. Examples are a small dataset embedded in the request, so apply dataset discipline:
+
+- choose cases near the ambiguity boundary rather than five easy duplicates;
+- cover labels and high-cost failure modes;
+- make the demonstrated output identical to the production schema;
+- remove accidental features that should not control the answer;
+- fix order while measuring, then test order sensitivity;
+- keep a held-out set that candidate selection never sees.
+
+Selection can be static or query-dependent. A static set is easy to version and maximizes prefix reuse. Query-dependent demonstrations may be more relevant but add retrieval errors, latency, and cache variation. Compare both on the same distribution. “Dynamic” is not automatically more capable.
+
+Example order can matter because a transformer sees an ordered sequence, and later examples sit closer to the query. Test several seeded permutations when the number of examples is small. If one order wins narrowly but fails on another seed, prefer the less brittle configuration or increase the case set. Also compare zero-shot against few-shot. An example can hurt when it conflicts with the model's existing decision boundary, consumes attention, or over-specifies surface form.
+
+Personas deserve the same test. “You are a world-class expert” may alter tone, verbosity, or behavior on a specific model and task; it is not a general capability multiplier. A 2024 EMNLP Findings study evaluated 162 personas across four model families and 2,410 factual questions and did not find overall accuracy improvement. That result does not ban roles. It moves the burden of proof to the application's metric. A role is useful when it establishes audience, responsibility, vocabulary, or interaction contract—not because status adjectives are assumed to create expertise.
+
+The golden-set grader in the artifact is deliberately small and inspectable:
+
+```python
+# code/ch13/prompt_optimizer.py — changed region: evaluate
+predictions = [classify(prompt, item.text) for item in examples]
+failures = [
+    {"text": item.text, "expected": item.expected, "actual": actual}
+    for item, actual in zip(examples, predictions)
+    if actual != item.expected
+]
+score = (len(examples) - len(failures)) / len(examples)
+```
+
+The per-case failures are the primary artifact. The scalar only ranks candidates. In a live experiment, replace `classify()` with a pinned model call, repeat stochastic calls when necessary, and separate the optimization split from the final test split.
+
+## Structure controls parsing, not trust {#sec-ch13-structure}
+
+Long prose makes boundaries implicit. Structural markup makes them visible to people, template code, and often the model. XML-like tags, Markdown headings, JSON objects, and explicit delimiters can distinguish instructions, examples, retrieved documents, and the current query:
+
+```text
+<retrieved_document trust="external" source="invoice-41">
+...document text...
+</retrieved_document>
+<task>
+Answer from the documents and identify unresolved conflicts.
+</task>
+```
+
+Use names that express semantics. `<data>` is weaker than `<untrusted_search_result>`. Close every delimiter, escape nested content, and render through one tested function. A delimiter mismatch is a serialization bug. Chapter 12's structured-output guarantees apply to the response; this section structures the input.
+
+Markup is not an authorization boundary. Text inside `<untrusted_search_result>` can still contain an instruction-like sentence, and a model can still follow it. Trust labels give the prompt and later audit code information with which to reason; they do not make hostile text inert. Chapter 24 owns prompt-injection defenses, isolation, and least privilege. Here the invariant is narrower: preserve provenance and never imply that fencing equals security.
+
+The system prompt should operate at the right altitude. It should state purpose, non-negotiable behavior, decision policy, tool-use expectations, and output contract without encoding a giant flowchart in prose. Brittle micro-rules are difficult to reconcile; slogans are too vague to test. Chapter 7 owns behavior-specification design. This chapter renders the selected version and keeps it stable.
+
+Prompting advice around reasoning is model-scoped. “Think step by step” historically helped some tasks and models, but it is not a durable default for every reasoning-tuned model. Some APIs expose a reasoning effort, thinking level, or budget; some models reason internally and return a summary rather than hidden tokens; some combinations constrain temperature or tool use. Treat reasoning configuration as a versioned request control. Evaluate task success, latency, input/output usage, and failure modes. Do not require a hidden chain of thought as an application contract. Ask for checkable work products—assumptions, calculations, citations, tests, or a concise rationale—when the task needs them.
+
+::: {.callout-note .landscape-2026}
+### Landscape 2026 — reasoning controls are provider and model surfaces
+
+As of 2026-07-19, current OpenAI, Anthropic, and Gemini APIs expose different controls and accounting for reasoning or thinking. Names, supported values, preservation across turns, and interactions with other parameters vary by model. The durable design is to keep a model-capability profile next to prompt configuration and gate every migration with the target evaluation suite.
+
+**Verify live:** inspect the official [OpenAI reasoning guide](https://developers.openai.com/api/docs/guides/reasoning), [Claude extended-thinking guide](https://platform.claude.com/docs/en/build-with-claude/extended-thinking), and [Gemini thinking guide](https://ai.google.dev/gemini-api/docs/thinking) for the selected model immediately before deployment. **Verified:** 2026-07-19.
+:::
+
+## Prompt optimization is search over a metric {#sec-ch13-apo}
+
+Once prompts have versions and scores, prompt optimization becomes ordinary black-box search. Let $\mathcal{P}$ be a candidate set and $\hat Q_D(P)$ the measured score on development cases. The simplest optimizer is
+
+$$
+P^*=\arg\max_{P\in\mathcal{P}} \hat Q_D(P).
+$$
+
+The candidate generator might enumerate hand-written instructions, select demonstrations, propose edits from failure traces, or combine all three. The evaluator can be exact match, executable tests, a calibrated judge, or a weighted vector of quality, latency, and cost. The loop is useful because proposals and evidence are separated.
+
+The lab searches four instructions. Its proxy model makes two ambiguous `technical` tickets look like `status` until the instruction defines labels and says that explicit refund intent outranks malfunction, which outranks delivery status. Three candidates score 10/12; the winner scores 12/12. The result is not that these English words are universally superior. It is that a declared rule fixes two named cases under a declared classifier.
+
+```python
+# code/ch13/prompt_optimizer.py — changed region: optimize_prompt
+trials = [{"prompt": prompt, **evaluate(prompt)} for prompt in candidates]
+winner = max(
+    enumerate(trials),
+    key=lambda pair: (pair[1]["score"], -pair[0]),
+)[1]
+```
+
+The index term makes ties deterministic and keeps the earlier candidate. The output retains losers and their failure rows. Without the losers, a future engineer cannot tell whether the winner dominated or won on one case.
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `prompt_optimizer.py` complete | 80 lines | Every candidate is scored by the same exact-match grader; ties are deterministic; failures and losing prompts remain inspectable. |
+:::
+
+Optimization can overfit prompts just as training can overfit weights. Searching more candidates against the same twelve cases leaks information about those cases into the chosen prompt. Keep a final set untouched, slice results by risk category, and retest after model changes. For judge-based metrics, calibrate the judge against human labels and inspect preference for length, style, self-reference, and shared model-family artifacts. For multi-objective systems, define the promotion rule before search—for example, maximize task success subject to a p95 latency ceiling and zero authorization regressions.
+
+An optimizer without a trustworthy metric accelerates the wrong behavior. It may learn verbosity that flatters a judge, demonstrations copied from the evaluation set, or loopholes in a unit test. Automatic prompt optimization does not remove specification work; it makes specification quality more consequential.
+
+::: {.callout-note .landscape-2026}
+### Landscape 2026 — optimizers search instructions, demonstrations, and traces
+
+MIPRO introduced joint optimization of free-form instructions and demonstrations for multi-stage language-model programs. GEPA later used natural-language reflection over trajectories and a Pareto frontier of candidates. The GEPA paper, revised in 2026 and accepted to ICLR 2026, reports gains over GRPO and MIPROv2 on its evaluated tasks with fewer rollouts; those are paper-specific results, not a universal ranking. Framework APIs and default optimizers change faster than the metric-first loop described above.
+
+**Verify live:** inspect the primary [MIPRO paper](https://arxiv.org/abs/2406.11695), [current DSPy MIPROv2 documentation](https://github.com/stanfordnlp/dspy/blob/main/docs/docs/api/optimizers/MIPROv2.md), and [GEPA paper](https://arxiv.org/abs/2507.19457) before selecting an optimizer. Reproduce on the application's own held-out tasks. **Verified:** 2026-07-19.
+:::
+
+## Build the context window deterministically {#sec-ch13-assembly}
+
+Context assembly should behave like a compiler pass, not scattered string concatenation. The inputs are typed segments; the output is one reproducible sequence plus an audit record. If the same state, policy, query, and budget enter twice, the same bytes should leave twice.
+
+The artifact begins with a small segment type:
+
+```python
+# code/ch13/context_assembly.py — changed region: Segment
+@dataclass(frozen=True)
+class Segment:
+    kind: str
+    trust: str
+    content: str
+    stable: bool = False
+    priority: int = 0
+    tags: tuple[str, ...] = ()
+```
+
+`kind` determines structural position. `trust` records who controls the content. `stable` identifies material that can form a reusable prefix. `priority` and `tags` support selection. This is an instructional minimum; a regulated system may require source URI, tenant, access decision, data class, effective time, expiry, and content digest.
+
+A sensible default order is stable to volatile:
+
+1. system contract and invariant policy;
+2. stable tool or output schemas;
+3. stable demonstrations;
+4. selected evidence and state;
+5. recent history;
+6. the current query.
+
+Ordering has three effects. It expresses precedence to the model, makes inspection predictable, and maximizes the chance that repeated leading bytes can be reused. There are exceptions: a provider's wire format may place tools outside the message list, and a model-specific prompting guide may recommend another arrangement. Encode such variation in the renderer for that model profile, not in every caller.
+
+The renderer sorts by a fixed table, wraps each block with kind and trust, and applies a budget. A required stable segment or query raises an error instead of disappearing. Lower-priority optional segments may be omitted, but selection should occur before rendering so the reason is visible:
+
+```python
+# code/ch13/context_assembly.py — changed region: render_context
+ordered = sorted(
+    enumerate(segments),
+    key=lambda pair: (ORDER[pair[1].kind], pair[0]),
+)
+for _, segment in ordered:
+    block = f'<{segment.kind} trust="{segment.trust}">\n{segment.content}\n</{segment.kind}>'
+    if used + token_count(block) > budget and not segment.stable and segment.kind != "query":
+        continue
+    if used + token_count(block) > budget:
+        raise ValueError(f"required {segment.kind} segment exceeds the budget")
+```
+
+Silent truncation is particularly damaging. Removing the end may delete the user query. Removing the beginning may delete policy. Cutting a serialized tool schema midway leaves invalid structure. Budget at segment boundaries, reserve output capacity separately, and fail closed when required material cannot fit.
+
+Production budgeting uses the exact tokenizer and chat template, as Chapter 12 demonstrated. The lab's `token_count()` uses whitespace solely so the experiment is portable and its arithmetic inspectable. Never transfer its counts to a hosted endpoint. Reconcile local rendered tokens against provider usage and alert on persistent drift; a hidden template or tool-description change may be consuming the difference.
+
+System instructions are not access control. A `trust="developer"` label expresses provenance to the model and logs. Authorization still belongs to executable code around tools and data. Conversely, putting user text in a system-position string does not convert it into trusted developer intent. Preserve origin through transformations.
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `context_assembly.py` complete | 82 lines | Rendering is deterministic, stable-to-volatile, trust-labelled, and unable to silently drop required system or query material. |
+:::
+
+## Write, select, compress, and isolate {#sec-ch13-four-moves}
+
+Four operations cover most caller-side context work. They are easier to reason about when named separately:
+
+- **Write** moves a durable fact or artifact outside the active window and leaves an addressable reference.
+- **Select** chooses the subset relevant to the current decision.
+- **Compress** replaces detail with a smaller representation that preserves declared invariants.
+- **Isolate** performs a noisy subtask in a separate context and returns only its result, evidence, and reference.
+
+These moves can compose. An agent writes a test log to an artifact, selects the failed tests, isolates root-cause analysis in a worker, then compresses the result into three evidence-backed findings. Figure @fig-ch13-four-moves distinguishes what happens to information in each move.
+
+```{mermaid}
+%%| label: fig-ch13-four-moves
+%%| fig-cap: "Which operation should reduce pressure on the active context without erasing recoverability?"
+flowchart TB
+    X["Candidate information"] --> D{"Needed on this call?"}
+    D -- "No, but durable" --> W["Write externally and keep a reference"]
+    D -- "Yes, only a subset" --> S["Select relevant segments"]
+    D -- "Yes, but too large" --> C["Compress under survival invariants"]
+    D -- "Requires noisy independent work" --> I["Isolate the work and return a digest"]
+    W --> A["Active context"]
+    S --> A
+    C --> A
+    I --> A
+```
+
+Write is not “remember everything.” A durable store needs its own schema, lifecycle, retrieval, and deletion policy, all owned by Chapter 18. At this boundary, write only produces a compact reference such as `REF incident-91: replay bundle and trace index`. A reference without enough **scent** to know when it matters is dead state; include a descriptive name, type, and short summary.
+
+Select is a precision decision. Filter by task, provenance, freshness, permissions, and expected information gain—not just lexical overlap. Chapter 14 will build retrieval candidates and Chapter 15 will rank and verify them. The Chapter 13 assembler accepts their selected segments and ensures their labels and ordering survive.
+
+Compress is lossy unless the representation is reversible. State what may be lost and what must survive. A tool transcript can often lose repeated progress output but not the exit status, error text, affected file, or command identity. A conversation summary can merge paraphrases but must not turn “do not deploy” into “deploy later.” The next compaction section builds this as an assertion.
+
+Isolate is useful when a subtask emits many exploratory tokens or works with a different evidence set. Isolation can reduce distraction and protect the primary prefix. It also loses tacit context, adds coordination latency, and can hide errors behind a neat summary. Require a return contract: conclusion, evidence, uncertainty, artifacts, and unresolved questions. Chapter 20 handles subagent topology and economics; this section only defines the context boundary.
+
+The operations respond to four recurring failure modes:
+
+| Failure | What happens | First diagnostic | Typical response |
+|---|---|---|---|
+| poisoning | an early mistaken fact or plan persists and shapes later turns | trace the first appearance and every derived decision | replace or quarantine it; preserve the correction and rationale |
+| distraction | irrelevant detail consumes attention and changes behavior | remove one context class at a time | select fewer high-signal segments |
+| confusion | similar tools, examples, or facts create an ambiguous choice | inspect competing names, descriptions, and demonstrations | simplify, rename, or isolate alternatives |
+| clash | instructions or facts conflict without an explicit precedence rule | render the full ordered context with provenance | resolve in application policy; do not ask the model to guess authority |
+
+These labels organize debugging; they are not mutually exclusive diagnoses. A stale summary can poison the trace, distract from new evidence, and clash with a current instruction. Also separate them from context rot: Chapter 3 used context rot for measured performance degradation as input grows. The four labels describe application-level content failures that can occur even in a short request.
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `context_assembly.py` with four context moves | Focused module remains 82 lines | Every reduction returns a typed segment or reference; isolated output is labelled as a tool observation rather than silently promoted to policy. |
+:::
+
+## Prefix stability is an application invariant {#sec-ch13-prefix}
+
+Chapter 10 explained the serving mechanism: a prefix cache can reuse previously computed KV state only for an exact compatible token prefix. Caller-side layout determines whether such a prefix exists. Semantic similarity is irrelevant. A reordered JSON schema, one whitespace-sensitive token, a changed tool description, or a timestamp near the front can end reuse at the first difference.
+
+Put slow-changing content first and fast-changing content last. A useful layout is
+
+$$
+\underbrace{S\Vert T\Vert E}_{\text{stable prefix}}
+\Vert
+\underbrace{R_t\Vert H_t\Vert Q_t}_{\text{volatile suffix}},
+$$
+
+where $S$ is system policy, $T$ stable tool/schema material, $E$ fixed examples, and the remaining segments vary by turn. Do not insert current time, request ID, user name, random nonce, or per-request feature flags before the stable prefix unless their position is semantically required. If a policy fragment changes at a different cadence, make that boundary explicit and measure the provider's cache behavior.
+
+Figure @fig-ch13-prefix compares two turns. The content is nearly identical in meaning; its leading bytes are not.
+
+```{mermaid}
+%%| label: fig-ch13-prefix
+%%| fig-cap: "Why can one volatile timestamp erase reuse for an otherwise stable request?"
+sequenceDiagram
+    participant A as "Turn t assembler"
+    participant C as "Prefix cache"
+    participant B as "Turn t+1 assembler"
+    A->>C: "[stable policy][tools][history t]"
+    Note over C: "Reusable entry ends after the stable leading blocks"
+    B->>C: "[stable policy][tools][history t+1]"
+    C-->>B: "Leading prefix hit"
+    B->>C: "[new timestamp][stable policy][tools][history]"
+    C-->>B: "Miss near the first differing byte"
+```
+
+Measure cache economics in one unit. Let $S$ be stable-prefix tokens, $V$ new suffix tokens, $u$ uncached input cost per token, and $r$ cached-read cost per token. Ignoring the first write for a moment, a later hit costs
+
+$$
+C_{hit}=rS+uV,
+$$
+
+while breaking the prefix costs
+
+$$
+C_{miss}=u(S+V).
+$$
+
+The artifact uses illustrative units $S=7{,}000$, $V=300$, $u=1$, and $r=0.1$. Then $C_{hit}=1{,}000$, $C_{miss}=7{,}300$, and the broken-prefix call costs 7.3 times as much input work in that fixture. These are not provider prices. The example isolates a multiplier; Chapter 10's full equation includes cache-write cost, reuse count, routing, storage, and eviction.
+
+Log server-reported cached reads and writes where available. A local common-prefix count is a diagnostic, not proof of a server hit: model revision, tokenizer, template, adapter, tenant isolation, cache lifetime, and routing also matter. A high token hit rate can still fail to improve latency if the remaining suffix dominates preprocessing or if queueing dominates time to first token.
+
+::: {.callout-note .landscape-2026}
+### Landscape 2026 — prompt caches share a principle, not one API
+
+As of 2026-07-19, OpenAI documents exact-prefix matching, automatic caching above model-dependent thresholds, usage fields for cache reads and—for newer families—writes, plus explicit cache controls on supported models. Anthropic documents prompt order as `tools → system → messages`, automatic and explicit cache breakpoints, and invalidation when earlier cached blocks change. Google's current Interactions API documents implicit caching for Gemini 2.5 and newer models, recommends common content first, and exposes cached-token usage. Thresholds, prices, lifetimes, and control fields differ and can change.
+
+**Verify live:** inspect the official [OpenAI prompt-caching guide](https://developers.openai.com/api/docs/guides/prompt-caching), [Claude prompt-caching guide](https://platform.claude.com/docs/en/build-with-claude/prompt-caching), and [Gemini context-caching guide](https://ai.google.dev/gemini-api/docs/caching), then confirm behavior with usage telemetry on the exact endpoint. **Verified:** 2026-07-19.
+:::
+
+## Compact by classifying before summarizing {#sec-ch13-compaction}
+
+A long-running interaction eventually approaches its effective or admitted budget. Dropping the oldest message is simple and unsafe. Summarizing everything into one paragraph is compact and unauditable. Good compaction first classifies state by survival requirement, then transforms only what may be transformed.
+
+A debugging trace often contains:
+
+- specifications and constraints that must remain verbatim;
+- decisions and their rationale;
+- open questions and current blockers;
+- unresolved errors and recent tool observations;
+- completed exploration that can be summarized;
+- bulky artifacts that can be replaced by references.
+
+The order matters. Extract durable items before asking any summarizer to rewrite the middle. Give the compactor a schema with separate fields rather than “summarize the conversation.” Verify that identifiers, negations, numeric limits, ownership, and uncertainty survive. Keep the original transcript addressable under the product's retention policy; compaction should not erase audit evidence merely because it leaves the active prompt.
+
+Figure @fig-ch13-compaction makes the survival check an explicit gate.
+
+```{mermaid}
+%%| label: fig-ch13-compaction
+%%| fig-cap: "How should a context manager compact history without treating every token as equally disposable?"
+flowchart TD
+    U["Utilization crosses a measured trigger at a clean turn boundary"] --> K["Classify specifications, decisions, open questions, errors, and references"]
+    K --> P["Pin verbatim durable state"]
+    K --> M["Summarize expendable middle history"]
+    K --> R["Keep recent observations"]
+    P --> V{"Survival assertions pass?"}
+    M --> V
+    R --> V
+    V -- "No" --> F["Reject compaction and surface a typed failure"]
+    V -- "Yes" --> N["Start the next context with a labelled compacted state"]
+```
+
+The lab triggers at 65 percent of its synthetic budget. That is an illustrative control point, not a recommendation. A real trigger should leave enough headroom for tool results, the next user turn, and output; it should be validated against effective-context quality and latency. Compact at clean boundaries when possible. Compaction during a partial tool call can separate a proposal from its result or discard an error still needed for recovery.
+
+The synthetic trace has 40 messages containing three literal `DECISION` lines, two literal `OPEN` lines, and one `ERROR`. The compactor extracts those classes, adds one summary of routine messages, and retains four recent messages:
+
+```python
+# code/ch13/context_history.py — changed region: compact_history
+durable = [
+    message for message in messages
+    if message.startswith(("DECISION ", "OPEN ", "ERROR "))
+]
+recent = list(messages[-keep_recent:])
+compacted = [*durable, summary, *[m for m in recent if m not in durable]]
+assert_survival(messages, compacted)
+```
+
+`assert_survival()` searches for every pre-compaction decision and open question as an exact substring. Literal survival is stronger than a model grader for these fields and cheaper to debug. Other applications need typed comparisons: a set of requirements, checksums for pinned excerpts, schema validation, or executable state-machine equivalence.
+
+Compaction can itself poison future context. A summary that says “timeout fixed” when one occurrence disappeared converts an observation into a conclusion. Record the compactor version, input and output digests, trigger reason, preserved-item counts, and any validation failures. Treat the compacted block as an application-produced summary, not as developer policy or verbatim user speech.
+
+::: {.callout-note .landscape-2026}
+### Landscape 2026 — context editing is becoming an API feature
+
+As of 2026-07-19, provider surfaces include server-side or SDK-assisted context-management features. Anthropic's current beta context-editing documentation describes clearing older tool results and thinking blocks and an SDK compaction path. Such features can reduce client work, but their model coverage, defaults, beta headers, preservation rules, and usage accounting are volatile. An API feature does not remove the application's obligation to define what must survive.
+
+**Verify live:** inspect the official [Claude context-editing guide](https://platform.claude.com/docs/en/build-with-claude/context-editing) and the selected provider's conversation-state or compaction documentation. Run a survival suite containing decisions, negations, open errors, call IDs, and recent tool results before enabling it. **Verified:** 2026-07-19.
+:::
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `context_history.py` complete | 96 lines | A 40-message trace is classified before reduction, and every literal decision and open question must survive or compaction fails. |
+:::
+
+## Load context just in time and keep a ledger {#sec-ch13-jit}
+
+Preloading every manual, tool description, example, and project file pays input cost whether or not the call needs it. Just-in-time context keeps compact references in the active window and resolves a subset when the task provides enough scent.
+
+If $N$ documents average $L$ tokens, preloading costs roughly $NL$ input tokens per call. If selection loads $k\ll N$ documents plus an index of $I$ tokens, the active cost is
+
+$$
+C_{JIT}=I+kL.
+$$
+
+The token saving is $NL-(I+kL)$, but selection is not free. It adds retrieval latency, can miss the needed item, and may require another model-tool round trip. JIT wins when references are searchable, the selector has high recall on important items, and avoided context cost exceeds selection cost and failure risk. A list of opaque IDs has no scent; a compact catalog with names, purposes, and constraints lets the model or application choose.
+
+Use preloading for a small stable contract needed on nearly every call. Use JIT for a large catalog with sparse per-call use. Hybrid designs preload names and one-line descriptions, then fetch full definitions on demand. Chapter 17 applies this to tools and skills; Chapters 14 and 15 apply it to evidence. Do not implement a second retrieval pipeline inside the prompt template.
+
+None of these decisions is operable without a **context ledger**. For every model call, record enough metadata to reconstruct why a segment appeared:
+
+| Field | Question it answers |
+|---|---|
+| model, template, prompt, and assembler versions | which executable configuration ran? |
+| segment kind, source, trust, digest, and token count | what entered, from where, and under whose authority? |
+| selection reason and score | why was this item chosen? |
+| position and truncation outcome | where did it land, and what was omitted? |
+| input budget and utilization | how close was the call to its operating envelope? |
+| cached-read and cache-write tokens | did the expected prefix actually reuse? |
+| compaction event and preserved-state counts | what changed between turns? |
+| output usage, latency, cost, and evaluation outcome | what did the context buy? |
+
+Avoid logging sensitive raw content by default. Digests, typed metadata, protected replay bundles, and sampled redacted payloads can provide observability without turning the trace system into an uncontrolled copy of user data. Chapter 28 owns the complete observability design.
+
+The artifact's 50-turn experiment emits one row per scenario and turn. The stable system portion contains 7,000 proxy tokens; each turn adds 108. Compaction fires at the 65-percent trigger and retains a compact summary plus three recent turns. The broken-prefix variants put a changing timestamp before the stable policy. Figure @fig-ch13-context-ops plots the measured ledger rather than a hand-drawn expectation.
+
+![Across a deterministic 50-turn simulation, compaction keeps context utilization below the 65-percent trigger envelope while an unchanged leading prefix preserves almost all reusable bytes. A timestamp at the front reduces reusable leading bytes to nearly zero whether compaction is enabled or not.](../code/ch13/generated/context-ops.svg){#fig-ch13-context-ops fig-alt="Two directly labeled line charts. Circle markers mean compaction on and squares mean off; solid lines mean stable prefix and dashed lines mean broken prefix. Uncompacted context grows beyond budget while compacted context stays near the 65 percent trigger. Stable-prefix runs preserve nearly all reusable leading bytes, while broken-prefix runs remain near zero."}
+
+Without compaction, utilization reaches 1.033 of the synthetic budget at turn 50. With compaction, its maximum is 0.6465 and compaction occurs 11 times. Across turns 2–50, the mean reusable leading-byte fraction is 0.992 without compaction and 0.983 with compaction for stable-prefix runs; it is below 0.00015 for both timestamp-first runs. A compaction event changes middle history and can reduce reuse after the stable base, but it does not destroy the base. Conversely, prefix stability does not prevent the history from overflowing. The two controls solve different constraints.
+
+Version prompts and context policies together. A prompt registry entry that points only to an instruction string cannot reproduce selection, ordering, compaction, or tool visibility. Make model scope explicit: `ticket-router/prompt-17` on one revision is not assumed equivalent on another. Chapter 26 will add registry promotion and canaries. At this point, a content hash, configuration record, ledger, and evaluation gate are enough.
+
+## Build {#sec-ch13-build}
+
+Run the integrated experiment from the book root:
+
+```bash
+python code/ch13/context_pipeline.py \
+  --output code/ch13/generated/context-metrics.json
+python code/ch13/render_metrics.py \
+  --output code/ch13/generated/context-ops.svg
+pytest -q tests/test_ch13_context.py
+```
+
+The first command grows the artifact through the complete path: prompt search, 40-message compaction, cache-cost calculation, and four 50-turn simulations. The second command imports that same build and renders the figure. The third checks mechanism-level invariants without an API key.
+
+The committed deterministic run reports:
+
+| Measurement | Result | Interpretation boundary |
+|---|---:|---|
+| baseline exact-match score | 10/12 (83.3%) | proxy classifier on the chapter fixture |
+| optimized score | 12/12 (100%) | candidate-selection result, not a generalization estimate |
+| losing candidate scores | 10/12, 10/12, 10/12 | retained with their two failure rows |
+| compaction size | 774 → 155 proxy tokens | whitespace count on a synthetic trace |
+| durable state lost | 0 decisions; 0 open questions | literal assertions, not semantic equivalence |
+| illustrative broken-prefix multiplier | 7.3× | configured unit costs, not provider pricing |
+| simulation rows | 200 | 50 turns for each of four cells |
+
+Read the output in that order. The prompt score demonstrates why a metric must precede search. The compaction result demonstrates that “shorter” is incomplete unless survival is tested. The grid demonstrates that context pressure and prefix reuse are independent axes.
+
+Try one controlled mutation at a time:
+
+1. Remove `PRECEDENCE` from the winning prompt and inspect the two failures rather than only the score.
+2. Delete one `OPEN` item from the compacted output and observe the typed assertion failure.
+3. Move the timestamp behind the stable policy and compare reusable leading bytes.
+4. Change the compaction trigger and plot peak utilization and event count together.
+
+Do not tune the fixture until it looks impressive. Its value comes from causal isolation. A production successor should replace the proxy classifier with pinned model calls, the whitespace counter with the real template-aware tokenizer, the byte-prefix diagnostic with provider telemetry, and the synthetic cases with versioned development and held-out sets. The control flow and invariants remain.
+
+## What endures, what changes {#sec-ch13-endures}
+
+**What endures.** A prompt is executable, model-scoped configuration. Improvements require a fixed distribution and metric. Demonstrations are data and can help or hurt. Context is deliberately assembled from typed, provenance-preserving segments under a budget; it is not an unlimited transcript. Structure improves parsing but does not create trust. Write, select, compress, and isolate are distinct operations with distinct loss modes. Exact prefix reuse requires stable leading content. Compaction must classify durable state before summarizing and verify survival afterward. JIT loading trades preload cost for selection latency and miss risk. A context ledger connects every choice to quality, latency, and cost.
+
+**What changes.** Model-specific prompting advice, reasoning controls, context limits, cache thresholds and prices, provider compaction features, optimizer algorithms, and framework APIs will move. Keep those facts in dated capability profiles and reverify them. Do not bake a 2026 parameter name or price into the conceptual architecture.
+
+The next chapter takes selected external evidence as its subject. It builds retrieval and ranking rather than asking the context assembler to improvise them. The handoff is clean: Chapter 14 produces evidence candidates with provenance and scores; Chapter 13's assembler decides how those selected candidates occupy a model call.
+
+## Exercises {#sec-ch13-exercises}
+
+1. **Break a few-shot set.** Add three redundant `refund` demonstrations and one mislabeled ambiguous example to a real or simulated classifier. Measure zero-shot, original few-shot, and corrupted few-shot performance by label. Explain whether the failure came from label balance, boundary definition, order, or format.
+
+2. **Specify a context contract.** For a code-review agent, define segment kinds, trust labels, stable fields, priority, expiry, and required provenance. Write three invariants that the assembler can test without calling a model, including behavior when required content exceeds the budget.
+
+3. **Compute cache economics.** With a 12,000-token stable prefix, 600-token suffix, cached-read rate 0.2 units, uncached rate 1 unit, and first-write rate 1.25 units, calculate total cost over one through ten calls. Find the first reuse count at which caching wins, then list two reasons server telemetry may differ from this arithmetic.
+
+4. **Attack compaction semantically.** Create a 30-turn trace containing negation, a superseded decision, two similar IDs, an unresolved error, and a tool result whose units matter. Design typed survival checks that are stronger than substring matching. Show one summary that passes a generic quality judge but fails your checks.
+
+5. **Choose a JIT boundary.** A catalog has 400 tools averaging 180 description tokens. A compact index costs 4,000 tokens, and a call uses five tools on average. Compute preload and JIT input sizes. Then write a decision memo incorporating lookup latency, selection recall, cache reuse, and the cost of omitting the correct tool.
+
+6. **Design an optimization study.** Propose a development set, untouched test set, metric vector, candidate generator, stopping rule, and promotion gate for a customer-support prompt. Include how you will detect judge verbosity bias and model-version overfitting. State what evidence would cause you to reject the highest aggregate score.
+
+7. **Operate the ledger.** Extend the 50-turn experiment with a third prefix policy that changes one tool description every tenth turn. Plot utilization, reusable bytes, compaction events, and cost units. Write an alert that detects an unexpected prefix-regression without firing on planned prompt releases.
+
+## Notes and sources {#sec-ch13-sources}
+
+- Anthropic's [Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) motivates the smallest-high-signal-context principle and discusses system prompts, tools, long-horizon tasks, compaction, and just-in-time retrieval. It is an engineering essay, so this chapter treats its prescriptions as practices to test rather than universal laws.
+- LangChain's [Context Engineering for Agents](https://www.langchain.com/blog/context-engineering-for-agents) organizes contemporary techniques into write, select, compress, and isolate. This chapter uses that taxonomy while keeping framework implementation out of the durable spine.
+- Liu et al., [“Lost in the Middle: How Language Models Use Long Contexts”](https://aclanthology.org/2024.tacl-1.9/), and Chroma's [Context Rot](https://www.trychroma.com/research/context-rot) support the warning that admitted length is not uniform effective context. Chapter 3 owns the detailed treatment.
+- Zheng et al., [“When ‘A Helpful Assistant’ Is Not Really Helpful”](https://aclanthology.org/2024.findings-emnlp.888/), report the persona experiment summarized in Section @sec-ch13-few-shot.
+- Opsahl-Ong et al., [“Optimizing Instructions and Demonstrations for Multi-Stage Language Model Programs”](https://arxiv.org/abs/2406.11695), introduce MIPRO; Agrawal et al., [“GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning”](https://arxiv.org/abs/2507.19457), describe reflective prompt evolution. Reported benchmark gains are attached to their evaluated tasks.
+- Current cache behavior is sourced from the official [OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching), [Anthropic](https://platform.claude.com/docs/en/build-with-claude/prompt-caching), and [Google](https://ai.google.dev/gemini-api/docs/caching) documentation linked in the dated box. Recheck rather than copying thresholds or prices into architecture documents.

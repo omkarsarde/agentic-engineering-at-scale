@@ -1,0 +1,449 @@
+---
+description: "A maintainable registry of current models, runtimes, retrieval policies, protocols, benchmarks, hardware, security standards, and governance signals."
+---
+
+# Landscape 2026: A Living, Dated Registry {#app-c}
+
+The durable chapters teach mechanisms. This appendix records moving facts.
+
+That separation is an engineering control. If a chapter says that a particular model is "best," the claim can become false without a code change. If it instead teaches how to select a model and points here for a dated candidate roster, the method survives. The same applies to inference engines, agent frameworks, protocol revisions, accelerator specifications, benchmarks, and regulation.
+
+This appendix is therefore not a prediction market, leaderboard, or shopping guide. It is a small, reviewable database plus a protocol for changing it. It is also not a duplicate index of every dated sentence in the book. Chapter-local Landscape callouts own teaching-local snapshots; this machine registry retains the smaller set of cross-chapter, deployment-sensitive, high-stakes, and operational pins that need coordinated maintenance. Every entry says exactly what was observed, what kind of claim it is, what artifact was pinned, when the source was checked, which file maintains or consumes it, and what must happen when the entry changes.
+
+The checked snapshot in this edition is **2026-07-19**. **Verify live:** every linked release, specification, model card, benchmark harness, product page, and government source before using it in a production decision.
+
+## Contents
+
+- [A claim needs a lifecycle](#app-c-lifecycle)
+- [The schema makes uncertainty visible](#app-c-schema)
+- [Model profiles are candidates, not rankings](#app-c-models)
+- [Local inference begins with fit, then measurement](#app-c-local)
+- [Tokenizer-free modeling is a frontier, not a foregone conclusion](#app-c-tokenizer-free)
+- [Frameworks and engines should sit behind owned contracts](#app-c-frameworks)
+- [Protocol versions form a compatibility matrix](#app-c-protocols)
+- [Retrieval policies need capability pins](#app-c-retrieval)
+- [Benchmarks need retirement rules](#app-c-benchmarks)
+- [Legal and governance entries are counsel-owned signals](#app-c-governance)
+- [Run an annual frontier audit](#app-c-audit)
+- [Keep an explicit open research agenda](#app-c-research)
+- [Build: audit the registry](#app-c-build)
+- [What endures, what changes](#app-c-endures)
+- [Exercises](#app-c-exercises)
+- [Notes and primary sources](#app-c-sources)
+
+## A claim needs a lifecycle {#app-c-lifecycle}
+
+A current fact is not ordinary prose. It is an asset with an owner, source, review clock, and exit path. Treating it as a sentence hides those properties. The lifecycle in @fig-appc-lifecycle turns "I saw this online" into evidence that can be reviewed.
+
+```{mermaid}
+%%| label: fig-appc-lifecycle
+%%| fig-cap: "How does a moving fact enter, serve, and leave the book?"
+%%| fig-alt: "A candidate claim is classified and scoped, verified against a primary source, pinned with a date and owner, used by a chapter, then checked by a linter and periodic audit. A changed claim is migrated, a superseded claim is retired, and an unverifiable claim is removed."
+flowchart LR
+    C["Candidate claim"] --> Q["Classify + scope"]
+    Q --> V["Verify primary source"]
+    V --> P["Pin artifact + date + owner"]
+    P --> U["Declared owner consumes claim"]
+    U --> L["Lint + scheduled audit"]
+    L -->|"unchanged"| U
+    L -->|"changed"| M["Migrate dependents"]
+    L -->|"superseded"| R["Retire with reason"]
+    L -->|"not verifiable"| X["Remove claim"]
+    M --> P
+    R --> H["Historical record"]
+```
+
+The important transition is not publish; it is **migrate**. Suppose an agent protocol changes its event discriminator. Updating the version string is insufficient. Readers may have copied fixtures, parsers, telemetry fields, or state-machine assumptions from the owning chapter. The migration note identifies those dependents and tells the maintainer what to retest.
+
+Each change follows five moves:
+
+1. **Scope the atomic claim.** One entry should support one decision-relevant statement. Do not combine a model's parameter count, context window, price, benchmark score, and license into one row.
+2. **Classify the evidence.** A measured result is not a vendor specification, and neither is an illustrative assumption. The label controls how strongly a reader may generalize.
+3. **Pin the referent.** A project homepage is not a reproducible dependency. Prefer a release tag, specification revision, model-card checkpoint, paper identifier, benchmark snapshot, statute, or dated government notice.
+4. **Name the maintenance owner.** `owner_chapter` is the `.qmd` file responsible for maintaining or consuming the row. A teaching chapter owns a row it directly uses. Appendix C owns a registry-only roster or control-plane pin. It does not silently assign an unused fact to a nearby chapter.
+5. **Write the migration before the change arrives.** A useful migration note names the compatibility tests, measurements, artifacts, or counsel review that a future maintainer must repeat.
+
+No automated fetcher edits the registry. Web pages can change structure; model cards can be rewritten; a "latest" release can introduce a breaking change; summaries can erase legal status. Automation may detect age or missing fields. A person remains responsible for reading a primary source, constraining the claim, and reviewing its dependents.
+
+## The schema makes uncertainty visible {#app-c-schema}
+
+The source of record is [`data/landscape-2026.json`](../data/landscape-2026.json). Its top-level `as_of` date describes the published snapshot. Every entry has the following required fields.
+
+| Field | Question it answers | Failure it prevents |
+|---|---|---|
+| `id` | What stable record is this? | duplicate or silently replaced claims |
+| `claim` | What exactly may a reader repeat? | generalization beyond the source |
+| `class` | Is this measured, vendor-reported, or illustrative? | treating unlike evidence as equivalent |
+| `pin` | Which release, revision, checkpoint, or artifact? | irreproducible "latest" dependencies |
+| `checked` | On which ISO date was the source read? | timeless-looking stale prose |
+| `source` | Which primary HTTPS source supports it? | citation laundering through aggregators |
+| `owner_chapter` | Which `.qmd` file maintains or consumes the row? | ceremonial ownership and orphan facts |
+| `migration_note` | What must change or be retested? | cosmetic version bumps that break systems |
+
+`category`, `status`, and `owner_anchor` are optional indexing and control fields. An owner is grounded when its file contains the exact `source` URL. If the owner consumes a pinned record without repeating that URL, `owner_anchor` must equal `landscape-ref-<id>` and identify a visible, row-specific span in the owner. The linter checks both directions: every row reaches a real owner, and every such marker reaches exactly one row owned by that file. A retired entry remains in the database when its historical role matters. Its claim must explain the retirement signal, and its migration note must route readers to a replacement strategy. Deleting every superseded benchmark would erase why old scores should not be compared with new ones.
+
+The three evidence classes have deliberately narrow meanings:
+
+- **Measured** means the source reports an experiment under a stated setup. It does not mean independently replicated, representative of production, or causally explained.
+- **Vendor-reported** means an organization or official body states a specification, release property, status, or timeline. The label does not accuse the source of being wrong; it prevents a reported ceiling or status from masquerading as an independent measurement.
+- **Illustrative** means the number or scenario exists to exercise a method. It must be self-contained and must never be presented as a quote, market price, or measured workload.
+
+Classification follows the claim, not the domain. An accelerator's advertised memory capacity is vendor-reported. Throughput observed by the book's pinned harness is measured. A hypothetical hourly cost in a capacity exercise is illustrative. One physical product can therefore have several entries with different classes.
+
+The schema also sets a limit on what belongs here. Durable definitions, derivations, algorithms, design patterns, and failure models stay in the chapters. Private production telemetry stays in the system's evidence store. A local dated teaching example stays in its chapter when no coordinated migration depends on it. Appendix C holds only public, change-prone facts that help readers locate the 2026 frontier, operate a current example, or coordinate a high-stakes change.
+
+::: {.callout-warning}
+### A fresh source can still support a weak claim
+
+Freshness is not validity. A page checked today may report an unrepresentative benchmark, a theoretical peak, a proposal that is not law, or a model family without a reproducible checkpoint. Scope and classification matter before date.
+:::
+
+## Model profiles are candidates, not rankings {#app-c-models}
+
+The model registry records architecture profiles because systems engineers must reason about memory, communication, active compute, routing, tokenizer compatibility, multimodal input, and serving support. It deliberately does not copy fast-moving quality leaderboards.
+
+The 2026 snapshot contains several mixture-of-experts profiles drawn from official model cards or announcements:
+
+| Pinned profile | Reported total parameters | Reported active parameters | Engineering use |
+|---|---:|---:|---|
+| [DeepSeek-V4-Pro]{#landscape-ref-model-deepseek-v4-pro} | 1.6T | 49B | reason about weight residency versus per-token expert compute |
+| [Kimi K2.5]{#landscape-ref-model-kimi-k2-5} | 1T | 32B | test large-MoE serving and communication assumptions |
+| [Qwen3.5-397B-A17B]{#landscape-ref-model-qwen3-5-397b-a17b} | 397B | 17B | compare a lower active fraction under the same workload |
+| [GLM-5]{#landscape-ref-model-glm-5} | 744B | 40B | expose runtime and expert-parallel compatibility constraints |
+| [gpt-oss-120b]{#landscape-ref-model-gpt-oss-120b} | 117B | about 5.1B | examine local or smaller-cluster MoE deployment boundaries |
+| [Llama 4 Maverick]{#landscape-ref-model-llama-4-maverick} | 400B | 17B | connect multimodal architecture claims to a deployable manifest review |
+
+These rows are not directly comparable performance results. "Active parameters" can be counted differently, and per-token activation does not describe attention cost, KV cache, vision encoders, speculative decoding, quantization, expert imbalance, interconnect traffic, or kernel quality. Total parameters do not say how many replicas fit. Neither number predicts tool-use reliability.
+
+Use a profile to create a candidate, then bind the actual experiment to a **version bundle**:
+
+```text
+weights hash + configuration + tokenizer + chat template
++ quantization + inference engine/container + tool parser
++ prompt/policy + retrieval snapshot + evaluation contract
+```
+
+Selection then becomes multi-objective. For the target task distribution, measure final-state success, policy compliance, calibration, tool arguments, latency percentiles, throughput under concurrency, memory headroom, cost per successful task, and operational failure modes. Run enough repeated trajectories to expose stochastic variance. A model that wins a static question set may lose after tool timeouts, long conversations, or strict structured-output validation.
+
+Closed provider models belong in the same decision process even when their parameter counts are unavailable. Pin the provider model identifier and dated API behavior; record region, retention controls, tool schema, context policy, latency, rate limits, retirement policy, and price separately. Missing architecture disclosure changes the available evidence, not the need for evaluation.
+
+When a model profile changes, do not edit downstream arithmetic blindly. Recreate the capacity worksheet from Appendix B, confirm that the runtime supports the exact architecture, and repeat the release suite. The correct migration may be "no chapter change" because the profile was illustrative. It may instead invalidate quantization, expert-parallel, tokenizer, or context assumptions.
+
+## Local inference begins with fit, then measurement {#app-c-local}
+
+Local inference spans laptops, workstations, single accelerators, on-premises clusters, sovereign installations, and disconnected edge systems. "Runs locally" says nothing about acceptable quality, prompt length, concurrency, thermal stability, or security posture.
+
+Begin with three feasibility questions:
+
+1. **Can the pinned artifact fit?** Account for quantized weights, KV cache at the allowed context and concurrency, runtime workspaces, multimodal encoders, draft models, adapters, and fragmentation.
+2. **Can memory move fast enough?** Decode for small batches is often bandwidth-sensitive, while prefill and larger batches can become compute-sensitive. Published bandwidth is a ceiling, not delivered tokens per second.
+3. **Can the operational envelope hold?** Measure time to first token, decode rate, tail latency, sustained temperature/power, failure recovery, output compatibility, and the exact workload distribution.
+
+The current registry includes three deliberately different hardware views. AMD reports 288 GB HBM3E and up to 8 TB/s for one [MI350X]{#landscape-ref-hardware-amd-mi350x}. NVIDIA reports rack aggregates for [GB300 NVL72]{#landscape-ref-hardware-nvidia-gb300-nvl72}: 72 GPUs, 20 TB GPU memory, and up to 576 TB/s aggregate GPU-memory bandwidth. Apple's [2025 Mac Studio]{#landscape-ref-hardware-apple-mac-studio-2025} specification allows up to 256 GB unified memory with M3 Ultra and reports 819 GB/s bandwidth. A per-accelerator line, a rack total, and a unified-memory workstation must not be placed on one bar chart without normalizing scope.
+
+The training-cost registry also pins one [price observation]{#landscape-ref-pricing-gcp-a3-highgpu-8g-2026}: Google Cloud listed `a3-highgpu-8g` at \$88.490000119 per eight-H100 VM-hour, or \$11.061250014875 per GPU-hour, on 2026-07-19. It is a workbook input example, not a reusable market price; region, contract, capacity, services, and interruption terms still require a current quote.
+
+The runtime pin matters just as much. The snapshot records [vLLM 0.21.0]{#landscape-ref-runtime-vllm-0-21-0} because its release notes include breaking build and dependency signals, and [llama.cpp build b9637]{#landscape-ref-runtime-llama-cpp-b9637} because it provides a concrete multi-platform commit and binary set. Neither pin means "preferred." They demonstrate two maintenance patterns:
+
+- semantically versioned engines may still change supported compilers, transformer libraries, kernels, parsers, and scheduler behavior;
+- commit-oriented local runtimes move so frequently that an exact build and quantized artifact hash are necessary for reproduction.
+
+A sound local benchmark uses the same prompt corpus and acceptance predicates as hosted candidates. Report model-quality deltas introduced by quantization alongside speed. Separate prefill from decode, warm from cold start, and single request from production concurrency. Include rejected outputs and retries in cost and throughput. A fast invalid JSON response has not completed useful work.
+
+Local deployment can improve data control and disconnection tolerance, but it does not automatically provide privacy. Prompts can leak through logs, crash dumps, desktop telemetry, swap, shared model servers, or plugin processes. Apply the data-flow, least-privilege, observability, patching, and incident controls from Chapters 24 through 28 to the local boundary too.
+
+## Tokenizer-free modeling is a frontier, not a foregone conclusion {#app-c-tokenizer-free}
+
+Subword tokenization compresses common strings into fewer model steps, but it creates a fixed vocabulary and segmentation procedure outside the learned model. That boundary can behave unevenly across languages, spelling noise, code, identifiers, and unseen byte sequences. Byte-level models remove the fixed vocabulary but initially pay with much longer sequences and more autoregressive steps.
+
+The active research question is not simply "tokens or bytes?" It is **where segmentation and multiscale computation should live**.
+
+| Frontier line | Core move | Pinned evidence | Question still open |
+|---|---|---|---|
+| MEGABYTE | fixed multiscale byte patches with global and local models | NeurIPS 2023 | how far fixed patching scales for general assistants |
+| [BLT]{#landscape-ref-tokenizer-free-blt} | entropy-guided variable byte patches | arXiv:2412.09871 | full lifecycle efficiency and independent large-scale replication |
+| [H-Net]{#landscape-ref-tokenizer-free-hnet} | learned content- and context-dependent hierarchical chunking | arXiv:2507.07955, ICLR 2026 | stability, tooling, and behavior at broad frontier scale |
+| [EvaByte]{#landscape-ref-tokenizer-free-evabyte} | efficient byte-level architecture and decoding | 6.5B project release | comparison under common hardware and measurement protocols |
+
+These projects establish that tokenization is an architecture choice rather than a law of nature. They do not establish that every production system should discard tokenizers in 2026. A production decision must compare end-to-end quality and resources: bytes processed, training FLOPs, sequence memory, decode steps, serving bandwidth, robustness, multilingual slices, code and identifier fidelity, streaming behavior, and compatibility with constrained decoding and tool protocols.
+
+Units are a recurring trap. A trillion bytes is not a trillion tokens. Bits per byte, token-level perplexity, task accuracy, FLOPs, and wall-clock throughput answer different questions. The owner chapter keeps the representation theory; this appendix records papers and releases so the reader can rerun the comparison as the frontier moves.
+
+The most valuable migration test is adversarial, not ceremonial. Include malformed UTF-8, mixed scripts, combining characters, long identifiers, spacing-sensitive code, spelling noise, binary-like payloads, and languages underserved by the existing tokenizer. Then include ordinary clean text. A frontier representation should improve the weak slices without silently degrading the dominant workload or multiplying serving cost.
+
+## Frameworks and engines should sit behind owned contracts {#app-c-frameworks}
+
+An agent framework can accelerate checkpointing, streaming, human review, graph execution, and adapters. It does not own the product's invariants. The system must still define state transitions, effect authority, idempotency, cancellation, budgets, telemetry, evaluation, and recovery in terms the organization can test without the framework.
+
+@fig-appc-stack separates five layers that are often collapsed into "the agent stack."
+
+```{mermaid}
+%%| label: fig-appc-stack
+%%| fig-cap: "Which layer owns each kind of compatibility?"
+%%| fig-alt: "Product contracts sit above an orchestration framework and durable runtime. Protocol adapters connect tools, agents, and user interfaces. Model serving engines sit below. Observability and policy cross every layer."
+flowchart TB
+    P["Product contracts<br/>state · effects · budgets · evidence"]
+    F["Orchestration framework<br/>graphs · messages · adapters"]
+    R["Durable runtime<br/>checkpoint · replay · queues · workers"]
+    X["Protocol adapters<br/>MCP · A2A · AG-UI"]
+    E["Model serving engines<br/>provider API · vLLM · llama.cpp"]
+    P --> F --> R
+    F --> X
+    R --> E
+    O["Observability + policy"] -. "cross-cutting" .-> P
+    O -.-> F
+    O -.-> R
+    O -.-> X
+    O -.-> E
+```
+
+The registry pins [LangGraph's 1.x LTS lane]{#landscape-ref-framework-langgraph-v1} and [AutoGen's 0.4 stable documentation lane]{#landscape-ref-framework-autogen-0-4} as examples, not as a complete market survey. LangGraph documents checkpointing, persistence, streaming, and human-in-the-loop in a graph runtime. AutoGen separates AgentChat, an event-driven Core runtime, extensions, and Studio. Their abstractions differ; the evaluation questions do not:
+
+- Can an interrupted run resume without repeating an external effect?
+- Is persisted state versioned and migratable?
+- Are cancellation and deadlines propagated to model, tools, and queues?
+- Can one trace connect user event, model call, tool proposal, policy decision, effect receipt, and final state?
+- Can the application export its domain state and leave the framework?
+
+Keep tool schemas, policy decisions, receipts, and domain events in owned types. Wrap framework messages at the boundary. Store a version with serialized checkpoints. Maintain replay fixtures across the oldest supported version and the candidate version. If a framework upgrade changes scheduling, streaming order, or retry semantics, run fault injection—not only a happy-path unit test.
+
+The same rule applies to serving engines. Use a stable internal request/response contract and adapt provider-specific or engine-specific fields. Pin structured-output behavior and chat templates. A runtime upgrade that improves throughput but changes reasoning tags or tool-call parsing can reduce end-to-end success.
+
+## Protocol versions form a compatibility matrix {#app-c-protocols}
+
+MCP, A2A, and AG-UI address different edges. MCP connects an application to tools and context. A2A connects independently described agent services and task lifecycles. AG-UI connects an agent backend to an interactive user interface through events. OpenTelemetry GenAI conventions describe telemetry; C2PA describes signed provenance manifests. They complement one another and should not be forced into one universal envelope.
+
+| Surface | Snapshot pin | Negotiation or state | 2026 migration watch |
+|---|---|---|---|
+| MCP | `2025-11-25` | date revision negotiated during initialization; capabilities exchanged | deprecated feature lifecycle, authorization, elicitation, and transport behavior |
+| A2A | specification `1.0.0`, protocol `1.0` | `A2A-Version`, Agent Cards, task/message/artifact lifecycle | migration from 0.3 discriminators and interface declarations |
+| AG-UI | pre-1.0 events checked 2026-07-19 | run, message, tool, state, and reasoning event streams | deprecated `THINKING_*` events replaced by `REASONING_*`; draft events can change |
+| OpenTelemetry | dedicated GenAI repository commit `c26a2c2`, based on core semantic conventions `1.43.0` | trace context and named attributes/events | repository migration, developmental GenAI fields, sensitive content, cardinality, dual-emission window |
+| C2PA | specification `2.4` | signed manifest, assertions, trust chain, hard/soft bindings | conformance tooling and trust-list policy; provenance is not truth |
+
+Version support is a matrix, not a Boolean. For each pair of client and server versions, test initialization, capability negotiation, unknown fields, unknown event types, cancellation, timeouts, authentication failures, streaming disconnects, duplicate delivery, and recovery. A tolerant reader should ignore safe unknown optional data; it must reject ambiguous authority or invalid required state.
+
+Protocol conformance does not grant trust. A schema-valid MCP server can describe a dangerous tool. A signed A2A Agent Card can advertise capability without proving quality. An AG-UI event can carry untrusted content. OpenTelemetry attributes can exfiltrate secrets. A valid C2PA manifest can preserve a false claim from a signer. Authentication, authorization, sandboxing, policy, validation, provenance, and evaluation remain separate controls.
+
+The practical thin waist is a typed internal event model. Adapters translate external messages into proposals and observations. Deterministic policy grants or denies effects. Receipts record committed outcomes. This lets an organization replace protocol libraries without making their classes the source of truth.
+
+## Retrieval policies need capability pins {#app-c-retrieval}
+
+“Advanced RAG” is not a reproducible dependency. It can mean a fixed hybrid retriever, a learned decision to retrieve, a corrective evidence evaluator, a graph index, a model that issues several searches, or a complete research workflow. The registry therefore records **policy capabilities and evidence**, not one ranking of retrieval products.
+
+The 2026 snapshot adds five retrieval landmarks. Microsoft's GraphRAG documentation exposes local, global, DRIFT, and basic query modes; that entry is vendor-reported because the claim is about the documented interface. [Search-R1]{#landscape-ref-retrieval-search-r1} and ReSearch are separate measured research entries that both study reinforcement-learned interleaving of reasoning and search under their own training and evaluation contracts. SPARKLE presents a structured adaptive retrieval policy. [PoisonedRAG]{#landscape-ref-retrieval-poisonedrag} is a measured security result about corpus knowledge corruption. None of these records says that the named policy wins on the reader's corpus.
+
+Pin a complete retrieval experiment:
+
+```text
+corpus snapshot + ACL snapshot + parser/chunker + embedding/index build
++ lexical configuration + fusion/reranker + query policy + model
++ maximum calls/tokens/time + evidence admission + scorer + task split
+```
+
+Changing any term can move quality, cost, or exposure. A new graph extractor can alter entity identity and invalidate deletion lineage. A new search policy can issue more calls while improving an answer metric. A retriever upgrade can change which hostile documents reach the model. A larger context window can change the best routing decision without changing the index.
+
+Security terminology is pinned separately to NIST AI 100-2e2025 and OWASP LLMSVS v2. Those documents make indirect prompt injection a current review concern; they do not supply a perfect detector. The owner chapters retain the durable controls: authorization before ranking, provenance through transformations, least-privilege tools, independent effect gates, typed abstention, and adversarial evaluation.
+
+When a retrieval-policy entry changes, rerun direct, one-shot, iterative, graph, structured-store, and required-abstention slices under equal budgets. Report retrieval recall, supported-claim rate, citation correctness, latency, calls, cost, permission violations, and attack influence separately. Migrate only when the complete system improves at an operating point the product can sustain.
+
+## Benchmarks need retirement rules {#app-c-benchmarks}
+
+A benchmark is a measurement instrument with a task distribution, environment, harness, scorer, policy, and contamination history. Naming only the dataset discards most of the experiment.
+
+The 2026 registry illustrates a portfolio rather than a single score:
+
+| Capability | Current pinned signal | What must accompany a score |
+|---|---|---|
+| terminal work | [Terminal-Bench 2.1 with pinned Harbor]{#landscape-ref-benchmark-terminal-bench-2-1} | task/container revision, agent, model, budget, retries |
+| computer use | [OSWorld 2.0 `v2026.06.24`]{#landscape-ref-benchmark-osworld-2} | VM/app state, observations, action policy, final-state verification |
+| long-term memory | LongMemEval-V2 | data isolation, memory policy, harness audit, per-ability slices |
+| dual-control support | [tau2-bench]{#landscape-ref-benchmark-tau2} | simulator, policy, environment, repeated trials, coordination errors |
+| software engineering | [SWE-bench-Live plus internal fresh tasks]{#landscape-ref-benchmark-swe-live} | repository cutoff, harness, adjudication, contamination controls |
+| GUI grounding | ScreenSpot-Pro | resolution, target protocol, application/OS slices |
+| document parsing | OmniDocBench paper `2412.07626v2` plus Real5 paper `2603.04205v2` | element metrics, page types, capture conditions, semantic checks |
+
+Static leaderboards decay for predictable reasons: training contamination grows, tasks become saturated, harnesses are optimized, dependencies rot, labels prove wrong, and the public score becomes a marketing target. OpenAI's [2026 rationale for no longer using SWE-bench Verified]{#landscape-ref-benchmark-swe-verified-retirement} is recorded as a **retirement signal**, not as proof that the original benchmark was useless. Historical scores can describe historical systems. They should stop driving frontier launch decisions when the instrument no longer separates or accurately measures candidates.
+
+```{mermaid}
+%%| label: fig-appc-benchmark-retirement
+%%| fig-cap: "When should a benchmark move from launch gate to historical record?"
+%%| fig-alt: "A benchmark enters validation, then active use. Audits check contamination, task validity, harness reproducibility, saturation, and production correlation. Healthy benchmarks remain active; repairable issues create a revision and crosswalk; severe issues retire the benchmark to historical use and a replacement is validated."
+flowchart LR
+    N["New instrument"] --> V["Validate tasks + harness"]
+    V --> A["Active decision signal"]
+    A --> D{"Periodic audit"}
+    D -->|"healthy"| A
+    D -->|"repairable"| U["New revision + crosswalk"]
+    D -->|"contaminated · invalid · saturated"| R["Retire from launch gate"]
+    U --> V
+    R --> H["Historical use only"]
+    R --> N2["Validate replacement"]
+```
+
+Define retirement triggers before a favored model scores well. Useful triggers include a high rate of invalid tasks, uncontrolled environment drift, evidence of answer leakage, performance near the human or harness ceiling, low variance among relevant candidates, weak correlation with production outcomes, or a change in the product task distribution.
+
+Never replace an old benchmark silently. Run a crosswalk on representative systems, publish task-level differences, and mark which historical comparisons remain valid. Keep internal shadow evaluations fresh and access-controlled. Use production incidents to add permanent regression cases, while preventing the training path from consuming release holdouts.
+
+## Legal and governance entries are counsel-owned signals {#app-c-governance}
+
+This appendix is not legal advice. It records official signals so engineers know when governance artifacts, lineage, disclosure, or counsel review may need to change. Legal applicability depends on jurisdiction, role, system purpose, user population, risk classification, dates, amendments, and facts that a book cannot determine.
+
+The registry separates four statuses that teams often blur:
+
+- an **enacted requirement** may have phased application dates and exceptions;
+- a **proposal or consultation** can change and is not a final rule;
+- official **guidance or a voluntary framework** can shape controls without itself being a universal legal duty;
+- a **technical standard** can support evidence or interoperability without deciding compliance.
+
+The dated snapshot includes the European Commission's AI Act implementation page, [California AB 2013]{#landscape-ref-governance-california-ab-2013}, [NIST AI 600-1]{#landscape-ref-governance-nist-ai-600-1}, the [U.S. Copyright Office's multi-part AI report]{#landscape-ref-governance-usco-ai-report}, and an [FTC June 2026 proposed policy statement]{#landscape-ref-governance-ftc-ai-accuracy-proposal}. Their roles differ. The AI Act and AB 2013 are legal sources with scoped obligations and timelines. NIST AI 600-1 is a voluntary risk-management profile. The Copyright Office report analyzes policy and doctrine; Part 3 remained marked pre-publication on the checked page. The FTC item is explicitly a proposal open for comment.
+
+An engineer should not translate those sources directly into "compliant: true." Instead, maintain an obligations register with:
+
+| Field | Example of the required precision |
+|---|---|
+| source and status | enacted text, final rule, proposal, guidance, or standard |
+| jurisdiction and role | provider, deployer, developer, importer, employer, public body |
+| system and use scope | which model, workflow, population, and decision are covered |
+| effective/application dates | date plus exception or transition basis |
+| counsel interpretation | named reviewer, decision date, assumptions, open questions |
+| mapped control | owner, implementation, test, retained evidence, residual risk |
+| update trigger | amendment, final guidance, new release, jurisdiction expansion, incident |
+
+The technical chapters make counsel review possible. Dataset lineage supports disclosure and rights analysis. Model and system cards constrain claims. Evaluation contracts substantiate performance. Logs and receipts support investigation. Privacy maps enable retention and deletion. A safety case connects hazards to evidence. Those artifacts do not decide the law, but a team without them cannot answer precise legal or audit questions efficiently.
+
+When a legal entry changes, freeze the source previously relied upon, record the new source, and open a change review. Counsel determines applicability. Engineering identifies affected datasets, model versions, interfaces, notices, controls, evidence retention, and launch conditions. Product owners decide rollout. The migration is complete only after affected evidence and system behavior are verified.
+
+## Run an annual frontier audit {#app-c-audit}
+
+Individual entries have freshness checks. Once per year, audit the **shape of the registry** so yesterday's categories do not define tomorrow's book.
+
+Use this sequence:
+
+1. **Inventory every dated box.** The linter covers the JSON registry; search all chapters for `Landscape 2026`, `Checked`, version strings, prices, leaderboards, and "current" claims. Every moving fact should either become a registry entry or be removed.
+2. **Challenge the taxonomy.** Ask whether new model interfaces, learned representations, agent protocols, hardware classes, media formats, evaluation methods, or regulatory categories require a new row—not merely a new vendor.
+3. **Re-run representative builds.** Execute the serving, protocol, runtime, evaluation, safety, observability, computer-use, multimodal, embodied, and capstone artifacts under pinned dependencies. Record breakages and changed results.
+4. **Audit primary sources and retirements.** Replace redirected or secondary links. Mark proposals that became final, benchmarks that became saturated, versions that lost support, and model artifacts that disappeared or changed terms.
+5. **Publish a migration digest.** Summarize changed entries, owner chapters, required reader actions, incompatible historical results, and intentionally unchanged durable lessons.
+
+Assign owners by domain, not vendor. A serving owner tracks engines and hardware. An interoperability owner tracks protocols. Evaluation owners track benchmark health. Governance and counsel track official sources. Chapter maintainers approve explanation changes. One editor owns the cross-book consistency gate.
+
+The audit should produce evidence, not a trend essay: linter output, link report, test and render results, dependency manifest, benchmark crosswalks, changed artifact hashes, reviewed legal-source status, and a signed editorial decision log. If a frontier claim cannot be verified or no longer helps a decision, delete it from the teaching path.
+
+## Keep an explicit open research agenda {#app-c-research}
+
+The registry answers "what is pinned now?" The research agenda asks "which uncertainty should change an engineering decision next?" A useful agenda names a measurable gap and an owner rather than announcing that a topic is exciting.
+
+### Models and representations
+
+- Can tokenizer-free or learned-chunk models preserve quality while reducing total training-and-serving energy across multilingual, code, tool, and streaming workloads?
+- Which sparse architectures remain robust under quantization, expert failures, heterogeneous accelerators, and adversarial routing loads?
+- How should reasoning-time compute be budgeted and calibrated when longer traces can increase both quality and attack surface?
+
+### Agent systems
+
+- Which task properties justify planning, memory, multi-agent coordination, or world models over a simpler workflow?
+- Can effect-safe runtimes provide portable exactly-once intent over heterogeneous tools that lack idempotency?
+- How can long-lived agents update memory while supporting deletion, provenance, contradiction, temporal validity, and poisoning recovery?
+
+### Evaluation and observability
+
+- How do we build live, contamination-resistant evaluations without making them irreproducible or prohibitively expensive?
+- Which trajectory signals predict production harm before final-state failure, without storing sensitive reasoning content?
+- How should uncertainty propagate across retrieval, perception, planning, policy, tool execution, and user confirmation?
+
+### Security, governance, and society
+
+- What isolation and authorization primitives remain usable under long-horizon, multi-tenant, multimodal agents?
+- Which provenance signals survive editing and distribution while preserving privacy and avoiding false certainty?
+- How can organizations test disparate failure rates, accessibility, contestability, and human oversight in workflows rather than static model outputs?
+
+### Embodied and multimodal systems
+
+- Which world-model representations improve recovery under distribution shift instead of merely improving open-loop prediction?
+- How should simulation evidence transfer to physical safety cases, and where must real-world testing remain mandatory?
+- Can speech and video agents remain interruptible, low-latency, and effect-safe when perception is partial and asynchronous?
+
+Review this agenda with the annual audit. Promote a question into a chapter only when it gains durable concepts, reproducible evidence, and a build. Remove questions that cease to influence design. The book should not grow merely because the news cycle does.
+
+## Build: audit the registry {#app-c-build}
+
+The integrated build is intentionally small: a deterministic linter over the living database. It does not browse, summarize, or edit claims. Its purpose is to make missing pins, malformed dates, duplicate identifiers, non-HTTPS sources, invalid evidence classes, and stale checks impossible to overlook.
+
+Run it from the book root:
+
+```bash
+python code/appc/landscape_lint.py data/landscape-2026.json \
+  --today 2026-07-19 --max-age-days 120 --warnings-as-errors
+python -m pytest tests/test_appendix_c_landscape.py -q
+```
+
+The checked snapshot reports:
+
+```text
+Checked 55 entries: 0 errors, 0 warnings.
+9 passed
+```
+
+Use the tool in the maintenance loop:
+
+1. copy the database to a working branch;
+2. remove a `pin` from one entry and observe a hard error;
+3. set a `checked` date beyond the allowed age and observe a warning;
+4. open the primary source manually and determine whether the atomic claim still holds;
+5. if it changed, update the pin, claim, checked date, and migration note together;
+6. inspect the owner chapter and run the named compatibility or evaluation work;
+7. rerun the linter, chapter tests, link checks, and full render;
+8. review the diff as an evidence change, not a documentation typo.
+
+The tests exercise the database itself plus missing fields, stale and future dates, malformed dates, duplicate identifiers, insecure source URLs, owner-path existence, source-or-anchor grounding, reverse marker ownership, and command exit behavior. `--warnings-as-errors` belongs in publication CI. A local audit may first run without it to print the stale work queue.
+
+The linter cannot tell whether a source is primary, a benchmark is valid, a statute applies, or a vendor result generalizes. Those are review responsibilities. Its value is narrower and real: it makes the editorial contract executable and ensures every moving claim carries the metadata needed for human judgment.
+
+## What endures, what changes {#app-c-endures}
+
+The enduring method is:
+
+- separate mechanisms from moving examples;
+- phrase one atomic, decision-relevant claim per record;
+- classify unlike evidence honestly;
+- pin the referent and verification date;
+- use primary sources;
+- give interpretation to an owner chapter;
+- write migration and retirement rules before they are needed;
+- automate consistency, not truth;
+- preserve historical context without letting it drive current launch gates.
+
+The changing surface includes model rosters and endpoints, weights and licenses, framework APIs, runtime kernels, hardware, prices, protocol revisions, telemetry conventions, benchmark tasks and leaderboards, official guidance, proposals, statutes, and application dates. Their presence in this appendix does not make them durable. Their explicit dates make their instability visible.
+
+## Exercises {#app-c-exercises}
+
+1. Pick one model-profile entry. Split its vendor-reported architecture fact from a measured deployment result on your hardware. Create two records with distinct pins and classes, then explain which chapter decision consumes each one.
+
+2. Build a client/server compatibility table for two MCP revisions or two A2A protocol lines. Add fixtures for negotiation failure, unknown optional fields, duplicate delivery, cancellation, and reconnect. Write the migration note before changing the adapter.
+
+3. Reproduce one local-inference comparison with a pinned model artifact and runtime commit. Report weight format, prompt corpus, prefill and decode rates, time to first token, p95 latency, memory peak, quality delta, thermal duration, and successful-task throughput.
+
+4. Audit a public agent leaderboard. Freeze the task set, harness, environment, scorer, model, agent, and budget. Identify at least three threats from contamination, invalid tasks, dependency drift, saturation, or selective reporting. Propose a retirement trigger and replacement signal.
+
+5. Take the EU AI Act, California AB 2013, NIST AI 600-1, or another official source relevant to your system. Without making your own legal conclusion, create an obligations-register draft that distinguishes source status, possible role, assumptions, counsel question, mapped evidence, and update trigger.
+
+6. Add one 2026 frontier entry that is absent from the registry. Use a primary source, make the claim atomic, choose the evidence class, pin an artifact, link an owner chapter, and write a migration note. Ask a reviewer to find where your language overgeneralizes the source.
+
+7. Run a miniature annual audit. Search the book for dated facts, choose three stale or unpinned candidates, verify their primary sources, update or remove them, run affected builds, and publish a one-page migration digest that states which durable lessons did not change.
+
+## Notes and primary sources {#app-c-sources}
+
+The full, machine-readable source list lives beside each claim in [`data/landscape-2026.json`](../data/landscape-2026.json). The following links are the principal anchors for this snapshot.
+
+For interoperability, consult the official [MCP versioning page](https://modelcontextprotocol.io/docs/learn/versioning), [MCP 2025-11-25 specification](https://modelcontextprotocol.io/specification/2025-11-25), [A2A v1.0.0 release](https://github.com/a2aproject/A2A/releases/tag/v1.0.0), [AG-UI event documentation](https://docs.ag-ui.com/concepts/events), the dedicated [OpenTelemetry GenAI semantic-conventions repository](https://github.com/open-telemetry/semantic-conventions-genai), and [C2PA 2.4 specification](https://spec.c2pa.org/specifications/specifications/2.4/specs/C2PA_Specification.html).
+
+For the tokenizer-free frontier, start with [MEGABYTE](https://papers.neurips.cc/paper_files/paper/2023/hash/f8f78f8043f35890181a824e53a57134-Abstract-Conference.html), [Byte Latent Transformer](https://arxiv.org/abs/2412.09871), [H-Net](https://arxiv.org/abs/2507.07955), and the [EvaByte project report](https://hkunlp.github.io/blog/2025/evabyte/).
+
+For the distributed-training snapshot and dated price observation, consult PyTorch [`fully_shard`](https://docs.pytorch.org/docs/main/distributed.fsdp.fully_shard.html), [TorchTitan](https://github.com/pytorch/torchtitan), [MaxText](https://github.com/AI-Hypercomputer/maxtext), and Google Cloud's [accelerator-optimized pricing](https://cloud.google.com/products/compute/pricing/accelerator-optimized).
+
+For the agentic-retrieval snapshot, use the official [GraphRAG query documentation](https://microsoft.github.io/graphrag/query/overview/), the COLM 2025 OpenReview record for [Search-R1](https://openreview.net/forum?id=Rwhi91ideu), [ReSearch arXiv v3](https://arxiv.org/abs/2503.19470), [SPARKLE](https://aclanthology.org/2026.acl-long.1793/), and the USENIX Security 25 proceedings page for [PoisonedRAG](https://www.usenix.org/conference/usenixsecurity25/presentation/zou-poisonedrag). Security terminology is pinned to [NIST AI 100-2e2025](https://csrc.nist.gov/pubs/ai/100/2/e2025/final) and [OWASP LLMSVS v2](https://owasp.org/www-project-llm-verification-standard/LLMSVS-v2.0-en.html).
+
+For current agent-evaluation examples, see [Terminal-Bench news and revisions](https://www.tbench.ai/news), [OSWorld 2.0](https://osworld-v2.xlang.ai/), [LongMemEval-V2](https://arxiv.org/abs/2605.12493), [tau2-bench](https://arxiv.org/abs/2506.07982), [SWE-bench-Live](https://arxiv.org/abs/2505.23419), [ScreenSpot-Pro](https://arxiv.org/abs/2504.07981), [OmniDocBench](https://arxiv.org/abs/2412.07626), and [Real5-OmniDocBench](https://arxiv.org/abs/2603.04205). Read benchmark retirement claims alongside the source that explains them, including OpenAI's dated note on [why it stopped using SWE-bench Verified for frontier evaluation](https://openai.com/index/why-we-no-longer-evaluate-swe-bench-verified/).
+
+For governance signals, use the European Commission's [AI Act implementation page](https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai), the enacted text and status for [California AB 2013](https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202320240AB2013), [NIST AI 600-1](https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-generative-artificial-intelligence), the U.S. Copyright Office [AI initiative and reports](https://www.copyright.gov/ai/), and the FTC docket page for its [June 2026 proposed AI accuracy policy statement](https://www.ftc.gov/policy/public-comments/policy-statement-concerning-suppression-accuracy-artificial-intelligence-systems). Recheck status and obtain qualified advice for the actual system and jurisdiction.

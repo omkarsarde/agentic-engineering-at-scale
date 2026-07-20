@@ -1,0 +1,534 @@
+---
+description: "Choose the smallest model-side intervention that matches the evidence, train it without confusing specialization for progress, and ship it only through a four-set release gate."
+---
+
+# Customization: Distillation, Merging, and Fine-Tuning in Practice [F+S] {#sec-ch11}
+
+## What you need going in {#sec-ch11-prerequisites}
+
+> **Assumed:** neural-network fundamentals, backpropagation, basic Python, and beginner PyTorch.
+>
+> **From earlier chapters:** Chapter 5's data-mixture and contamination treatment established why provenance, deduplication, and clean evaluation data matter. [Chapter 7, Supervised and preference post-training](07-post-training.qmd#sec-ch07) owns the derivations of SFT, reward modeling, DPO, and RLHF. [Chapter 8, Reinforcement learning with verifiable rewards](08-reasoning-test-time-compute.qmd#sec-ch08) owns reasoning-policy optimization. [Chapter 10, Quantization is a validation problem](10-serving-at-scale.qmd#sec-ch10-quantization) owns inference quantization and multi-LoRA serving mechanics. This chapter turns those ingredients into a customization decision and release workflow.
+>
+> **Not required:** a training cluster, access to a proprietary teacher, experience with a fine-tuning service, or a seven-billion-parameter checkpoint. The default build is a deterministic CPU proxy; an optional adapter exposes the same QLoRA configuration to a real open-weight model.
+
+## Contents {#sec-ch11-contents}
+
+- [The customization decision tree](#sec-ch11-decision-tree)
+- [What you will build](#sec-ch11-will-build)
+- [LoRA and QLoRA isolate a trainable update](#sec-ch11-peft)
+- [Distillation moves behavior down the size ladder](#sec-ch11-distillation)
+- [Model merging combines task vectors, not capabilities](#sec-ch11-merging)
+- [Preference tuning and reinforcement fine-tuning are surgical tools](#sec-ch11-preference-rft)
+- [Data engineering determines what customization learns](#sec-ch11-data)
+- [Forgetting and compression define the capability budget](#sec-ch11-forgetting)
+- [The four-set gate decides whether a model ships](#sec-ch11-eval-gate)
+- [Serving customized models closes the loop](#sec-ch11-serving)
+- [Landscape 2026 (dated)](#sec-ch11-landscape)
+- [Build](#sec-ch11-build)
+- [What endures, what changes](#sec-ch11-endures)
+- [Exercises](#sec-ch11-exercises)
+- [Notes and sources](#sec-ch11-sources)
+
+## The customization decision tree {#sec-ch11-decision-tree}
+
+A support assistant repeatedly answers with the wrong refund policy. The team proposes fine-tuning because the error appears in the model's output. That diagnosis is one layer too late. The policy changes every quarter, must be cited, and depends on the customer's jurisdiction. Encoding today's answer in weights would make updates slow, provenance invisible, and stale behavior difficult to revoke. The failure is missing evidence and state, not missing response behavior.
+
+The first customization skill is deciding *not* to customize weights. Name the failing contract before choosing a method:
+
+- **Evidence:** the answer requires facts that are private, mutable, attributable, or too rare to trust to parametric recall. Retrieve the facts and require grounded use.
+- **State:** the answer depends on an account, workflow, prior action, or current environment. Read state through an authorized interface.
+- **Effect:** success means changing the world—issuing a refund, compiling code, or updating a ticket. Use a typed tool with validation and authorization.
+- **Behavior:** the necessary information is already present, but the model selects the wrong format, tone, classification, transformation, or refusal policy. Prompting or post-training may fit.
+- **Representation:** retrieval fails because semantically related items are poorly embedded or ranked. Tune the retriever, embedding model, or reranker against retrieval judgments.
+- **Economics:** a strong model succeeds, but latency or per-query compute prevents deployment. Distill into a smaller student, prune a family member, or route easy cases to it.
+
+The RAG branch is completed in Ch 14. This section is deliberately self-contained because Chapter 14's Route B reader uses it to decide whether retrieval is the missing mechanism.
+
+Before any training, build the strongest non-training baseline that the production interface permits: a precise instruction, representative few-shot examples, a typed output schema, retrieved evidence when appropriate, and a deterministic verifier. Run that baseline on a frozen evaluation set. Training without this baseline cannot distinguish a learned capability from an expensive way to shorten a prompt.
+
+Once the defect is genuinely model behavior, the kind of supervision selects the method:
+
+| Supervision the team can produce | Most direct intervention | What it teaches |
+|---|---|---|
+| “Here is the response to write” | SFT, often through LoRA or QLoRA | conditional imitation: input to target output |
+| “Response A is better than B” | preference tuning such as DPO | relative choice under a prompt distribution |
+| “This outcome scores 0.8” | reinforcement fine-tuning | search against a stable reward or grader |
+| “Here is the teacher distribution” | logit distillation | relative probability across alternatives |
+| “Here is the teacher completion or solution trace” | sequence distillation | imitation of teacher-generated trajectories |
+| “These specialized checkpoints share one base” | model merging | an evaluated combination of parameter updates |
+| “Here is a large unlabeled domain corpus” | continued pretraining | the domain's token distribution, vocabulary, and regularities |
+
+Do not climb this table as a maturity ladder. SFT is not an inferior form of RL when exact targets are available; RFT is not useful when a grader is noisy or exploitable. Pick the supervision that most directly expresses the contract.
+
+Figure @fig-ch11-decision-tree makes escalation and its stop conditions explicit. Every weight-changing path returns to the same release gate.
+
+```{mermaid}
+%%| label: fig-ch11-decision-tree
+%%| fig-cap: "Which missing mechanism should be repaired before a team changes model weights?"
+flowchart TD
+    F(["Observed production failure"]) --> B["Freeze a baseline and reproduce it"]
+    B --> Q{"What is missing?"}
+    Q -->|"mutable facts or citations"| R["Retrieval / RAG — completed in Ch 14"]
+    Q -->|"private or live state"| S["Authorized state read"]
+    Q -->|"external effect"| T["Typed tool + policy"]
+    Q -->|"retrieval geometry"| E["Embedding or reranker tuning"]
+    Q -->|"response behavior"| H{"Available supervision?"}
+    H -->|"target response"| SFT["SFT with PEFT or full tuning"]
+    H -->|"ranked pair"| DPO["Preference tuning"]
+    H -->|"reliable scalar verifier"| RFT["Reinforcement fine-tuning"]
+    Q -->|"teacher succeeds, serving is costly"| KD["Distill to a smaller student"]
+    Q -->|"compatible specialists exist"| M["Merge task vectors"]
+    R --> G["Four-set task and regression gate"]
+    E --> G
+    SFT --> G
+    DPO --> G
+    RFT --> G
+    KD --> G
+    M --> G
+    G -->|"pass"| P(["Canary, observe, promote"])
+    G -->|"fail"| B
+```
+
+Two tempting shortcuts fail this tree. Fine-tuning on documents is not a dependable database: memorization is uneven, updates require training, and answers do not carry source identity. Fine-tuning on a handful of bad outputs is also not a specification: the examples may encode an accidental wording, judge bias, or one traffic slice. Diagnose the invariant, then collect supervision around it.
+
+## What you will build {#sec-ch11-will-build}
+
+::: {.callout-tip title="The customization decision lab"}
+You will extend one integrated artifact rooted at [`code/ch11/customization_lab.py`](../code/ch11/customization_lab.py). Its declared synthetic linear fixture has a frozen base classifier, two related tasks, and four data partitions. The lab reconstructs the base through the NF4 codebook, trains a rank-two LoRA update, adds temperature-scaled logit distillation, evaluates every checkpoint on train, development, untouched task-test, and general-regression sets, then sweeps a two-adapter linear merge against TIES.
+
+[`render_metrics.py`](../code/ch11/render_metrics.py) renders the numeric result from the same functions. [`hf_qlora_adapter.py`](../code/ch11/hf_qlora_adapter.py) is an optional training seam for a real seven-billion-parameter-class conversational checkpoint and teacher-trace JSONL; it does not replace the release gate. Success in the default fixture means the task-test gain reaches eight percentage points, general regression loses no more than eight points, every mechanism test passes, and the merge result is reported rather than presumed.
+:::
+
+## LoRA and QLoRA isolate a trainable update {#sec-ch11-peft}
+
+Full fine-tuning gives every parameter permission to move. That is useful when a broad distribution shift needs high capacity, but it couples one adaptation to the storage, optimizer state, checkpointing, and serving cost of an entire model. Parameter-efficient fine-tuning (PEFT) constrains the update and keeps a reusable base.
+
+For a pretrained linear map $W_0\in\mathbb{R}^{d_{out}\times d_{in}}$, LoRA freezes $W_0$ and learns
+
+$$
+h=W_0x+\frac{\alpha}{r}BAx,
+$$
+
+where $A\in\mathbb{R}^{r\times d_{in}}$, $B\in\mathbb{R}^{d_{out}\times r}$, rank $r\ll\min(d_{in},d_{out})$, and $\alpha$ controls update scale. The trainable parameter count is $r(d_{in}+d_{out})$ instead of $d_{in}d_{out}$. A common initialization draws $A$ and sets $B=0$, so the first forward pass exactly matches the base. After training, $\Delta W=(\alpha/r)BA$ can remain as an adapter or be added to a compatible base for inference.
+
+A common mixed-precision Adam accounting is roughly 16 bytes per *trainable* parameter—half-precision weight and gradient, a full-precision master weight, and two full-precision moments—before activations and temporary buffers. LoRA reduces that term and the saved artifact. It does not erase activation memory, base-weight memory, optimizer implementation details, or the cost of forwarding through the full model.
+
+Configuration is a capacity allocation problem:
+
+1. Establish an all-linear baseline when the architecture and PEFT implementation support it; restricting updates to query and value projections is a historical default, not a universal optimum.
+2. Sweep rank against held-out quality. Rank is update capacity, not an accuracy knob with monotonic returns.
+3. Treat $\alpha$, learning rate, dropout, target modules, sequence length, packing, and epochs as a coupled recipe. The heuristic $\alpha=2r$ is a starting point, not a law.
+4. Inspect trainable parameter names and counts before the first batch. A misspelled module pattern can create a no-op or update an unintended head.
+5. Save the base revision, tokenizer, chat template, PEFT configuration, and adapter together. An adapter is not self-describing enough to deploy safely.
+
+Rank-stabilized LoRA replaces $\alpha/r$ scaling with $\alpha/\sqrt{r}$ so updates do not vanish as quickly at high rank. DoRA separates weight magnitude from direction and applies a low-rank update to the direction. Both are hypotheses to evaluate under the same gate; neither repairs poor supervision.
+
+Full fine-tuning remains an important control. Escalate when a well-tuned PEFT sweep saturates, the required update is broad rather than approximately low rank, embeddings or architectural components must change, or continued pretraining is the actual objective. Compare it with PEFT at matched data and a declared compute budget; a full update can gain capacity while increasing optimizer memory, checkpoint size, forgetting surface, and the cost of keeping variants independently deployable.
+
+QLoRA makes the *frozen* base cheaper to hold during adapter training. It stores base weights in four-bit NormalFloat (NF4), dequantizes them to a higher-precision compute type for matrix operations, and backpropagates through that fixed reconstruction into LoRA parameters. The optimized object remains the adapter; the four-bit codes are not updated.
+
+NF4 places code points according to a normal-distribution prior and includes an exact zero. Double quantization compresses the blockwise quantization constants, saving about 0.37 bits per parameter in the QLoRA experiments. Paged optimizers move optimizer pages through unified memory to control transient spikes. These mechanisms solve different memory terms and should be measured separately.
+
+Figure @fig-ch11-qlora answers the frequent question “what receives a gradient?” The quantized base participates in the computation but is immutable.
+
+```{mermaid}
+%%| label: fig-ch11-qlora
+%%| fig-cap: "During QLoRA, which representation is stored, which precision computes, and which parameters update?"
+flowchart LR
+    X(["Activation x"]) --> Q["Frozen NF4 codes + block scales"]
+    Q -->|"dequantize for compute"| W["Base matrix multiply in bf16/fp16"]
+    X --> A["Trainable LoRA A"]
+    A --> B["Trainable LoRA B"]
+    W --> SUM(("+"))
+    B -->|"scaled low-rank update"| SUM
+    SUM --> H(["Activation h"])
+    L["Loss"] -.->|"gradient"| B
+    L -.->|"gradient"| A
+    L -.->|"no update"| Q
+```
+
+The lab implements the NF4 reconstruction and the low-rank gradient explicitly:
+
+```python
+# code/ch11/customization_lab.py — changed regions: nf4_quantize, LoRA
+quantized_base, rmse = nf4_quantize(full_base, group_size=16)
+adapter = LoRA(quantized_base, rank=2, alpha=4.0, seed=1)
+
+frozen = quantized_base.copy()
+train_sft(adapter, sets["train"])
+assert np.array_equal(quantized_base, frozen)
+assert np.linalg.norm(adapter.delta) > 0
+```
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `customization_lab.py` after NF4 and LoRA | 97 lines | The base reconstruction never changes; only the low-rank update receives optimization steps. |
+:::
+
+## Distillation moves behavior down the size ladder {#sec-ch11-distillation}
+
+A frontier teacher classifies difficult tickets accurately, but its latency and price make it unsuitable for every request. Distillation asks a smaller student to reproduce the teacher on a *declared operating distribution*. It does not copy an abstract capability object. What transfers depends on prompts, teacher access, targets, student capacity, and loss.
+
+**Sequence-level distillation** samples teacher completions and uses them as SFT targets. It works through a black-box API and can transfer format, style, tool-selection patterns, or solution traces. It discards the teacher's probability mass over alternatives and inherits sampling errors. Generate multiple candidates when a verifier exists, retain provenance and teacher settings, filter invalid outputs, and preserve human or executable gold data as an anchor.
+
+**Logit distillation** uses the teacher distribution. Let $z_T$ and $z_S$ be teacher and student logits and let temperature $\tau>0$ soften both distributions:
+
+$$
+p_T^{(\tau)}=\operatorname{softmax}(z_T/\tau),\qquad
+p_S^{(\tau)}=\operatorname{softmax}(z_S/\tau).
+$$
+
+A standard objective contains
+
+$$
+\mathcal{L}_{KD}=\tau^2D_{KL}\!\left(p_T^{(\tau)}\,\|\,p_S^{(\tau)}\right).
+$$
+
+The teacher can reveal that two wrong labels are nearly plausible even when its sampled output supplies only one hard target. The $\tau^2$ factor compensates for gradient shrinkage introduced by temperature. This white-box signal requires compatible vocabularies or an explicit mapping and can be expensive across all tokens.
+
+Direction matters. Forward KL, $D_{KL}(p_T\|p_S)$, penalizes the student for under-covering teacher-supported regions. Reverse KL, $D_{KL}(p_S\|p_T)$, emphasizes modes the student itself assigns mass to; MiniLLM developed a reverse-KL formulation for generative LMs. These are different objectives, not interchangeable spelling.
+
+**On-policy distillation** addresses exposure mismatch. Static teacher sequences condition training on teacher prefixes, while deployment conditions the student on its own prior tokens. Generalized Knowledge Distillation lets the student generate prefixes and asks the teacher for feedback there. It spends teacher compute on states the student actually visits and can focus learning on self-generated mistakes. It also needs safeguards against low-quality or adversarial student trajectories.
+
+Reasoning traces add a learnability constraint. A correct, very long teacher solution can exceed the student's capacity or teach verbal mannerisms rather than a reusable procedure. Evidence on the small-model learnability gap found that students at or below three billion parameters did not consistently benefit from longer traces or larger teachers; shorter or mixed-complexity traces could work better. Treat trace length, abstraction, correctness, diversity, and student likelihood as data-selection variables. Compare answer-only, concise derivation, long trace, and mixed curricula on an untouched set. Do not assume access to a provider's private hidden chain of thought; use outputs the provider and license permit, executable trajectories, or concise authored rationales.
+
+Distillation becomes an economic replacement only after amortization. If data generation and training cost $C_{build}$, the teacher costs $C_T$ per in-scope query, the student costs $C_S<C_T$, and $N$ such queries are expected, the direct-cost break-even is
+
+$$
+N>\frac{C_{build}}{C_T-C_S}.
+$$
+
+Add routing, monitoring, retraining, and teacher fallback before using this as a business case. A student matching the teacher on support-ticket triage has not matched it on open-domain reasoning. Record the envelope and route outside it.
+
+The lab begins KD from the SFT adapter and uses softened teacher logits on a separate distillation set:
+
+```python
+# code/ch11/customization_lab.py — changed region: LoRA.kd_step
+teacher = softmax(teacher_logits, temperature)
+student = softmax(adapter.logits(x), temperature)
+loss = np.mean(np.sum(teacher * np.log((teacher + 1e-12) / (student + 1e-12)), axis=1))
+grad_logits = (student - teacher) * temperature / len(x)
+adapter._apply_gradient(grad_logits.T @ x, learning_rate)
+```
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `customization_lab.py` after logit KD | 30 lines | Temperature changes the supervised distribution, and KD loss falls without granting updates to the base. |
+:::
+
+## Model merging combines task vectors, not capabilities {#sec-ch11-merging}
+
+Two teams fine-tune the same base: one for ticket routing, another for urgency detection. Retraining a joint model requires both datasets and another training run, so the teams average checkpoints and call the result a combined expert. Sometimes that works because the checkpoints remain in a connected low-loss region. Sometimes opposing updates cancel the features each task needs.
+
+For a base parameter vector $\theta_0$ and task-fine-tuned parameters $\theta_i$, define the task vector
+
+$$
+\tau_i=\theta_i-\theta_0.
+$$
+
+Linear task arithmetic constructs $\theta'=\theta_0+\sum_i\lambda_i\tau_i$. A model soup instead averages compatible fine-tuned checkpoints, often selected by validation performance. Both require aligned parameters: the same architecture, tensor shapes, tokenizer and vocabulary layout, and normally the same base revision. Matching filenames or model family names is insufficient.
+
+LoRA makes the subtraction cheap because $\tau_i$ is already represented by low-rank deltas. Merge the realized deltas $B_iA_i$, not $A$ matrices separately from $B$ matrices: in general,
+
+$$
+(B_1+B_2)(A_1+A_2)\ne B_1A_1+B_2A_2.
+$$
+
+If one compact adapter must represent the merged delta, add the deltas and refactor the result with a rank-constrained SVD, accepting approximation error.
+
+TIES addresses two common interference sources:
+
+1. **Trim:** zero small-magnitude changes that are more likely redundant or noisy.
+2. **Elect:** choose an aggregate sign for each surviving coordinate.
+3. **Disjoint merge:** combine only task updates whose sign agrees with the elected sign.
+
+DARE randomly drops delta parameters and rescales survivors before a merge, using redundancy to reduce interference. SLERP follows a spherical interpolation path between two parameter vectors rather than a straight Euclidean segment. Names do not select a winner. Coefficients, density, layer treatment, task mix, and regression behavior still need a sweep.
+
+The lab's TIES implementation is intentionally small enough to audit:
+
+```python
+# code/ch11/customization_lab.py — changed region: ties_merge
+cutoff = np.quantile(np.abs(delta), 1.0 - density)
+trimmed = np.where(np.abs(delta) >= cutoff, weight * delta, 0.0)
+elected = np.sign(stack.sum(axis=0))
+keep = np.sign(stack) == elected
+count = keep.sum(axis=0)
+merged = np.divide(
+    (stack * keep).sum(axis=0), count,
+    out=np.zeros_like(stack[0]), where=count > 0,
+)
+```
+
+At equal weights in the fixed fixture, TIES beats linear averaging on mean task accuracy. Across the full coefficient sweep, a linear merge reaches the higher best mean. That result is more useful than declaring a universal algorithm: interference handling can improve one operating point while coefficient selection changes the conclusion.
+
+Merging is attractive when training data are unavailable, when ablation is cheap, or when one artifact reduces serving complexity. It is a bad fit for checkpoints with different bases, incompatible tokenizers, safety policies that must remain independently revocable, or tasks whose joint regressions cannot be measured. A merged model inherits licenses and risks; it does not erase lineage.
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `customization_lab.py` after the merge sweep | 47 lines | Only deltas from one quantized base are combined, and linear versus TIES quality is measured at every coefficient. |
+:::
+
+## Preference tuning and reinforcement fine-tuning are surgical tools {#sec-ch11-preference-rft}
+
+SFT can demonstrate a desired refusal or concise answer, yet it treats every target token as equally authoritative. When several responses are valid but one is preferred, comparative or scalar feedback carries a better-shaped signal.
+
+For preference tuning, collect two responses to the same prompt and label a chosen and rejected output. Pairs should expose the defect: excessive hedging, unsupported claims, a refusal boundary, verbosity, instruction priority, or tone. Near-ties can be informative when annotators agree; easy pairs waste capacity. Preserve the policy that generated each response, randomize presentation order, measure annotator agreement, and keep a slice from real production failures.
+
+DPO optimizes a classification-style loss over the chosen/rejected log-probability margin relative to a reference policy. Its $\beta$ participates in the policy-versus-reference trade-off and interacts with learning rate and pair difficulty. Tune it against both preference win rate and general regressions. Chapter 7 owns the derivation; the practical point here is that a higher training win rate can still indicate memorized phrasing or excessive drift.
+
+Reinforcement fine-tuning (RFT) fits tasks with multiple valid trajectories and a reliable outcome score: code that passes tests, mathematics with a checked final answer, structured extraction against a validator, or a simulator score. It is usually a poor first move for subjective tone when the grader is an unstable judge model. Start by evaluating the grader independently:
+
+- Does it score known good and bad outputs correctly across slices?
+- Can formatting, verbosity, or leaked references raise reward without solving the task?
+- Is reward stable across retries and grader versions?
+- Are training prompts, grader development cases, and final tests separate?
+- Does the model have enough initial success to receive a useful signal?
+
+If almost every sample receives zero, provide SFT demonstrations or a curriculum before RFT. If almost every sample already receives full reward, the optimization has little headroom. Hold out adversarial grader cases and inspect high-reward failures for reward hacking. Chapter 8 owns RLVR/GRPO mechanics, and Chapter 23 extends reinforcement tuning to complete agent trajectories; this chapter owns the model-customization choice and gate.
+
+Use the smallest intervention that matches the feedback. A refusal wording issue may need a few-shot prompt or a narrow preference adapter. A verifiable reasoning strategy may justify RFT. Neither should be used to inject a quarterly policy document.
+
+## Data engineering determines what customization learns {#sec-ch11-data}
+
+Optimization makes the model imitate the empirical training distribution. It cannot infer which examples were mislabeled, which teacher outputs violate a license, which repeated template dominates by accident, or which benchmark answer leaked into a prompt. Most customization leverage therefore sits before the trainer.
+
+Define one canonical record schema with prompt, context, response or feedback, task and source identifiers, provenance, license, timestamp, policy version, generator revision and settings, validation result, safety labels, and split. Hash normalized content and near-deduplicate at the semantic unit users see—a conversation or problem, not only an individual message.
+
+Split by source or entity *before* augmentation and synthesis. If one customer template is paraphrased into train and test, lexical differences conceal shared information. Quarantine the final test and regression sets from teacher generation, rejection sampling, hyperparameter selection, and judge-prompt development. A repeatedly consulted test set becomes a development set; rotate it.
+
+Synthetic data is a controlled measurement instrument, not free truth:
+
+- **Self-Instruct** bootstraps instructions, inputs, and outputs from a model, then filters invalid or similar generations.
+- **Magpie** elicits user-like queries from the pre-query template of an aligned model and generates responses at scale.
+- **Rejection sampling** generates several outputs and retains those passing a verifier or quality model.
+- **ReST and ReST-EM** alternate generation, feedback-based filtering, and offline fine-tuning.
+
+Each loop can narrow diversity, amplify a grader blind spot, or train on its own mistakes. The model-collapse results in Chapter 5 concern recursive replacement of real-distribution support, not a ban on all synthetic supervision. Keep licensed human or environment-grounded anchors, track synthetic fraction by slice and generation, measure diversity and tail coverage, and stop when held-out improvement saturates.
+
+Reasoning and tool data need extra validation. Execute code and tool calls in a sandbox; recompute final answers; reject traces that reach a correct result through invalid steps; normalize tool schemas without erasing meaningful variation. Do not train on secrets or raw production conversations merely because they improved the teacher prompt. Apply consent, retention, access, and deletion policies before data enters an immutable artifact.
+
+Figure @fig-ch11-data-loop places the irreversible boundary at dataset approval and keeps evaluation outside the self-improvement loop.
+
+```{mermaid}
+%%| label: fig-ch11-data-loop
+%%| fig-cap: "Where must provenance, filtering, and evaluation quarantine interrupt a synthetic self-improvement loop?"
+flowchart LR
+    P["Versioned real prompts and labels"] --> S["Split by source / entity"]
+    S --> TR["Train partition"]
+    S --> DV["Development partition"]
+    S --> TT["Sealed task test"]
+    S --> RG["General regressions"]
+    TR --> G["Teacher or current policy generates candidates"]
+    G --> V["Executable checks, humans, dedup, license filter"]
+    V -->|"approved records + provenance"| MX["Versioned training mixture"]
+    MX --> FT["SFT / preference / RFT / distillation"]
+    FT --> G
+    FT --> DV
+    DV -->|"recipe selection only"| MX
+    FT --> Q["Release candidate"]
+    TT --> Q
+    RG --> Q
+```
+
+Mixture weights are part of the objective. Sampling a million synthetic classification records beside ten thousand safety cases does not merely add data; it changes gradient frequency. Report raw counts, sampled counts, token counts, duplication, loss masks, and per-source learning curves. Pack short examples for efficiency only after verifying boundary tokens and assistant-only loss masking.
+
+## Forgetting and compression define the capability budget {#sec-ch11-forgetting}
+
+A frozen base does not guarantee preserved behavior. LoRA leaves $W_0$ unchanged, but inference uses $W_0+\Delta W$. For any input $x$ and compatible operator/vector norms,
+
+$$
+\left\|\frac{\alpha}{r}BAx\right\|
+\le
+\frac{\alpha}{r}\|B\|\,\|A\|\,\|x\|.
+$$
+
+The adapter can dominate particular activations even when it contains few parameters. Catastrophic forgetting is observed behavior on earlier capabilities, not proof that base tensors moved.
+
+Mitigate drift by matching intervention strength to the defect: lower rank or fewer target modules, a smaller learning rate, fewer epochs, early stopping on regression metrics, KL or weight regularization, and replay of representative general examples. Separate adapters can preserve revocability when tenants or policies differ. Replay must sample meaningful capabilities and safety boundaries; generic benchmark averages can miss a critical slice.
+
+A practical adaptation ladder is:
+
+1. **Continued pretraining (CPT):** use the language-model objective on a large unlabeled domain corpus when vocabulary, style, or domain regularities are absent. Mix replay and expect the widest regression surface.
+2. **SFT:** teach explicit input-to-output behavior when targets can be written or verified.
+3. **Preference tuning:** resolve subjective trade-offs that exact demonstrations underspecify.
+4. **RFT:** optimize a stable outcome verifier when trajectories have many valid forms.
+5. **Distillation:** transfer the resulting in-scope behavior into the deployment-sized student.
+
+These stages are optional and can branch. Do not run CPT to fix JSON formatting or preference tuning to memorize terminology. Gate after every stage so the source of gain or damage remains identifiable.
+
+Compression can create a smaller model family rather than one adapter:
+
+- **Structured pruning** removes complete layers, hidden dimensions, attention heads, or MLP channels. It can reduce dense tensor shapes and produce speedups on ordinary kernels, but requires importance estimation and recovery training.
+- **Unstructured pruning** zeros individual weights. Parameter count falls, yet wall-clock speed improves only with a supported sparse representation and kernel.
+- **Low-rank compression** factorizes an existing matrix $W\in\mathbb{R}^{m\times n}$ as $UV$ with inner dimension $k$, reducing parameters from $mn$ to $k(m+n)$. Truncated SVD minimizes matrix reconstruction error under a Frobenius norm; that is not the same as minimizing language-model loss.
+- **Prune then distill** uses the original model to recover quality in the structurally smaller student. Minitron combines depth, width, attention, and MLP pruning with distillation; SliceGPT removes rows and columns after rotations that preserve the network function before slicing.
+
+Quantization is another compression axis, but Chapter 10's validation ladder remains authoritative. A pruned or distilled model can still be quantized afterward; each composition needs its own quality and kernel measurement. Compare against a natively pretrained model of similar size. Creating a family member is worthwhile when recovered quality and lifetime serving savings exceed the pruning, distillation, and revalidation burden.
+
+## The four-set gate decides whether a model ships {#sec-ch11-eval-gate}
+
+Training loss tells whether an optimizer fits its objective. It does not tell whether the model generalizes, preserves prior behavior, obeys safety policy, or runs within the serving contract. A customization project needs four data roles whose access rules differ:
+
+| Set | Used for | Forbidden use | Typical failure it reveals |
+|---|---|---|---|
+| Train | gradient updates | reporting generalization | memorization and source imbalance |
+| Development | hyperparameters, checkpoints, mixture and prompt selection | final unbiased claim | recipe sensitivity and overfitting to train |
+| Untouched task test | one release decision after the recipe is frozen | iterative tuning | true in-scope generalization |
+| General regression suite | existing capability, safety, calibration, and operational invariants | optimizing only an aggregate score | collateral damage outside the target |
+
+“Untouched” is a process property. Store access logs, restrict labels, and promote a test to development after repeated inspection. Create a new sealed set for the next release. Decontaminate by source, template, entity, and semantic overlap, not only exact strings.
+
+Predeclare a release rule. Let $M_{task}$ be task-test quality, $R_j$ be a regression loss for capability $j$, $\delta$ the required task gain, and $\epsilon_j$ each tolerated regression. A simplified gate is
+
+$$
+\operatorname{ship}=
+\mathbf{1}\!\left[
+\Delta M_{task}\ge\delta
+\land
+\forall j:\Delta R_j\le\epsilon_j
+\land
+safety=pass
+\land
+serving=pass
+\right].
+$$
+
+Use paired confidence intervals or a test appropriate to the metric when samples are noisy. Report slices and worst-case constraints; an aggregate gain must not buy an unacceptable jurisdiction, language, safety, or accessibility regression. Run deterministic or executable metrics first. When model judges are needed, calibrate position, length, style, and self-preference biases as Chapter 22 describes.
+
+Hold the inference contract fixed: model base, adapter, tokenizer, template, prompt, tools, decoding, quantization, and context budget. Comparing a tuned model with greedy decoding to a base model with a different system prompt is a system comparison, not an isolated adaptation estimate. Both can be useful if labeled accurately.
+
+The gate should include deployment metrics when customization is motivated by economics: peak memory, cold start, time to first token, output rate, structured-output validity, and cost under the same workload. Distillation that loses one quality point but halves latency may win a predeclared utility function; a post hoc story does not.
+
+The lab encodes the minimum task gain and maximum regression drop before inspecting its final candidate:
+
+```python
+# code/ch11/customization_lab.py — changed region: release_gate
+task_gain = candidate["task_test"] - baseline["task_test"]
+regression_drop = baseline["general_regression"] - candidate["general_regression"]
+passed = task_gain >= 0.08 and regression_drop <= 0.08
+```
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `customization_lab.py` after the four-set gate | 22 lines | A task improvement cannot ship by hiding an excessive general-regression loss. |
+:::
+
+## Serving customized models closes the loop {#sec-ch11-serving}
+
+Training produces an artifact; deployment gives it identity, latency, and a failure radius. Register the complete lineage: base and tokenizer revisions, chat template, quantization recipe, adapter or merged weights, data manifest, training code and seed, licenses, evaluation record, and approval. A hash of only the adapter file cannot detect a mismatched base.
+
+An unmerged adapter preserves a small artifact, rapid rollback, and multi-tenant sharing. It adds adapter loading, residency, routing, and kernel compatibility to the serving lattice. Chapter 10's multi-LoRA path is the canonical design for many adapters on one base. A merged checkpoint simplifies a single-model runtime and removes adapter lookup, but consumes a full artifact, weakens revocability, and requires another quantization and regression pass.
+
+QLoRA makes merging numerically delicate. The training base is a four-bit reconstruction, while an original higher-precision checkpoint may also exist. Adding $\Delta W$ to one and serving the other changes the model. Repeatedly merging into four-bit codes also re-quantizes the sum. Choose the target representation explicitly: dequantize the intended base, merge in adequate precision, quantize once under a pinned recipe, then rerun the gate. Do not assume `merge_and_unload` plus an arbitrary export format is equivalent to the training path.
+
+Canary on the traffic slice represented by the test set, with a base-model fallback and an adapter-specific kill switch. Monitor output-schema validity, refusal and safety rates, slice quality proxies with delayed labels, latency, cache identity, load failures, and distribution drift. Production corrections become candidate training records only after provenance, privacy, deduplication, and split assignment.
+
+This closes a controlled loop:
+
+1. observe a reproducible failure;
+2. diagnose evidence, state, effect, representation, behavior, or economics;
+3. select the narrowest intervention and supervision;
+4. train against versioned data;
+5. pass task, regression, safety, and serving gates;
+6. canary, monitor, and retain rollback;
+7. admit new data only through the governed data boundary.
+
+The loop's stable unit is not “a fine-tuned model.” It is a versioned hypothesis with evidence for where it works and a mechanism for withdrawing it.
+
+## Landscape 2026 (dated) {#sec-ch11-landscape}
+
+::: {.landscape-2026}
+**Verified on 2026-07-19.** The current open-weight stack exposes most of this chapter as composable libraries. [Hugging Face PEFT](https://huggingface.co/docs/peft/developer_guides/lora) documents LoRA configuration, rsLoRA, DoRA, quantized training preparation, adapter merge, and newer initialization/routing variants. [Transformers bitsandbytes documentation](https://huggingface.co/docs/transformers/quantization/bitsandbytes) documents NF4, nested quantization, and higher-precision compute for QLoRA. [TRL](https://huggingface.co/docs/trl/sft_trainer) provides SFT and [DPO](https://huggingface.co/docs/trl/dpo_trainer) trainers. [Mergekit](https://github.com/arcee-ai/mergekit) implements families of checkpoint-merging recipes. Their supported intersections move faster than the LoRA and task-vector equations.
+
+Managed customization now spans more than SFT. Official [OpenAI documentation](https://developers.openai.com/api/docs/guides/reinforcement-fine-tuning) describes supervised fine-tuning, DPO, and grader-driven RFT. [Google Vertex AI tuning documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/tune-models) lists supervised and preference tuning for selected Gemini models. [Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/custom-models.html) documents supervised fine-tuning and managed model distillation, while its [RFT documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/reinforcement-fine-tuning.html) exposes reward functions through code or model judges for selected models. Model lists, regions, quotas, data policies, and artifact access differ.
+
+The research frontier is moving toward feedback on the student's own states. [On-Policy Context Distillation](https://arxiv.org/abs/2602.12275) trains on student trajectories while comparing with a context-conditioned teacher and reports cross-size transfer of experiential and system-prompt behavior. Treat this as a paper result requiring reproduction, not a default production recipe. Structured pruning plus recovery distillation remains a practical route to model-family creation; current NVIDIA tooling documents the [Minitron pruning workflow](https://docs.nvidia.com/nemo-framework/user-guide/25.11/model-optimization/pruning/pruning.html).
+
+Hosted tuning buys managed training, security integration, and deployment but restricts available bases, algorithms, gradients/logits, merging, export, and sometimes data inspection. Open-weight DIY work grants tensor-level control, offline evaluation, adapter portability, distillation logits, pruning, and custom merges while making the team responsible for accelerator software, licenses, supply chain, privacy, kernels, serving, and incident response. Choose from the required control surface, not ideology.
+
+**Verify live:** tunable model IDs and retirement dates; supported regions and modalities; SFT, preference, RFT, and distillation availability; grader semantics; training-data retention and use; output rights for distillation; whether weights or adapters can be exported; PEFT/TRL/bitsandbytes compatibility; target-module names; compute dtypes and accelerator support; merge methods and tokenizer handling; serving-engine adapter/quantization intersections; prices, quotas, licenses, security advisories, and deprecations.
+:::
+
+## Build {#sec-ch11-build}
+
+Run the deterministic build from the `newbook` directory:
+
+```bash
+python code/ch11/customization_lab.py
+python code/ch11/render_metrics.py
+python -m unittest discover -s code/ch11 -p "test_*.py" -v
+```
+
+The fixture uses four classes and twelve features. A declared task update acts primarily on the first seven features; the general-regression distribution emphasizes the remaining features. That construction gives the gate a capability it should preserve without pretending to model language. The base is quantized and reconstructed in groups of sixteen with NF4, producing RMSE 0.0671 fixture units. Rank-two adapters train on 320 task examples, KD uses 400 additional inputs, and the untouched task test has 320 examples.
+
+| Candidate | Train | Development | Untouched task test | General regression |
+|---|---:|---:|---:|---:|
+| Frozen NF4 base | 0.7625 | 0.7583 | 0.7750 | 0.9625 |
+| QLoRA-style SFT adapter | 0.9438 | 0.9125 | 0.9313 | 0.9333 |
+| SFT plus logit KD | 0.9750 | 0.9625 | 0.9625 | 0.9417 |
+
+The distilled candidate gains 0.1875 task-test accuracy and loses 0.0208 general-regression accuracy against the same NF4 baseline. It passes the predeclared gain and loss limits of 0.08. SFT cross-entropy falls from 0.5694 to 0.2825; KD KL falls from 0.0117 to 0.0044.
+
+At a 0.5/0.5 merge, linear task arithmetic reaches mean task accuracy 0.8469 and TIES reaches 0.8578. Sweeping coefficients reverses the simple ranking: linear reaches 0.8656 at adapter-A weight 0.8, while the best TIES point reaches 0.8578 at weight 0.7. Figure @fig-ch11-build-metrics shows both the release gate and the merge ablation.
+
+![What changed after each customization stage, and did an interference-aware merge remove the need to tune coefficients? The left panel evaluates the frozen NF4 base, QLoRA-style SFT adapter, and logit-distilled adapter on all four deterministic fixture sets. The right panel sweeps linear and TIES merge weights; TIES wins at equal weights but not at each method's best coefficient. All values are synthetic CPU measurements, not language-model estimates.](../code/ch11/customization_metrics.svg){#fig-ch11-build-metrics fig-alt="Two grayscale panels with zero-based accuracy axes. Labeled grouped bars compare base, QLoRA SFT, and logit KD accuracy on train, development, untouched task test, and general regression sets. Circle and square lines compare linear and TIES merging as adapter A weight moves from zero to one, with equal weighting marked."}
+
+For a real seven-billion-parameter-class run, create conversational JSONL with one `messages` list per record. Generate teacher traces only in the training partition, validate and deduplicate them, and keep development, sealed task-test, and general-regression files independent. Install a compatible PyTorch/Transformers stack and invoke the optional seam:
+
+```bash
+python code/ch11/hf_qlora_adapter.py \
+  data/train_teacher_traces.jsonl \
+  data/development.jsonl \
+  artifacts/support-qlora \
+  --model MODEL_ID \
+  --epochs 1
+```
+
+The adapter pins the mechanism: NF4 base storage, double quantization, bf16 compute, gradient checkpointing, rank 16, $\alpha=32$, dropout 0.05, and all-linear targets. It does not claim those values are optimal. Start with roughly one to two thousand high-quality task records and a separately labeled set of teacher traces only when licensing and privacy permit, then sweep rank, learning rate, epochs, modules, and data mixtures on development data. Generate outputs from the frozen base and every candidate under identical decoding, score all four sets, and apply thresholds declared before the run. Pin the model revision and inspect target-module names before training.
+
+::: {.callout-warning title="Honesty boundary"}
+The default build is a linear classification proxy. Its NF4 codebook, LoRA algebra, gradients, KL loss, task vectors, TIES operations, splits, and gate are real; its features, labels, accuracy, and thresholds estimate no LLM, teacher, domain, or deployment. The optional adapter performs a real QLoRA training path when its third-party dependencies, checkpoint, data, license, and GPU are supplied, but task-specific generation and grading remain the user's evaluation harness. A successful proxy run is evidence that the mechanisms execute, not that a seven-billion-parameter model will pass.
+:::
+
+## What endures, what changes {#sec-ch11-endures}
+
+**What endures.** Diagnose evidence, state, effects, representation, behavior, and economics before changing weights. Match supervision to the signal: write for SFT, rank for preference tuning, verify for RFT, distribute probabilities or sequences for distillation. LoRA constrains an update but does not guarantee retained behavior. QLoRA quantizes a frozen base while optimizing higher-precision adapters. Distillation transfers behavior on a sampled envelope, not general intelligence. Task-vector arithmetic requires parameter alignment, and every merge coefficient is an empirical choice. Split before synthesis, preserve provenance, and quarantine tests. Every candidate must pass an untouched task test and general regressions under the intended serving representation.
+
+**What changes.** Base models, tokenizer templates, provider tuning methods, trainable model lists, adapter variants, quantization kernels, managed graders, merge implementations, pruning tools, accelerator memory, prices, licenses, and benchmark status move. Keep them in pinned recipes and the dated landscape. Removing the landscape leaves the decision tree, low-rank algebra, distillation objectives, task-vector definition, data boundaries, and four-set gate intact.
+
+Chapter 14 completes the evidence branch with embeddings and RAG. Chapters 22 and 26 deepen evaluation validity and lifecycle economics, while Chapter 23 applies reinforcement training to agents rather than only model responses.
+
+## Exercises {#sec-ch11-exercises}
+
+1. **Defend a non-training decision.** Choose a real failure and classify it as evidence, state, effect, representation, behavior, or economics. Build the strongest prompt/schema/retrieval/tool baseline you can. State what new evidence would justify SFT, preference tuning, or RFT, and why training before that evidence would be premature.
+
+2. **Budget a LoRA configuration.** For one transformer projection, compute trainable parameters for ranks 8, 16, 64, and 256, plus approximate mixed-precision Adam state. Compare $\alpha/r$ and $\alpha/\sqrt{r}$ scaling. Predict which rank will win on development data, run the sweep, and explain any non-monotonic result.
+
+3. **Audit QLoRA numerics.** Extend `nf4_quantize` to return codes and scales. Implement double quantization of scales, calculate effective bits per parameter including metadata, and compare reconstruction error across group sizes. Break the exact-zero invariant, predict its effect on zero-valued groups, and add a failing test before repairing it.
+
+4. **Compare distillation signals.** Add hard-label sequence KD, forward-KL logit KD, reverse KL, and an on-policy prefix sampler to the fixture or a small language model. Hold examples and compute constant. Compare task gain, calibration, regression, and sensitivity to temperature. For reasoning data, ablate answer-only, concise, long, and mixed-length traces.
+
+5. **Make merging earn its artifact.** Add a third compatible adapter. Compare linear task arithmetic, model soup selection, TIES, and DARE across coefficient and density sweeps. Include all task tests and general regressions. Construct one sign-conflict failure, then determine whether keeping independently routed adapters is safer than any merge.
+
+6. **Operate the four-set gate.** Replace the fixture thresholds with confidence intervals and at least three regression slices. Log every access to the sealed test. Simulate ten rounds of recipe selection, show how repeated test inspection biases the release decision, then design a rotation policy and a predeclared utility function that includes latency.
+
+7. **Create and serve a smaller specialist.** Use licensed teacher outputs to QLoRA-tune a seven-billion-parameter-class or smaller open-weight model on one narrow task. Compare it with a stronger teacher and a natively small baseline. Quantize the winner under Chapter 10's ladder, canary it with a fallback, and report training/data cost, break-even volume, task envelope, regression budget, model-card lineage, and residual risk.
+
+## Notes and sources {#sec-ch11-sources}
+
+[LoRA](https://arxiv.org/abs/2106.09685) introduces frozen-base low-rank updates. [QLoRA](https://papers.neurips.cc/paper_files/paper/2023/file/1feb87871436031bdc0f2beaa62a049b-Paper-Conference.pdf) introduces NF4, double quantization, and paged optimizers. [rsLoRA](https://arxiv.org/abs/2312.03732) studies rank-stabilized scaling; [DoRA](https://arxiv.org/abs/2402.09353) decomposes magnitude and direction.
+
+[Distilling the Knowledge in a Neural Network](https://arxiv.org/abs/1503.02531) establishes temperature-based KD. [MiniLLM](https://arxiv.org/abs/2306.08543) develops reverse-KL generative distillation. [Generalized Knowledge Distillation](https://arxiv.org/abs/2306.13649) trains on student-generated sequences. [Small Models Struggle to Learn from Strong Reasoners](https://aclanthology.org/2025.findings-acl.1301/) documents the learnability gap for long traces and large teachers.
+
+[Model Soups](https://proceedings.mlr.press/v162/wortsman22a.html) studies checkpoint averaging. [Task Arithmetic](https://arxiv.org/abs/2212.04089) defines task vectors; [TIES-Merging](https://arxiv.org/abs/2306.01708) resolves redundancy and sign interference; [DARE](https://proceedings.mlr.press/v235/yu24p.html) drops and rescales task deltas.
+
+[InstructGPT](https://arxiv.org/abs/2203.02155) gives the demonstration, preference-model, and RLHF pipeline. [DPO](https://arxiv.org/abs/2305.18290) directly optimizes pairwise preferences. [Tülu 3](https://arxiv.org/abs/2411.15124) provides an open SFT, DPO, RLVR, decontamination, and multi-task evaluation recipe.
+
+[Self-Instruct](https://aclanthology.org/2023.acl-long.754/) bootstraps instruction data; [Magpie](https://arxiv.org/abs/2406.08464) synthesizes alignment prompts; [ReST-EM](https://arxiv.org/abs/2312.06585) iterates generation, filtering, and training. [The Curse of Recursion](https://doi.org/10.1038/s41586-024-07566-y) studies model collapse under recursive generated-data replacement. [Don't Stop Pretraining](https://aclanthology.org/2020.acl-main.740/) establishes domain- and task-adaptive pretraining.
+
+[Minitron](https://arxiv.org/abs/2407.14679) combines structured pruning with distillation, [Sheared LLaMA](https://arxiv.org/abs/2310.06694) uses structured pruning and continued training, and [SliceGPT](https://arxiv.org/abs/2401.15024) deletes rows and columns after computational invariance transformations. [HELM](https://arxiv.org/abs/2211.09110) motivates multi-scenario, multi-metric evaluation; Chapter 22 owns the full evaluation system.

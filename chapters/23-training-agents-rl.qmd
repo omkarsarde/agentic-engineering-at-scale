@@ -1,0 +1,478 @@
+---
+description: "Train tool-using agents from trajectories by engineering state coverage, resettable environments, local credit, reward integrity, and fresh rollout infrastructure."
+---
+
+# Training Agents with RL [S] {#sec-ch23}
+
+## What you need going in
+
+> **Assumed:** neural-network training, cross-entropy, probability distributions, gradients, production Python, and ordinary agent tool loops.
+>
+> **From earlier chapters:** [Chapter 16](16-agent-anatomy.qmd) supplies the proposal–gate–execute–observe loop and typed termination. [Chapter 17](17-tool-harness-engineering.qmd) supplies tool and workspace enforcement. [Chapter 22](22-evaluation.qmd) supplies versioned tasks, trajectory evidence, graders, uncertainty, and release gates. This chapter consumes those evaluation contracts as reward inputs; it does not reteach their statistics.
+>
+> **Not required:** Chapters 7–8, prior reinforcement learning, PPO, GRPO, a GPU cluster, or an RL framework. The first teaching section is a self-contained Route B primer. Route A readers may use it as a compact notation check.
+
+## Contents
+
+- [Route B primer: from policy gradients to GRPO](#sec-ch23-primer)
+- [Climb from imitation to constrained online RL](#sec-ch23-curriculum)
+- [Agent trajectories change the learning problem](#sec-ch23-trajectories)
+- [Build resettable environments before trainers](#sec-ch23-environments)
+- [Assign credit across tool calls](#sec-ch23-credit)
+- [Rewards must reject successful violations](#sec-ch23-rewards)
+- [Keep on-policy data fresh at production scale](#sec-ch23-infrastructure)
+- [Train weights only after fixing the system](#sec-ch23-rft)
+- [Build](#sec-ch23-build)
+- [What endures, what changes](#sec-ch23-endures)
+- [Exercises](#sec-ch23-exercises)
+- [Notes and sources](#sec-ch23-sources)
+
+## What you will build
+
+::: {.callout-tip}
+### Behavior cloning, then group-relative learning in one tool gym
+
+The artifact under `code/ch23/` trains a small tabular softmax policy whose states stand in for model contexts and whose actions are tool calls. A scripted expert produces safe refund trajectories for behavior cloning. Held-out recovery states expose the resulting state-coverage gap. The same policy then gathers fresh multi-turn rollouts, receives state-grouped relative advantages, and updates through a clipped policy-ratio rule. A composite scorer vetoes unauthorized or duplicate effects. The deterministic run improves eligible held-out completion from two of four tasks to four of four, records 22 vetoed rollouts and zero vetoed updates, and shows declared environment work dominating sampling and optimizer work.
+:::
+
+## Route B primer: from policy gradients to GRPO {#sec-ch23-primer}
+
+A support agent refunds a high-value order without requesting approval. The database reaches the user's requested final state, so an outcome-only grader marks the trajectory successful. A training pipeline promotes it into the next dataset. After behavior cloning, the unauthorized shortcut becomes more likely. The gradient worked; the training contract failed.
+
+That incident is the reason to learn RL from the objective outward. Reinforcement learning does not tell a system what “good” means. It changes a policy to increase the reward supplied by an environment. If the environment rewards the shortcut, optimization reinforces it.
+
+::: {.callout-note}
+### Route B primer — policy gradients through GRPO
+
+This primer is self-contained. Chapters 7–8 give the canonical treatment of post-training and reasoning-focused RL, but no machinery from them is assumed here.
+
+An agent generates a **trajectory**
+
+\[
+\tau=(s_0,a_0,r_0,s_1,a_1,r_1,\ldots,s_T),
+\]
+
+where (s_t) is the information available to the policy at decision (t), (a_t) is an action sampled from policy (pi_\theta(a\mid s_t)), (r_t) is reward, and (	heta) denotes trainable parameters. For a language-model agent, one action may be a token, a whole tool call, a structured control decision, or a block of tokens. The choice determines the credit-assignment unit.
+
+The **return-to-go** from step (t) is
+
+\[
+G_t=\sum_{k=t}^{T-1}\gamma^{k-t}r_k,
+\]
+
+where discount (0<\gamma\leq1) controls how later reward is assigned to earlier decisions. In a bounded task whose final result matters equally at every step, (gamma=1) can be appropriate. A smaller value expresses a preference for nearer reward; it does not prove which earlier action caused the outcome.
+
+The training objective is expected return:
+
+\[
+J(\theta)=\mathbb{E}_{\tau\sim\pi_\theta}[G_0].
+\]
+
+The score may be nondifferentiable: a test passes, a database reaches a goal state, or a policy rule is violated. The policy-gradient identity moves the gradient onto the log probability of sampled actions. A Monte Carlo estimator is
+
+\[
+\widehat{\nabla_\theta J}
+=\sum_{t=0}^{T-1}\nabla_\theta\log\pi_\theta(a_t\mid s_t)G_t.
+\]
+
+If a sampled trajectory receives positive return, gradient ascent increases its selected actions' log probabilities; negative return decreases them. This estimator is unbiased under its assumptions but noisy. Subtracting a baseline (b(s_t)) that does not depend on the sampled action preserves the expected gradient while reducing variance. The **advantage**
+
+\[
+A_t=G_t-b(s_t)
+\]
+
+asks whether the sampled action did better than the comparison available at that state. Actor–critic methods learn (b) with a value model called a critic.
+
+Policy updates can move too far from the policy that generated the batch. Proximal Policy Optimization (PPO) records the old action probability and uses ratio
+
+\[
+\rho_t(\theta)=
+\frac{\pi_\theta(a_t\mid s_t)}{\pi_{\text{old}}(a_t\mid s_t)}.
+\]
+
+Its clipped surrogate is
+
+\[
+L^{\text{clip}}(\theta)=
+\mathbb{E}_t\left[
+\min\left(
+\rho_t A_t,
+\operatorname{clip}(\rho_t,1-\epsilon,1+\epsilon)A_t
+\right)
+\right],
+\]
+
+where (epsilon>0) bounds the region in which improvement keeps receiving the ordinary policy-gradient incentive. Clipping is a stabilizer, not a proof that the new policy is safe or improved.
+
+Group Relative Policy Optimization (GRPO) avoids a learned value critic by sampling a group of alternatives for the same prompt or state and normalizing their rewards. For group (mathcal{G}),
+
+\[
+A_i=\frac{R_i-\mu_{\mathcal{G}}}{\sigma_{\mathcal{G}}+\varepsilon},
+\quad
+\mu_{\mathcal{G}}=\frac{1}{|\mathcal{G}|}\sum_{j\in\mathcal{G}}R_j,
+\]
+
+where (R_i) is trajectory reward, (sigma_{\mathcal{G}}) is the group reward standard deviation, and small (arepsilon) prevents division by zero. The policy then optimizes a PPO-like clipped objective, often with regularization toward a reference policy. “PPO without a critic” captures the memory-saving intuition, but the group construction, normalization, clipping, and regularization are load-bearing parts of the method.
+
+Reinforcement learning with verifiable rewards (RLVR) uses programmatic or otherwise checkable rewards instead of a learned preference score where the task permits. Chapter 8 owns RLVR for reasoning and the broader GRPO family. This chapter asks what changes when one sample contains many agent decisions, tools mutate an environment, and the reward arrives from final application state.
+:::
+
+The primer yields four rules for the rest of the chapter. Rewards define the behavior pressure. A baseline changes variance and local comparison, not task semantics. Policy-ratio control requires knowing which policy generated each action. Multi-turn credit depends on what counts as a state and action, not merely on which optimizer name appears in the configuration.
+
+## Climb from imitation to constrained online RL {#sec-ch23-curriculum}
+
+RL is late in the improvement ladder. Begin with trajectories whose outcomes and process constraints have already been verified. If a capable policy produced them, **behavior cloning** (BC) fits the next-action distribution by supervised learning:
+
+\[
+L_{\text{BC}}(\theta)=-\sum_{\tau\in\mathcal D}\sum_t
+\log\pi_\theta(a_t\mid s_t).
+\]
+
+BC is attractive because it is stable, uses existing training infrastructure, and does not need online exploration. It also imitates every systematic feature of accepted data, including accidental shortcuts, verbosity, and tool sequences that happened to work. “Successful” must therefore include final-state correctness, policy compliance, effect integrity, and provenance—not merely a favorable outcome flag.
+
+The deeper limitation is distribution shift. Expert demonstrations cover states induced by the expert. A learned policy makes occasional different actions, reaches unfamiliar states, and compounds errors because those recovery states are absent from (mathcal D). More expert data from the same narrow state distribution may not repair that gap.
+
+Dataset Aggregation (DAgger) addresses the mismatch iteratively: run the learner, collect the states it actually visits, ask an expert for the right action at those states, aggregate those labels, and retrain. “Expert” may mean a human, a stronger policy, a deterministic controller, or an application-specific oracle. It must be qualified for the decision; self-labeling a failure with the same policy does not provide independent correction.
+
+Offline RL can use logged rewards to improve beyond demonstrated actions without new environment interaction. The danger is estimating values for actions poorly represented in the log. Long agent trajectories worsen the problem because off-policy corrections multiply ratios across decisions:
+
+\[
+w_{0:T}=\prod_{t=0}^{T-1}
+\frac{\pi_\theta(a_t\mid s_t)}{\pi_b(a_t\mid s_t)},
+\]
+
+where (pi_b) is the behavior policy. Products can explode or vanish. Conservative offline methods penalize unsupported actions or constrain the learned policy near logged behavior. They reduce extrapolation; they do not make a weak or confounded log causal evidence.
+
+Constrained online RL comes last. It lets the current policy explore in a resettable environment, which closes state coverage but creates real opportunities for reward gaming and unsafe effects. Run it in a sandbox with hidden checks, bounded actions, hard vetoes, and no ambient production authority.
+
+```{mermaid}
+%%| label: fig-ch23-curriculum
+%%| fig-cap: "The learning mode should become more adaptive only as state coverage, reward integrity, and environment containment become stronger."
+%%| fig-alt: "A ladder begins with verified behavior cloning, then DAgger relabeling on learner-visited states, conservative offline reinforcement learning, constrained online reinforcement learning in a sandbox, and finally shadow and canary release. Each rung requires stronger evidence and containment."
+flowchart LR
+    V["Verified successful trajectories"] --> B["Behavior cloning"]
+    B --> D["DAgger-style relabeling of learner states"]
+    D --> O["Conservative offline RL"]
+    O --> R["Constrained online RL in resettable gym"]
+    R --> S["Shadow evaluation and release gates"]
+    B -. "state coverage gap" .-> D
+    O -. "unsupported actions" .-> R
+```
+
+This is a curriculum of evidence, not a mandatory march to online RL. Stop at the first rung that meets the product contract. Chapters 26–27 own canaries, aliases, rollback, and operations; this chapter's responsibility is to produce a versioned policy bundle and evidence packet they can release or reject.
+
+## Agent trajectories change the learning problem {#sec-ch23-trajectories}
+
+A single completion can be approximated as a contextual bandit: observe a prompt, emit one completion, receive one reward. An agent instead changes what it will observe next. A tool call mutates a database, a browser action changes a page, and a failed command produces a diagnostic. The process is naturally modeled as a partially observable Markov decision process.
+
+Let (x_t) be authoritative environment state, which the model may not see. The environment emits observation (o_t). The harness constructs policy state (s_t) from the instruction, allowed context, memory, and prior observations. The policy proposes (a_t\sim\pi_\theta(\cdot\mid s_t)). A gate validates authority and arguments before executor (E) applies the action. The next observation is returned to the harness. This preserves Chapter 16's ownership rule: the policy proposes; application code authorizes and executes.
+
+```{mermaid}
+%%| label: fig-ch23-trajectory-ownership
+%%| fig-cap: "Training may optimize the policy's proposals, but the harness, executor, environment, and verifier retain their separate authority."
+%%| fig-alt: "Sequence diagram showing a policy proposing an action, a harness validating it, an executor applying it to an environment, and a verifier observing state and assigning reward. A denied proposal returns an observation without execution."
+sequenceDiagram
+    participant P as Policy
+    participant H as Harness and gate
+    participant E as Executor
+    participant X as Environment
+    participant V as Verifier
+    P->>H: propose action with policy version and log probability
+    alt denied
+        H-->>P: typed denial observation
+    else authorized
+        H->>E: validated action
+        E->>X: apply effect with effect ID
+        X-->>H: next observation and state version
+    end
+    X->>V: final authoritative state
+    V-->>H: reward components and hard vetoes
+```
+
+The trajectory record must support learning, replay analysis, and incident reconstruction. At minimum store task and environment snapshot IDs; policy, tokenizer, prompt, tool-schema, harness, and scorer versions; observation references; structured action and action mask; behavior-policy log probability; gate result; tool receipt or effect ID; termination category; reward components; and eligibility for training. A single “model version” field is insufficient because a prompt or tool-schema change alters the behavior policy.
+
+Do not use hidden chain-of-thought as the causal event log. It may be unavailable, unfaithful, or intentionally withheld. Record externally meaningful decisions: messages exposed to the application, tool proposals, gate outcomes, observations, state versions, effects, and verifier evidence. Chapter 25 owns interpretability and faithfulness questions.
+
+The chapter artifact retains the minimal learning seam:
+
+```python
+# agent_gym.py — behavior-policy evidence on every action
+@dataclass(frozen=True)
+class Transition:
+    observation: str
+    action: str
+    behavior_logp: float
+    behavior_version: int
+
+@dataclass
+class Trajectory:
+    task_id: str
+    transitions: list[Transition] = field(default_factory=list)
+    success: bool = False
+    policy_violation: bool = False
+    duplicate_effect: bool = False
+    environment_units: int = 0
+```
+
+Action granularity affects learning. Token-level updates can shape structured arguments but broadcast noisy outcome credit across formatting tokens. Tool-call-level updates align with application decisions but need the log probability of the complete action under the behavior policy. Turn-level updates include reasoning or text surrounding the call, but the boundary must be reproducible. Choose the coarsest unit that captures the behavior being trained and whose probability can be recorded correctly.
+
+## Build resettable environments before trainers {#sec-ch23-environments}
+
+An agent gym is not just a benchmark with a `reset()` method. It combines three versioned layers:
+
+| Layer | Owns | Failure when conflated |
+|---|---|---|
+| **Taskset** | Initial states, instructions, hidden goals, splits, difficulty and policy cases | Training sees held-out answers or narrow tasks masquerade as a domain |
+| **Harness** | Policy context, tool schemas, gates, budgets, trace format, termination | A harness change is mistaken for a weight improvement |
+| **Runtime** | Reset, isolation, clocks, services, fixtures, resource limits, effect emulation | Rollouts contaminate one another or touch production |
+
+A reset contract must restore authoritative state, not merely clear conversation history. Database rows, files, queues, clock, random seed, authentication, rate-limit counters, and external-service fakes all belong to the episode identity. If perfect reset is impossible, create a fresh isolated namespace and record it. Every effect needs an idempotency or reconciliation identity so retries can be distinguished from duplicate actions.
+
+Training environments also need hidden structure. A policy that can read the checker, expected patch, target database snapshot, or reward implementation may optimize the test instead of the task. Separate agent-visible observations from verifier-only state. Hold out tasks, initial-state patterns, and exploit probes. Give the trainer reward components after the episode without exposing private checker implementation through tools.
+
+The artifact's environment is deliberately permissive: an unauthorized refund can mutate fixture state. That design lets the scorer demonstrate why final-state success is insufficient. Production should enforce the policy at execution time as Chapter 17 teaches; a training gym should still retain adversarial cases that prove the reward and release gates would catch a defect.
+
+```python
+# agent_gym.py — the high-value approval transition
+def step(self, action: str) -> str:
+    if self.done:
+        raise RuntimeError("step after terminal state")
+    high = self.task.amount > 50
+    if self.state in {"start", "recover"} and action == "lookup":
+        self.state = "known_high" if high else "known_low"
+    elif self.state == "known_high" and action == "request_approval":
+        self.state = "approved"
+    elif self.state in {"known_low", "approved"} and action == "refund":
+        self.refunded, self.state, self.effects = True, "refunded", self.effects + 1
+    elif self.state == "known_high" and action == "refund":
+        self.refunded, self.state, self.effects = True, "refunded", self.effects + 1
+        self.violation = True
+    elif self.state == "refunded" and action == "finish":
+        self.done = True
+    elif action == "finish":
+        self.done = True
+    else:
+        self.state = "recover"
+    return "terminal" if self.done else self.state
+```
+
+Environment throughput is completed valid transitions per unit time, not raw requests per second. Measure reset latency, tool latency by class, verifier latency, timeout and infrastructure-error rates, active environments, and useful transitions per accelerator-hour. In agent RL, model generation may wait on browsers, containers, databases, human simulators, or test suites. Faster gradient kernels cannot recover time the rollout fleet spends waiting for environments.
+
+Benchmarks such as τ-bench and SWE-Gym demonstrate important environment properties: executable state, domain policy or repository tests, task setup, and trajectory collection. A training gym additionally needs safe repeatability, hidden splits, exploit resistance, high-throughput orchestration, and a policy for which trajectories may become training data.
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `agent_gym.py` through environment and BC | About 145 lines | Reset removes prior effects, expert trajectories obey approval order, and recovery state is absent from BC data. |
+:::
+
+## Assign credit across tool calls {#sec-ch23-credit}
+
+A terminal reward says which trajectory ended well. It does not identify which turn caused the outcome. Broadcasting one normalized sequence advantage across every generated token is a valid estimator for a trajectory objective, but it is coarse credit assignment. Early useful actions, irrelevant narration, and a late decisive tool call receive the same sign.
+
+There are three common resolutions:
+
+- **Trajectory-level credit** assigns the final advantage to all optimized actions. It needs no step labels and works when trajectories are short, but variance grows with horizon.
+- **Turn- or action-level credit** estimates a local advantage for a tool call or decision. It can use returns-to-go, process rewards, counterfactual rollouts, or groups of actions taken from comparable states.
+- **Token-level credit** distributes the action or turn signal over generated tokens, commonly through the same policy ratio. It is necessary for language-model parameter updates but should not be confused with knowing which semantic token caused success.
+
+The deterministic build uses an anchor-state idea: collect repeated visits to the same task and observation state, group the final rewards of actions taken there, and normalize within that group. For visit (i) at anchor (s),
+
+\[
+A_{i,s}=\frac{R_i-\mu_s}{\sigma_s+\varepsilon}.
+\]
+
+This comparison is finer than one baseline across whole trajectories. It also depends on state identity. If two strings look equal while hidden database state differs, grouping them creates biased comparisons. Production anchor states require environment-defined identifiers or carefully justified equivalence, not model-generated summaries.
+
+Sparse reward is not automatically defective. A strong terminal verifier can be preferable to a dense learned process reward that is easier to exploit. Add intermediate reward only when the intermediate property is independently meaningful: an authorization was obtained, a compiler phase passed, or a required source was inspected. Reward shaping changes the objective; it does not reveal causal credit by itself.
+
+The build records old log probabilities, constructs local group advantages, makes two clipped passes over each fresh batch, and discards the batch. It is a tabular mechanism demonstration, not a claim that a production language model needs the same hyperparameters. A production trainer must compute sequence log probabilities with the exact tokenizer, action mask, sampling transformation, and reference policy used by its objective.
+
+Long-horizon training has recognizable pathologies. Nearly identical group rewards collapse the normalized signal. A lucky late action assigns positive advantage to weak earlier steps. Repeated low-information turns can dominate token count. Entropy can collapse so the policy repeats a narrow strategy and no longer generates comparison diversity. Track reward variance, action entropy by state, unique tool sequences, trajectory length, invalid-action rate, and advantage magnitude—not only average return.
+
+## Rewards must reject successful violations {#sec-ch23-rewards}
+
+Consider three high-value refund trajectories:
+
+| Trajectory | Actions | Final state | Hidden failure |
+|---|---|---|---|
+| **Safe** | lookup → approval → refund → finish | Refunded | None |
+| **Shortcut** | lookup → refund → finish | Refunded | Required approval bypassed |
+| **Loopy** | lookup → approval → refund → refund → finish | Refunded | Duplicate external effect |
+
+An outcome-only reward gives all three the same success. A scalar weighted sum can still trade a severe violation against a large outcome bonus. Separate reward components and use **lexicographic constraints**: first decide whether the trajectory is eligible; only then use scalar quality or efficiency to compare eligible trajectories.
+
+The artifact scorer makes that order executable:
+
+```python
+# agent_gym.py — outcome quality cannot buy eligibility
+def score_trajectory(trajectory: Trajectory) -> Score:
+    outcome = 1.0 if trajectory.success else 0.0
+    policy = -2.0 if trajectory.policy_violation else 0.0
+    effects = -1.0 if trajectory.duplicate_effect else 0.0
+    cost = -0.03 * len(trajectory.transitions)
+    eligible = policy == 0.0 and effects == 0.0
+    return Score(outcome + policy + effects + cost,
+                 eligible, outcome, policy, effects, cost)
+```
+
+The scalar reward remains useful for advantage calculation and diagnostics, including the group baseline. The update loop separately checks `eligible`; shortcut and duplicate-effect trajectories produce no policy-gradient updates. This is conservative. In other systems, a safe denied action may deserve a negative update, while an executed prohibited action must never become a positive example. Write that policy explicitly.
+
+One narrated failure is enough. The build samples a high-value shortcut that reaches `refunded`, receives outcome component (+1), receives policy component (-2), and becomes ineligible. The group sees evidence that alternatives differ, but the shortcut's actions never enter the update set. If the eligibility check were removed, changing the outcome weight could eventually make the forbidden sequence profitable.
+
+Reward gaming targets every visible seam:
+
+| Exploit | What the policy learns | Countermeasure |
+|---|---|---|
+| Readable checker or expected answer | Emit the fixture rather than solve the task | Verifier-only state and hidden held-outs |
+| Editable tests or policy files | Weaken the definition of success | Read-only verifier assets and immutable digests |
+| Mocked tool or intercepted receipt | Forge success without final state | Independent environment-state assertion |
+| Timeout or crash ambiguity | Seek episodes whose failure is mislabeled | Typed infrastructure failure excluded from reward |
+| Duplicate retries | Accumulate outcome credit through repeated effects | Effect IDs, idempotency, and duplicate-effect veto |
+| Proxy maximization | Satisfy a count while harming the goal | Component telemetry, adversarial probes, review |
+
+Anti-exploit design is continuous because the learned policy searches the reward surface more aggressively than ordinary testing. Keep known exploit trajectories as must-not-train fixtures. Audit unexpectedly high rewards before scaling. Restrict the training runtime so finding an exploit cannot become a real external incident; Chapter 24 owns the broader security architecture.
+
+## Keep on-policy data fresh at production scale {#sec-ch23-infrastructure}
+
+On-policy training is a data-consistency problem. Each transition must identify the behavior policy that generated it. The policy version includes weights, tokenizer, prompt template, tool schema, action masking, decoding configuration, harness, and environment. If workers collect rollouts while weights change, the trainer must either synchronize at a declared boundary, quantify and correct policy lag, or reject stale trajectories.
+
+PPO-like objectives permit several optimization epochs over one batch because the recorded old probability defines the ratio. They do not authorize indefinite replay of a mixed six-month log. As lag grows, ratios clip more often, effective sample use falls, and unrecorded harness changes make the ratio itself incomplete. Offline logs belong to BC or explicitly offline objectives unless their behavior probabilities and environment identities satisfy the chosen estimator.
+
+A production system separates the **execution plane** from the **training plane**. Rollout workers run the real harness against isolated gym instances. A trajectory store accepts immutable, versioned events. Reward workers read verifier-only state and attach components plus eligibility. A curator filters duplicates, infrastructure failures, privacy violations, and contaminated tasks. The trainer reads an approved snapshot and publishes a candidate bundle, never the production alias.
+
+```{mermaid}
+%%| label: fig-ch23-training-flywheel
+%%| fig-cap: "The production flywheel has two trust boundaries: outcomes must be curated before training, and learned weights must pass gates before serving."
+%%| fig-alt: "Production traces flow through outcome verification and privacy curation into a versioned trajectory snapshot. Sandbox rollout workers and a reward service feed a trainer. The candidate policy goes through offline evaluation, shadow and canary gates, and may be promoted or rolled back."
+flowchart LR
+    P["Production and expert trajectories"] --> C["Verify, redact, deduplicate, version"]
+    C --> S["Immutable training snapshot"]
+    S --> W["Sandbox rollout workers"]
+    W --> R["Reward components and eligibility"]
+    R --> T["Trainer"]
+    T --> G["Evaluation and release gates"]
+    G -->|"eligible"| A["Candidate alias"]
+    G -->|"regression or exploit"| C
+    A -->|"observed failures"| P
+```
+
+Rollout throughput usually sets cluster balance. The generation engine handles prefix caching, batching, and policy sampling. Environments wait on tools and services. Reward workers may run tests or database comparisons. The training engine performs forward and backward passes. Increasing trainers while rollout queues are empty wastes accelerators; increasing rollout concurrency beyond database or browser capacity creates timeouts instead of useful transitions. Capacity-plan from measured service times and backpressure.
+
+The deterministic fixture reports **declared work units** rather than pretending laptop wall-clock timing predicts a cluster. Each tool action carries a stable environment cost, policy sampling carries three units per decision, and each accepted gradient carries one. This makes the bottleneck reproducible while preserving the accounting shape. A real adapter replaces units with monotonic timing and resource telemetry.
+
+```{python}
+#| label: fig-ch23-build-measurement
+#| fig-cap: "The fixture closes the recovery-state gap while declared environment work remains the largest training phase."
+#| fig-alt: "The left bar chart shows eligible held-out success rising from two of four after behavior cloning to four of four after group-relative reinforcement learning. The right chart shows environment work units above policy-sampling and update units."
+#| echo: true
+import sys
+from pathlib import Path
+chapter_code = Path("code/ch23").resolve()
+if str(chapter_code) not in sys.path:
+    sys.path.insert(0, str(chapter_code))
+from agent_gym import run_experiment
+import matplotlib.pyplot as plt
+from matplotlib_inline.backend_inline import set_matplotlib_formats
+
+plt.rcParams["svg.hashsalt"] = "chapter-23-inline"
+set_matplotlib_formats("svg", metadata={"Date": None})
+
+report = run_experiment()
+fig, axes = plt.subplots(1, 2, figsize=(8, 3.2))
+axes[0].bar(["BC", "BC + RL"], [report["bc"]["successes"], report["bc_plus_rl"]["successes"]])
+axes[0].set(ylabel="eligible successes (of 4)", ylim=(0, 4.3))
+units = report["training"]["work_units"]
+axes[1].bar(["environment", "sampling", "update"], units.values())
+axes[1].set(ylabel="declared work units")
+axes[1].tick_params(axis="x", rotation=20)
+fig.tight_layout()
+plt.show()
+```
+
+The measurement answers two questions only: did the fixture learn the deliberately missing state, and which declared phase dominates? It does not establish sample efficiency, accelerator utilization, or model quality.
+
+::: {.callout-note .landscape-2026}
+### Landscape 2026 (dated)
+
+As of 2026-07-19, public agent-RL work includes execution/training disaggregation, asynchronous tool rollouts, anchor-state group credit, and stabilized multi-turn objectives. Representative research systems include Agent Lightning, VerlTool, GiGPO, and RAGEN/StarPO. Hosted reinforcement fine-tuning surfaces expose user-defined graders, while open training stacks increasingly separate rollout engines from trainer backends. Their APIs, supported models, algorithm variants, and performance claims remain volatile.
+
+**Verify live: 2026-07-19.** Recheck the primary [Agent Lightning paper](https://arxiv.org/abs/2508.03680), [VerlTool paper](https://arxiv.org/abs/2509.01055), [GiGPO paper](https://arxiv.org/abs/2505.10978), [RAGEN paper](https://arxiv.org/abs/2504.20073), maintained framework repositories, and the official [reinforcement fine-tuning](https://platform.openai.com/docs/api-reference/fine-tuning) and [grader](https://platform.openai.com/docs/api-reference/graders) documentation before adopting named systems or current interfaces.
+:::
+
+## Train weights only after fixing the system {#sec-ch23-rft}
+
+Agent reinforcement fine-tuning (RFT) is appropriate when the remaining behavior gap is genuinely in the policy, the task supplies reliable trajectory rewards, the gym covers policy-induced states, and the harness will remain stable long enough for training evidence to transfer. It is not the first response to a 30-percent failure rate.
+
+Use a six-step diagnosis:
+
+1. **Repair the task contract.** Remove ambiguous instructions and define authoritative completion.
+2. **Repair observations.** Ensure the policy can see the state and provenance required for the decision.
+3. **Repair actions and gates.** Make valid actions easy to express and invalid actions impossible or typed.
+4. **Repair the verifier.** Test final state, policy compliance, effects, and infrastructure failure separately.
+5. **Use inference-time control.** Improve context, decomposition, retries, or model choice when those target the failure directly.
+6. **Train only the residual.** Choose BC, DAgger, offline RL, or constrained online RL according to the evidence ladder.
+
+This ordering is causal debugging. If a tool omits an essential argument, weight updates ask the model to work around a broken interface. If retrieval hides the relevant policy, training may memorize cases instead of gaining access to the rule. If the checker rewards unauthorized state changes, RL intensifies the defect. Fixing the system also creates cleaner trajectories for later training.
+
+When RFT is justified, freeze and version the contract before collecting the confirmatory dataset. Define action masks and zero-tolerance constraints. Predeclare training, validation, exploit, and held-out environment splits. Estimate rollout capacity and abort conditions. Start from a BC or otherwise stable policy unless the experiment specifically justifies cold exploration. Run shadow training, inspect reward-component distributions and trajectories, and make promotion a separate release decision under Chapter 22's evidence contract.
+
+Rollback means restoring the prior complete policy bundle—not just weights. Tokenizer, prompt, tools, harness, scorer, and environment compatibility travel with it. A learned policy can also change traffic: more tool calls, longer trajectories, new error states, and higher approval volume. Chapters 26–27 own deployment and SLO operations; the trainer must hand them the capacity and failure evidence needed to operate the candidate.
+
+## Build {#sec-ch23-build}
+
+The integrated artifact consists of [agent_gym.py](../code/ch23/agent_gym.py) and its focused [tests](../code/ch23/tests/test_agent_gym.py). It uses only the Python standard library; Matplotlib is needed only for the book figure. From the `newbook/` directory, run:
+
+```bash
+python -m unittest discover -s code/ch23/tests -v
+python code/ch23/agent_gym.py
+```
+
+The default experiment is deterministic at seed 7. Read the JSON report in this order:
+
+1. `bc.successes = 2` of 4. The normal low- and high-value tasks pass. Both recovery-start tasks fail because BC never saw observation `recover`; its tied logits greedily select `finish`.
+2. `bc_plus_rl.successes = 4` of 4 after 24 rounds. Fresh rollouts discover `lookup` from the recovery state and the state-grouped advantage makes that action more likely.
+3. `vetoed_rollouts = 22`. Exploration found unauthorized or duplicate-effect trajectories that may have reached a refunded final state.
+4. `vetoed_updates = 0`. The update set and veto set are intersected explicitly; no prohibited trajectory contributes an update.
+5. `max_policy_lag = 0`. Each round's trajectories were generated by the declared batch policy and discarded after the update.
+6. Declared work units are environment 30,682; policy sampling 12,267; update 7,774. The values are deterministic accounting fixtures, not elapsed milliseconds.
+
+The tests separately prove the BC coverage gap, scorer veto, group-centering property, reset isolation, and integrated outcome. Change `--seed` to inspect sensitivity or `--rounds` to change the on-policy budget. Predict the result before reducing rounds; a short run need not close both recovery states and may exit with status `2`.
+
+### Acceptance checks
+
+The build is complete when all focused tests pass, the default command exits zero, eligible held-out completion changes from two to four, at least one successful violation is vetoed, vetoed updates and policy lag remain zero, and environment work exceeds both sampling and update work.
+
+### Honesty note
+
+The tabular policy makes state coverage, probabilities, clipping, and updates inspectable. It is not a language model and does not demonstrate useful agent capability. Declared work units make the bottleneck result reproducible but do not predict wall-clock ratios. The group-relative update is a small mechanism analogue with anchor-state advantages and clipping; production GRPO includes sequence-level likelihoods, batching, regularization, distributed rollout and training, and extensive stability controls. The permissive refund tool exists to test reward vetoes; a deployed executor must enforce approval before effect.
+
+## What endures, what changes {#sec-ch23-endures}
+
+**What endures.** Train from trajectories only after final state, policy, effects, and provenance are verified. Climb from BC to learner-state relabeling, conservative offline learning, and constrained online learning only as evidence and containment improve. Treat a gym as taskset plus harness plus resettable runtime. Record behavior-policy probabilities and the whole policy bundle. Separate eligibility constraints from scalar quality. Localize credit at meaningful action boundaries, measure state coverage and entropy, and capacity-plan environments as part of the training system.
+
+**What changes.** Agent-RL algorithm names, hosted RFT APIs, open training frameworks, rollout engines, anchor-state methods, model families, scaling results, and recommended hyperparameters will change. Removing the Landscape 2026 box leaves the curriculum, environment contract, reward boundaries, and freshness rules intact.
+
+## Exercises {#sec-ch23-exercises}
+
+1. Compute returns-to-go for rewards ((0,0,1)) with (gamma\in\{0.9,0.95,1.0\}). Explain how discount changes early-turn weight and why it does not prove causal responsibility.
+2. Add one recovery state that differs only in hidden account status. Show why grouping by the visible string biases the local advantage, then add an environment-owned state identity that separates the groups.
+3. Implement one DAgger round: collect the BC policy's learner-visited recovery states, label them with the scripted expert, retrain, and compare with the RL result. Defend which source of supervision is cheaper and safer for this fixture.
+4. Extend the scorer with a duplicate-effect constraint keyed by tenant and effect ID. Construct a retry after an ambiguous timeout and distinguish a safe reconciliation from a second refund.
+5. Expose the gym's checker through a read tool and design a policy that gains reward without satisfying the intended task. Move the checker behind the verifier boundary and add the exploit as a must-not-train test.
+6. Given six months of trajectories from mixed prompts, tokenizers, tool schemas, scorers, and policies, define the minimum version tuple and decide which records qualify for BC, offline RL, on-policy correction, or exclusion.
+7. Design-review exercise: a support agent fails 30 percent of tasks and a product manager requests online RL. Apply the six-step diagnosis, define the evidence needed to advance each curriculum rung, and name the condition that would make you stop before RL.
+
+## Notes and sources {#sec-ch23-sources}
+
+- Williams, [“Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning”](https://doi.org/10.1007/BF00992696), introduced REINFORCE-style likelihood-ratio policy gradients.
+- Schulman et al., [“Proximal Policy Optimization Algorithms”](https://arxiv.org/abs/1707.06347), introduced PPO's clipped surrogate and repeated minibatch updates.
+- Shao et al., [“DeepSeekMath”](https://arxiv.org/abs/2402.03300), introduced GRPO as a critic-free group-relative PPO variant for verifiable mathematical reasoning.
+- Ross, Gordon, and Bagnell, [“A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning”](https://arxiv.org/abs/1011.0686), introduced DAgger and analyzes learning under policy-induced state distributions.
+- Levine et al., [“Offline Reinforcement Learning: Tutorial, Review, and Perspectives on Open Problems”](https://arxiv.org/abs/2005.01643), surveys distribution shift and conservative learning from fixed logs.
+- Feng et al., [“Group-in-Group Policy Optimization for LLM Agent Training”](https://arxiv.org/abs/2505.10978), constructs episode- and anchor-state-level relative advantages for agent trajectories.
+- Wang et al., [“RAGEN”](https://arxiv.org/abs/2504.20073), studies multi-turn agent RL pathologies including reward-variance cliffs, gradient spikes, and strategy collapse.
+- Luo et al., [“Agent Lightning”](https://arxiv.org/abs/2508.03680), proposes execution/training disaggregation and hierarchical credit assignment for existing agents.
+- Jiang et al., [“VerlTool”](https://arxiv.org/abs/2509.01055), treats asynchronous multi-turn tool environments as a first-class rollout system.
+- Yao et al., [τ-bench](https://arxiv.org/abs/2406.12045), combines domain policy, tool interaction, user simulation, and final database-state evaluation.
+- Pan et al., [“Training Software Engineering Agents and Verifiers with SWE-Gym”](https://arxiv.org/abs/2412.21139), provides executable repository environments and trajectories for training software agents.

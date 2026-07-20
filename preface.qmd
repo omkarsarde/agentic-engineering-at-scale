@@ -1,0 +1,46 @@
+---
+number-sections: false
+---
+
+# Preface {.unnumbered}
+
+## The promise
+
+This is a textbook to learn from, not a catalog of frameworks. It combines explanation, mathematics, runnable code, measurements, diagrams, failure traces, and exercises in one continuous path. The intended entry point is someone who understands neural networks, backpropagation, and basic PyTorch but has not yet studied language models or agent platforms.
+
+The target is senior engineering judgment. That does not mean beginning with jargon or compressing the subject into reference tables. It means earning depth in layers: first intuition, then a precise mechanism, then an executable test, then the production boundary where the toy stops being sufficient.
+
+## The learning loop
+
+Most chapters repeat the same low-friction rhythm:
+
+1. Start with a concrete failure or measurement.
+2. State the invariant the system needs.
+3. Build the smallest mechanism that can enforce or test it.
+4. Break the mechanism deliberately.
+5. Measure the failure rather than describing it vaguely.
+6. Map the lesson to a production system.
+7. Name what the production product still does not own.
+
+Conceptual chapters use the corresponding sequence: motivation, intuition, load-bearing mathematics, code, verification, and a short synthesis.
+
+## How code is presented
+
+One artifact grows through a chapter. After its first appearance, code blocks show only additions or changes and identify their location. A small checkpoint table records what changed and which invariant is now verified. The complete source lives under `code/`; a chapter prints the whole file only when doing so genuinely helps and the result remains short.
+
+The default exercises use deterministic fixtures and do not require a paid API. Optional adapters let readers repeat a build with an open model, a local inference server, or a hosted provider. Results involving hardware or model behavior are reported as measured ranges with configuration metadata, not as universal constants.
+
+## How to read figures
+
+The book uses four visual grammars consistently:
+
+- Mermaid for control flow, protocols, state, lifecycle, and trust boundaries.
+- Graphviz for dense dependency, lineage, and ownership graphs.
+- Executable plots for quantitative behavior and tradeoffs.
+- Editable SVG for spatial concepts that need deliberate composition.
+
+Color is never the only carrier of meaning. Captions state the question, labels state the semantics of arrows or boundaries, and the following paragraph states the conclusion.
+
+## A note on 2026
+
+The field changes faster than a printed book. This edition therefore separates durable mechanisms from dated observations. Appendix C records the cutoff, primary source, owner, and next verification date for volatile claims. When a mechanism changes—not merely a product name—the annual audit can propose a controlled revision to the spine.

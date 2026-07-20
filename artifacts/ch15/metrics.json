@@ -1,0 +1,683 @@
+{
+  "experiment_contract": "executor-only; gold compiled plans exclude planner error and cost",
+  "summary": {
+    "one-shot k=1": {
+      "supported_answer_accuracy": 0.6666666666666666,
+      "mean_search_calls": 1.0,
+      "mean_verified_candidate_documents": 1.0,
+      "mean_rejected_documents": 0.0,
+      "mean_evidence_edges": 0.6666666666666666
+    },
+    "one-shot k=2": {
+      "supported_answer_accuracy": 0.6666666666666666,
+      "mean_search_calls": 1.0,
+      "mean_verified_candidate_documents": 2.0,
+      "mean_rejected_documents": 0.0,
+      "mean_evidence_edges": 0.8333333333333334
+    },
+    "one-shot k=3": {
+      "supported_answer_accuracy": 0.8333333333333334,
+      "mean_search_calls": 1.0,
+      "mean_verified_candidate_documents": 2.3333333333333335,
+      "mean_rejected_documents": 0.0,
+      "mean_evidence_edges": 1.1666666666666667
+    },
+    "one-shot k=4": {
+      "supported_answer_accuracy": 1.0,
+      "mean_search_calls": 1.0,
+      "mean_verified_candidate_documents": 2.5,
+      "mean_rejected_documents": 0.0,
+      "mean_evidence_edges": 1.3333333333333333
+    },
+    "agentic": {
+      "supported_answer_accuracy": 1.0,
+      "mean_search_calls": 1.5,
+      "mean_verified_candidate_documents": 1.3333333333333333,
+      "mean_rejected_documents": 0.16666666666666666,
+      "mean_evidence_edges": 1.3333333333333333
+    }
+  },
+  "rows": [
+    {
+      "strategy": "one-shot k=1",
+      "query_id": "q1",
+      "expected": "Maya Chen",
+      "answer": "Maya Chen",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 1,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "owner",
+          "object": "Maya Chen",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=1",
+      "query_id": "q2",
+      "expected": "Atlas",
+      "answer": "Atlas",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 1,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=1",
+      "query_id": "q3",
+      "expected": "us-east-2",
+      "answer": null,
+      "supported_correct": false,
+      "stop": "abstained",
+      "search_calls": 1,
+      "candidate_documents": 1,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=1",
+      "query_id": "q4",
+      "expected": "SLO review",
+      "answer": "SLO review",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 1,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "release_gate",
+          "object": "SLO review",
+          "document_id": "d4",
+          "source_uri": "kb://projects/falcon-gate",
+          "support": "The release gate for Falcon is SLO review."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=1",
+      "query_id": "q5",
+      "expected": "Aurora",
+      "answer": null,
+      "supported_correct": false,
+      "stop": "abstained",
+      "search_calls": 1,
+      "candidate_documents": 1,
+      "evidence": [],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=1",
+      "query_id": "q6",
+      "expected": null,
+      "answer": null,
+      "supported_correct": true,
+      "stop": "abstained",
+      "search_calls": 1,
+      "candidate_documents": 1,
+      "evidence": [],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=2",
+      "query_id": "q1",
+      "expected": "Maya Chen",
+      "answer": "Maya Chen",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "owner",
+          "object": "Maya Chen",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=2",
+      "query_id": "q2",
+      "expected": "Atlas",
+      "answer": "Atlas",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=2",
+      "query_id": "q3",
+      "expected": "us-east-2",
+      "answer": null,
+      "supported_correct": false,
+      "stop": "abstained",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        },
+        {
+          "subject": "Atlas",
+          "relation": "telemetry_store",
+          "object": "Aurora",
+          "document_id": "d2",
+          "source_uri": "kb://services/atlas",
+          "support": "Atlas stores its telemetry in Aurora."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=2",
+      "query_id": "q4",
+      "expected": "SLO review",
+      "answer": "SLO review",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "release_gate",
+          "object": "SLO review",
+          "document_id": "d4",
+          "source_uri": "kb://projects/falcon-gate",
+          "support": "The release gate for Falcon is SLO review."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=2",
+      "query_id": "q5",
+      "expected": "Aurora",
+      "answer": null,
+      "supported_correct": false,
+      "stop": "abstained",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=2",
+      "query_id": "q6",
+      "expected": null,
+      "answer": null,
+      "supported_correct": true,
+      "stop": "abstained",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=3",
+      "query_id": "q1",
+      "expected": "Maya Chen",
+      "answer": "Maya Chen",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "owner",
+          "object": "Maya Chen",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=3",
+      "query_id": "q2",
+      "expected": "Atlas",
+      "answer": "Atlas",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=3",
+      "query_id": "q3",
+      "expected": "us-east-2",
+      "answer": null,
+      "supported_correct": false,
+      "stop": "abstained",
+      "search_calls": 1,
+      "candidate_documents": 3,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        },
+        {
+          "subject": "Atlas",
+          "relation": "telemetry_store",
+          "object": "Aurora",
+          "document_id": "d2",
+          "source_uri": "kb://services/atlas",
+          "support": "Atlas stores its telemetry in Aurora."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=3",
+      "query_id": "q4",
+      "expected": "SLO review",
+      "answer": "SLO review",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "release_gate",
+          "object": "SLO review",
+          "document_id": "d4",
+          "source_uri": "kb://projects/falcon-gate",
+          "support": "The release gate for Falcon is SLO review."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=3",
+      "query_id": "q5",
+      "expected": "Aurora",
+      "answer": "Aurora",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 3,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        },
+        {
+          "subject": "Atlas",
+          "relation": "telemetry_store",
+          "object": "Aurora",
+          "document_id": "d2",
+          "source_uri": "kb://services/atlas",
+          "support": "Atlas stores its telemetry in Aurora."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=3",
+      "query_id": "q6",
+      "expected": null,
+      "answer": null,
+      "supported_correct": true,
+      "stop": "abstained",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=4",
+      "query_id": "q1",
+      "expected": "Maya Chen",
+      "answer": "Maya Chen",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "owner",
+          "object": "Maya Chen",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=4",
+      "query_id": "q2",
+      "expected": "Atlas",
+      "answer": "Atlas",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=4",
+      "query_id": "q3",
+      "expected": "us-east-2",
+      "answer": "us-east-2",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 4,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        },
+        {
+          "subject": "Atlas",
+          "relation": "telemetry_store",
+          "object": "Aurora",
+          "document_id": "d2",
+          "source_uri": "kb://services/atlas",
+          "support": "Atlas stores its telemetry in Aurora."
+        },
+        {
+          "subject": "Aurora",
+          "relation": "region",
+          "object": "us-east-2",
+          "document_id": "d3",
+          "source_uri": "kb://services/aurora",
+          "support": "Aurora runs in region us-east-2."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=4",
+      "query_id": "q4",
+      "expected": "SLO review",
+      "answer": "SLO review",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "release_gate",
+          "object": "SLO review",
+          "document_id": "d4",
+          "source_uri": "kb://projects/falcon-gate",
+          "support": "The release gate for Falcon is SLO review."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=4",
+      "query_id": "q5",
+      "expected": "Aurora",
+      "answer": "Aurora",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 3,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        },
+        {
+          "subject": "Atlas",
+          "relation": "telemetry_store",
+          "object": "Aurora",
+          "document_id": "d2",
+          "source_uri": "kb://services/atlas",
+          "support": "Atlas stores its telemetry in Aurora."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "one-shot k=4",
+      "query_id": "q6",
+      "expected": null,
+      "answer": null,
+      "supported_correct": true,
+      "stop": "abstained",
+      "search_calls": 1,
+      "candidate_documents": 2,
+      "evidence": [],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "agentic",
+      "query_id": "q1",
+      "expected": "Maya Chen",
+      "answer": "Maya Chen",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 1,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "owner",
+          "object": "Maya Chen",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "agentic",
+      "query_id": "q2",
+      "expected": "Atlas",
+      "answer": "Atlas",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 1,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "agentic",
+      "query_id": "q3",
+      "expected": "us-east-2",
+      "answer": "us-east-2",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 3,
+      "candidate_documents": 3,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        },
+        {
+          "subject": "Atlas",
+          "relation": "telemetry_store",
+          "object": "Aurora",
+          "document_id": "d2",
+          "source_uri": "kb://services/atlas",
+          "support": "Atlas stores its telemetry in Aurora."
+        },
+        {
+          "subject": "Aurora",
+          "relation": "region",
+          "object": "us-east-2",
+          "document_id": "d3",
+          "source_uri": "kb://services/aurora",
+          "support": "Aurora runs in region us-east-2."
+        }
+      ],
+      "rejected_ids": [
+        "d5"
+      ]
+    },
+    {
+      "strategy": "agentic",
+      "query_id": "q4",
+      "expected": "SLO review",
+      "answer": "SLO review",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 1,
+      "candidate_documents": 1,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "release_gate",
+          "object": "SLO review",
+          "document_id": "d4",
+          "source_uri": "kb://projects/falcon-gate",
+          "support": "The release gate for Falcon is SLO review."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "agentic",
+      "query_id": "q5",
+      "expected": "Aurora",
+      "answer": "Aurora",
+      "supported_correct": true,
+      "stop": "answered",
+      "search_calls": 2,
+      "candidate_documents": 2,
+      "evidence": [
+        {
+          "subject": "Falcon",
+          "relation": "depends_on",
+          "object": "Atlas",
+          "document_id": "d1",
+          "source_uri": "kb://projects/falcon",
+          "support": "Project Falcon is owned by Maya Chen and depends on Atlas."
+        },
+        {
+          "subject": "Atlas",
+          "relation": "telemetry_store",
+          "object": "Aurora",
+          "document_id": "d2",
+          "source_uri": "kb://services/atlas",
+          "support": "Atlas stores its telemetry in Aurora."
+        }
+      ],
+      "rejected_ids": []
+    },
+    {
+      "strategy": "agentic",
+      "query_id": "q6",
+      "expected": null,
+      "answer": null,
+      "supported_correct": true,
+      "stop": "abstained",
+      "search_calls": 1,
+      "candidate_documents": 0,
+      "evidence": [],
+      "rejected_ids": []
+    }
+  ]
+}

@@ -1,0 +1,487 @@
+---
+description: "Spend inference compute deliberately, verify reasoning without assuming the verifier is perfect, and derive critic-free RL with verifiable rewards."
+---
+
+# Reasoning: Test-Time Compute and RLVR [F+S] {#sec-ch08}
+
+## What you need going in {#sec-ch08-prerequisites}
+
+> **Assumed:** neural-network fundamentals, backpropagation, basic Python, and beginner PyTorch.
+>
+> **From earlier chapters:** [Chapter 7, Policy gradients](07-post-training.qmd#sec-ch07-policy-gradient) supplies REINFORCE, baselines, and advantages. [Chapter 7, RLHF](07-post-training.qmd#sec-ch07-rlhf) supplies PPO's clipped ratio and the reference-policy KL. This chapter derives GRPO as a precise change to those mechanisms rather than reteaching them.
+>
+> **Not required:** search algorithms, Monte Carlo tree search, process reward models, reasoning-model APIs, rollout engines, or prior experience training a reasoning model.
+
+## Contents {#sec-ch08-contents}
+
+- [A correct answer can be generated and still be lost](#sec-ch08-opening)
+- [What you will build](#sec-ch08-will-build)
+- [Coverage turns samples into opportunity](#sec-ch08-coverage)
+- [Search chooses where reasoning branches](#sec-ch08-search)
+- [Verifiers set the ceiling](#sec-ch08-verifiers)
+- [Allocate compute by marginal value](#sec-ch08-allocation)
+- [GRPO replaces the critic with siblings](#sec-ch08-grpo)
+- [RLVR turns verification into training](#sec-ch08-rlvr)
+- [Entropy, length, and Goodhart break naive RL](#sec-ch08-pathologies)
+- [Capability claims require pass@k and proof](#sec-ch08-capability)
+- [Landscape 2026 (dated)](#sec-ch08-landscape)
+- [Build](#sec-ch08-build)
+- [What endures, what changes](#sec-ch08-endures)
+- [Exercises](#sec-ch08-exercises)
+- [Notes and sources](#sec-ch08-sources)
+
+## A correct answer can be generated and still be lost {#sec-ch08-opening}
+
+Suppose a model solves a hard algebra problem correctly in one of eight sampled responses. The other seven disagree. A plurality vote returns the most common wrong answer. A learned judge prefers a polished but invalid derivation. Asking the model to “check again” changes the right answer into a wrong one. The generator had enough capability to produce success, yet the surrounding inference procedure failed to find and preserve it.
+
+**Test-time compute** is computation spent after the weights are fixed to improve an answer. It can be spent in three distinct ways. **Serial compute** extends one trajectory with more intermediate tokens, revisions, or backtracking. **Parallel compute** samples independent trajectories. **Search compute** branches on partial trajectories, evaluates them, and decides which branches deserve expansion. These mechanisms are often grouped under “thinking longer,” but they make different bets.
+
+Why can serial reasoning help at all? A transformer applies a fixed number of layers per generated token. When it emits an intermediate token and conditions on that token next, the autoregressive loop creates another serial computation step. A chain of thought is therefore an external scratch sequence that lets a fixed-depth network perform a longer computation. The trace may help the model reach an answer; it is not automatically a faithful explanation of how the answer arose. Chapter 25 owns that monitoring and faithfulness question.
+
+Parallel compute exploits a different fact: the model defines a distribution over possible paths. One sample may miss a low-probability correct region; repeated sampling can cover it. Search combines both ideas by preserving promising prefixes and abandoning others. Every method eventually needs a selection signal. This creates the **generator–verifier gap**: in some domains, checking a candidate is cheaper and more reliable than generating one. A compiler can reject invalid code much faster than a model can invent a correct program. Substitution can check an arithmetic answer. A proof assistant can validate a formal certificate.
+
+The gap is conditional, not universal. Judging an essay may be as difficult as writing it. A learned verifier can share the generator's errors. A test suite can omit the behavior an optimizer exploits. More candidate compute helps only when the selection mechanism can recognize improvement.
+
+Figure @fig-ch08-compute-ladder makes the allocation decision explicit. The next unit of compute should buy a new path, a deeper path, or a better check—not merely more tokens by habit.
+
+```{mermaid}
+%%| label: fig-ch08-compute-ladder
+%%| fig-cap: "Where can the next unit of test-time compute produce new information?"
+flowchart TD
+    Q["Problem + current candidate set"] --> V{"Reliable external check available?"}
+    V -->|"yes"| G{"Any candidate passes?"}
+    G -->|"yes"| STOP["Return verified candidate"]
+    G -->|"no"| CHOOSE{"Current failure is coverage or depth?"}
+    V -->|"no"| UNCERTAIN["Use a calibrated selection rule; retain uncertainty"]
+    CHOOSE -->|"coverage"| PAR["Sample another independent trajectory"]
+    CHOOSE -->|"depth"| SER["Extend or revise a promising trajectory"]
+    CHOOSE -->|"branch uncertainty"| SEARCH["Expand and prune partial thoughts"]
+    PAR --> Q
+    SER --> Q
+    SEARCH --> Q
+```
+
+The invariant is that extra compute enters a measured loop. Without a verifier, confidence rule, or stopping condition, “think longer” is only an instruction to spend more.
+
+## What you will build {#sec-ch08-will-build}
+
+::: {.callout-tip title="The reasoning-and-RLVR microscope"}
+You will run one engine-free, standard-library CPU build rooted at `code/ch08/reason_rl.py`. A seeded arithmetic fixture exposes five reasoning strategies across easy, medium, and hard prompts. The same exact-answer verifier first ranks repeated samples and then becomes the reward for a clipped GRPO update.
+
+The build measures coverage, plurality accuracy, noisy-verifier best-of-$n$, true pass@1, normalized policy entropy, expected response length, and objective reward. A deliberately misspecified length proxy runs through the same GRPO core to show Goodhart's law. `render_metrics.py` generates the chapter's print-safe SVG. Success means exact RLVR raises true accuracy, group advantages are zero-mean, and the broken proxy run visibly separates measured reward from true utility.
+
+`hf_generate_adapter.py` is an optional `transformers` adapter that supplies real sampled completions and extracted numeric answers. It requires an explicit model download and is never imported by the deterministic build.
+:::
+
+## Coverage turns samples into opportunity {#sec-ch08-coverage}
+
+Let a prompt $x$ have per-sample probability $p_x$ of producing a response that passes an exact verifier. If $k$ samples are conditionally independent, the probability that at least one succeeds is
+
+$$
+\operatorname{pass@}k(x)=1-(1-p_x)^k.
+$$
+
+This is **coverage**: whether the candidate set contains a success. The marginal gain from sample $k+1$ is $p_x(1-p_x)^k$, so returns diminish but remain positive whenever $p_x\in(0,1)$. Dataset pass@$k$ averages this quantity over prompts. Real samples are correlated, and $p_x$ varies widely, so the equation is a mental model rather than an estimator to apply blindly. Empirical work has nevertheless found smooth inference-scaling relationships over large sample ranges in verifiable domains.
+
+Coverage is not selection accuracy. **Self-consistency** samples reasoning traces, extracts their final answers, and returns the plurality answer:
+
+$$
+\hat a=\arg\max_a\sum_{i=1}^{k}\mathbb{1}[a_i=a].
+$$
+
+Plurality does not require more than half the votes. It works asymptotically when the correct answer $a^*$ is the unique most probable answer bucket:
+
+$$
+P(A=a^*)>\max_{a\ne a^*}P(A=a).
+$$
+
+The commonly repeated “each sample must be more than 50% accurate” condition applies to binary majority voting, not general plurality. If wrong mass is diffuse across many answers, a correct bucket with probability 0.35 can still win. If one systematic mistake has probability 0.45, repeated sampling makes the system more confidently wrong even when coverage approaches one.
+
+The reference fixture gives two correct strategies the same arithmetic answer, one wrong strategy a concentrated off-by-one answer, and other wrong strategies diffuse answers. The core sampling loop records all three selection outcomes:
+
+```python
+# code/ch08/reason_rl.py — changed region: ttc_curve
+actions = [sample_index(probabilities, rng) for _ in range(samples)]
+answers = [
+    candidate_answer(gold, action, trial + i)
+    for i, action in enumerate(actions)
+]
+correct = [is_correct(action) for action in actions]
+coverage += any(correct)
+winner = max(dict.fromkeys(answers), key=answers.count)
+plurality += winner == gold
+marked = [i for i, hit in enumerate(correct) if hit != (rng.random() < .18)]
+selected = rng.choice(marked) if marked else 0
+noisy_bon += correct[selected]
+```
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `reason_rl.py` after `ttc_curve` | 38 lines | coverage, plurality, and noisy-verifier selection are measured separately on the same candidates |
+:::
+
+At one sample, all three metrics equal the fixture's 0.397 pass@1. At 32 samples, exact-verifier coverage reaches 1.000, plurality reaches only 0.583, and noisy selection reaches 0.732. The gap between coverage and selected accuracy is not unused model capability in the abstract; it is an engineering opportunity whose value depends on verifier quality.
+
+Serial and parallel compute can also interact. One can sample $k$ short traces or fewer long traces under the same token budget. If the task fails because early paths are diverse but shallow, extra length may help. If one long trajectory repeatedly commits to the same early mistake, parallel restarts may help. Measure success against *total sampled tokens*, not sample count alone, and stratify by difficulty.
+
+## Search chooses where reasoning branches {#sec-ch08-search}
+
+Independent samples throw away partial work. Search keeps a frontier of partial reasoning states and allocates expansions selectively. To make this useful, define four interfaces: a state representation, an expansion operator, a partial-state score, and a termination check. “Ask the model for another thought” is only the expansion operator.
+
+**Beam search** retains the best $B$ prefixes at each depth. Standard token beam search scores cumulative log-probability, which measures model likelihood rather than correctness. Reasoning beam search instead branches on semantic steps and may combine policy likelihood with a process score. It is simple and parallel, but pruning is irreversible: a temporarily low-scored branch cannot recover.
+
+**Tree of Thoughts (ToT)** treats a coherent intermediate thought as a node, expands several child thoughts, scores them, and permits backtracking. The tree preserves distinct histories. **Graph of Thoughts (GoT)** also merges equivalent or reusable intermediate states, which can avoid recomputation and combine partial results. Merging requires canonical state identity. If two states look similar in prose but carry different assumptions, an incorrect merge corrupts every descendant.
+
+**Verifier-guided search** uses a process reward model or deterministic partial checker to rank prefixes. It earns its cost when bad branches can be rejected before they consume full generations. **Monte Carlo tree search (MCTS)** balances exploitation of high-value branches and exploration of uncertain branches. A common selection score is
+
+$$
+a^*=\arg\max_a\left[
+Q(s,a)+c\sqrt{\frac{\log N(s)}{1+N(s,a)}}
+\right],
+$$
+
+where $Q(s,a)$ is estimated value after choosing thought $a$ from state $s$, $N(s)$ is the parent visit count, $N(s,a)$ is the edge visit count, and $c$ controls exploration. Expansion adds a candidate thought; evaluation or simulation estimates downstream value; backup updates ancestor statistics. Language-model search must decide what constitutes a state, because raw prose creates an enormous, weakly canonicalized tree.
+
+Figure @fig-ch08-search-structures compares what the algorithms retain. The arrows encode ancestry; the graph merge and MCTS backup are the operations unavailable to a simple beam.
+
+```{mermaid}
+%%| label: fig-ch08-search-structures
+%%| fig-cap: "What information does each reasoning-search structure retain?"
+flowchart LR
+    subgraph B["Beam: fixed frontier"]
+        B0["prompt"] --> B1["top thought A"]
+        B0 --> B2["top thought B"]
+        B1 --> B3["top-B next states"]
+        B2 --> B3
+    end
+    subgraph T["Tree of Thoughts: branch and backtrack"]
+        T0["prompt"] --> T1["thought A"]
+        T0 --> T2["thought B"]
+        T1 --> T3["A1"]
+        T1 --> T4["A2"]
+        T2 --> T5["B1"]
+    end
+    subgraph G["Graph of Thoughts: merge reusable state"]
+        G0["prompt"] --> G1["route A"]
+        G0 --> G2["route B"]
+        G1 --> G3["canonical intermediate"]
+        G2 --> G3
+    end
+    subgraph M["MCTS: selection and value backup"]
+        M0["visited root N,Q"] --> M1["selected branch"]
+        M1 --> M2["new expansion"]
+        M2 -. "value backup" .-> M0
+    end
+```
+
+The selection rule, not the topology name, determines whether search helps. Model likelihood can favor familiar errors. A learned process score can be confidently wrong off distribution. A deterministic partial checker may be incomplete. Track expansions, prunes, verifier calls, recovered branches, and final verified success so extra search has an accountable marginal return.
+
+## Verifiers set the ceiling {#sec-ch08-verifiers}
+
+An **outcome reward model (ORM)** scores a complete response or final answer. It is cheap to call once per candidate and matches tasks whose final result is sufficient. Exact answer matching, unit tests, and a simulator terminal condition are programmatic ORMs. A learned sequence classifier is also an ORM, but its score is a proxy rather than a proof.
+
+A **process reward model (PRM)** scores intermediate steps or prefixes. It can identify the first invalid transformation, prune a branch early, and provide denser credit during training. Its supervision is much harder. Annotators need consistent step boundaries and must distinguish a locally unusual but valid path from an error. Monte Carlo labels—continue a prefix many times and use downstream success as its value—replace human labels with sampling assumptions and can be noisy on rare but recoverable states.
+
+The operational choice follows the information available:
+
+| Verifier | Observes | Useful when | Residual risk |
+|---|---|---|---|
+| exact ORM | final artifact | answer or program has an executable truth condition | parser or tests omit cases |
+| learned ORM | full response | quality is holistic but labeled comparisons exist | style and distribution biases |
+| deterministic process check | partial state | invariants can reject a branch early | checker is incomplete |
+| learned PRM | intermediate reasoning steps | early pruning saves substantial generation | local labels may penalize valid alternatives |
+
+A noisy verifier places a mathematical ceiling on best-of-$n$. Suppose a sampled candidate is correct with probability $p$. A binary verifier has symmetric error rate $q$: it marks a correct candidate positive with probability $(1-q)$ and a wrong one positive with probability $q$. Among candidates marked positive, its precision is
+
+$$
+\pi_v=
+\frac{p(1-q)}{p(1-q)+(1-p)q}.
+$$
+
+As the candidate pool grows, the probability of finding *some* marked candidate approaches one, but selecting uniformly among marked candidates approaches precision $\pi_v$, not perfect accuracy. A ranker has a different formula, yet the same constraint: increasing $n$ creates more correct candidates and more false positives. The tail behavior of the verifier determines which wins.
+
+Verification must therefore be evaluated under the candidate distribution induced by search. Measure false positives at the top of the score distribution, not only average classification accuracy on random pairs. Hold out adversarial candidates. For programmatic checks, mutate correct and incorrect solutions and verify that the parser rejects malformed, ambiguous, and multiple-answer outputs.
+
+This also explains the limits of **intrinsic self-correction**. Asking the same model to reconsider without new evidence reuses correlated knowledge and biases. Empirical work has found that such prompts can leave reasoning unchanged or flip correct answers to wrong ones. This is not a claim that revision never works. It separates revision with new information—compiler errors, test failures, retrieved facts, a PRM signal—from revision that only restates the original uncertainty. Log right-to-wrong and wrong-to-right transitions separately; a net score can hide destructive correction.
+
+## Allocate compute by marginal value {#sec-ch08-allocation}
+
+There is no globally optimal number of reasoning tokens or samples. Let $m$ denote a strategy—serial extension, parallel sampling, or guided search—and $b$ its compute budget. A decision rule can be written
+
+$$
+(m^*,b^*)=\arg\max_{m,b}
+\left(\mathbb{E}[U\mid x,m,b]-\lambda C(m,b)\right),
+$$
+
+where $U$ is task utility, $C$ is compute measured consistently, and $\lambda$ expresses how much utility justifies another unit of compute. The expectation is conditional on the prompt $x$ because difficulty changes the curve.
+
+Easy prompts may already pass a cheap check, so more compute adds little. Medium prompts often benefit most: the generator has nonzero coverage and the verifier can discriminate candidates. On extremely hard prompts, all candidates may fail and group rewards may have zero variance. Search then spends heavily without a useful gradient or selection signal. A stronger base policy, better decomposition, or new external information may be required before test-time scaling pays.
+
+Compute-optimal studies confirm the need to condition strategy on prompt difficulty and verifier behavior rather than applying one fixed best-of-$n$. In practice, build per-slice curves of utility against total generated tokens and verifier calls. The slope
+
+$$
+\frac{\Delta\text{verified utility}}{\Delta\text{sampled tokens}}
+$$
+
+is more actionable than a single benchmark maximum. Stop when the slope falls below the product's threshold or when the verifier cannot distinguish additional candidates.
+
+This chapter owns the allocation mechanism, not production serving controls. Provider-specific reasoning settings, request budgets, cache interaction, length forcing, and the latency economics of long traces belong in Chapter 10. Here, compute is an abstract measured budget so the decision survives changes in API surface.
+
+## GRPO replaces the critic with siblings {#sec-ch08-grpo}
+
+Chapter 7 introduced PPO's value model as a learned baseline. Group Relative Policy Optimization (GRPO), introduced in DeepSeekMath, removes that critic. For each prompt $x$, sample a group of $G$ responses $y_1,\ldots,y_G$ from the old policy and score them with rewards $r_1,\ldots,r_G$. Define
+
+$$
+\bar r=\frac{1}{G}\sum_{i=1}^{G}r_i,
+\qquad
+s_r=\sqrt{\frac{1}{G}\sum_{i=1}^{G}(r_i-\bar r)^2},
+$$
+
+and the group-relative advantage
+
+$$
+\hat A_i=\frac{r_i-\bar r}{s_r+\varepsilon}.
+$$
+
+The siblings supply the baseline. A response better than its group receives positive advantage; one worse receives negative advantage. If all rewards are equal, every advantage is zero and the prompt supplies no learning signal. The reference fixture implements exactly this population-standardized calculation:
+
+```python
+# code/ch08/reason_rl.py — changed region: grpo_advantages
+mean = sum(rewards) / len(rewards)
+variance = sum((reward - mean) ** 2 for reward in rewards) / len(rewards)
+if variance == 0.0:
+    return [0.0] * len(rewards)
+scale = math.sqrt(variance)
+return [(reward - mean) / scale for reward in rewards]
+```
+
+For token $t$ of response $i$, let
+
+$$
+\rho_{i,t}(\theta)=
+\frac{\pi_\theta(y_{i,t}\mid x,y_{i,<t})}
+{\pi_{\theta_{\mathrm{old}}}(y_{i,t}\mid x,y_{i,<t})}.
+$$
+
+A common GRPO loss applies the same sequence advantage to each response token:
+
+$$
+\mathcal{L}_{\text{GRPO}}(\theta)=
+-\frac{1}{G}\sum_{i=1}^{G}\frac{1}{|y_i|}
+\sum_{t=1}^{|y_i|}
+\min\!\left(
+\rho_{i,t}\hat A_i,
+\operatorname{clip}(\rho_{i,t},1-\epsilon,1+\epsilon)\hat A_i
+\right)
++\beta D_{\mathrm{KL}}(\pi_\theta\|\pi_{\text{ref}}).
+$$
+
+Here $|y_i|$ is response length, $\epsilon$ is PPO's clipping width, and $\beta$ controls an optional reference KL. Implementations vary in normalization, ratio granularity, and whether a reference penalty is retained for a programmatic reward. Those choices are part of the algorithm, not harmless reductions.
+
+The fixture uses one discrete strategy as a sequence-level action. It reuses each sampled group for three clipped epochs and applies a small reference KL. The active gradient is the exact softmax score gradient:
+
+```python
+# code/ch08/reason_rl.py — changed region: train_grpo
+ratio = probabilities[action] / old[action]
+clipped = (advantage >= 0 and ratio > 1 + clip) or (
+    advantage < 0 and ratio < 1 - clip
+)
+if not clipped:
+    for index in range(5):
+        score = float(index == action) - probabilities[index]
+        gradient[index] -= advantage * ratio * score / group_size
+```
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `reason_rl.py` after `train_grpo` | 58 lines | sibling rewards replace the critic, zero-variance groups produce zero signal, and clipped ratios bound sample reuse |
+:::
+
+GRPO removes the learned value network; it does not remove online sampling, old-policy bookkeeping, reward computation, or the need to monitor exploration. The memory saving matters, but we do not repeat Chapter 6's bytes-per-parameter arithmetic. The conceptual delta from PPO is the baseline source.
+
+## RLVR turns verification into training {#sec-ch08-rlvr}
+
+**Reinforcement learning with verifiable rewards (RLVR)** uses an executable check as the reward instead of a learned human-preference model. Math equivalence, unit tests, a theorem prover, a simulator, or a constrained optimizer can produce the signal. The reward may still include formatting and other terms, but only the programmatically checked portion deserves the word *verifiable*.
+
+The connection to test-time compute is direct. Repeated sampling uses a verifier to select a response without changing weights. RLVR uses the same verifier to increase the probability of successful responses in future samples. The fixture's `is_correct()` function first computes exact-verifier coverage and then supplies the exact GRPO reward vector. This is one mechanism promoted from ranker to trainer.
+
+The R1 family made a multi-stage version of this pipeline prominent. R1-Zero applied large-scale RL directly to a base policy and reported the emergence of longer reasoning and self-revision-like behavior, alongside readability and language-mixing problems. The R1 pipeline added cold-start long-reasoning examples before RL, then used rejection sampling to create supervised data and a further RL stage to improve reasoning while restoring broader behavior. Trace distillation into smaller models is a customization mechanism owned by Chapter 11.
+
+Figure @fig-ch08-r1-pipeline answers what each stage contributes. It should not be read as a universal mandatory recipe.
+
+```{mermaid}
+%%| label: fig-ch08-r1-pipeline
+%%| fig-cap: "What distinct problem does each stage of an R1-style pipeline address?"
+flowchart LR
+    B(["Base policy"]) --> C["Cold-start SFT<br/>readable reasoning format"]
+    C --> R["RLVR<br/>explore and reinforce verified outcomes"]
+    R --> S["Rejection-sampling SFT<br/>retain strong traces and broad data"]
+    S --> F["Final RL<br/>reasoning plus behavior objectives"]
+    V["Programmatic verifier"] -->|"outcome reward"| R
+    V -->|"filter candidates"| S
+```
+
+The durable pattern is staged error correction. SFT establishes a usable support and format; online RL changes the distribution using fresh outcomes; rejection sampling converts selected successes back into stable supervised data. Skip a stage when its measured delta does not justify its cost.
+
+An exact-looking verifier can still be incomplete. Numeric extraction may accept a correct number embedded in contradictory text. Unit tests may miss forbidden I/O. A proof checker validates the formal statement it receives, which may not match the natural-language task. Verifier tests and specification review remain part of RLVR.
+
+## Entropy, length, and Goodhart break naive RL {#sec-ch08-pathologies}
+
+The training reward can rise while the policy becomes less useful. Three mechanisms must be separated because they require different repairs.
+
+### Entropy collapse removes exploration
+
+For a token or discrete action distribution, entropy is
+
+$$
+H(\pi)=-\sum_a\pi(a)\log\pi(a).
+$$
+
+Policy-gradient updates increase actions that happened to earn positive advantage and decrease alternatives. Across many updates, probability concentrates and entropy falls. Some concentration is the goal: pass@1 improves when correct paths become more likely. **Entropy collapse** is the failure regime in which diversity disappears before the policy has explored enough of the solution space. Training loss can look healthy while pass@$k$ coverage and novel strategy discovery stagnate.
+
+Track entropy by position and prompt difficulty, distinct-answer count, pass@1, and high-$k$ coverage. Wider upper clipping for positive-advantage tokens, explicit entropy control, reference regularization, and richer prompt curricula can preserve exploration. These are interventions to validate, not guarantees.
+
+### Length can be rewarded accidentally by loss or data
+
+Vanilla GRPO's per-response division by $|y_i|$ changes token weighting. For positive-advantage responses it can favor shorter correct responses; for negative-advantage responses it penalizes each token of a long wrong response less, creating pressure toward longer wrong answers. Group standard-deviation normalization can also overweight prompt groups according to their reward variance.
+
+Dr. GRPO removes response-length and within-group standard-deviation normalization to target these biases. DAPO uses batch-level token averaging, asymmetric clipping that permits more upward movement, dynamic sampling that removes all-equal reward groups, and soft overlength shaping. These proposals show that “GRPO” is a family of objectives whose reduction and normalization must be written down.
+
+| Variant or intervention | Changes | Intended failure addressed |
+|---|---|---|
+| Dr. GRPO | removes response-length and group-std normalization | long incorrect-response and difficulty weighting bias |
+| DAPO token-level loss | averages active tokens across the batch | per-response length bias |
+| DAPO clip-higher | separates lower and upper clip widths | premature entropy collapse |
+| DAPO dynamic sampling | drops groups with zero reward variance | rollout compute with zero gradient |
+| overlength shaping | penalizes approaching truncation gradually | hard cutoff and runaway response length |
+
+The chapter fixture does not claim to reproduce vanilla GRPO's token-normalization bias: its action is an entire synthetic response. Instead, it creates a separate and more severe length problem in the reward itself.
+
+### Goodhart's law separates proxy reward from utility
+
+Goodhart's law is the warning that a measure stops behaving like the intended goal when optimization pressure targets the measure. Let $U(x,y)$ be true specification utility and $\hat R(x,y)$ the implemented reward. On the original candidate distribution they may correlate. GRPO changes that distribution toward regions with high $\hat R$. If the verifier or shaping term has a blind spot, the policy can find responses where $\hat R$ is high and $U$ is low.
+
+The fixture's exact mode rewards only correct arithmetic. Its broken mode adds an excessive response-length bonus. The five action rewards are produced through the same core:
+
+```python
+# code/ch08/reason_rl.py — changed region: reward_values
+if mode == "exact":
+    return [1.0, 1.0, 0.0, 0.0, 0.0]
+if mode == "proxy":
+    return [
+        float(is_correct(action)) + 2.2 * TOKEN_LENGTHS[action] / 30
+        + .1 * float(action != 3)
+        for action in range(5)
+    ]
+```
+
+The proxy run initially raises true accuracy from 0.393 to 0.670 as it reinforces a verbose correct strategy. Continued optimization discovers a longer incorrect strategy with higher proxy reward. By step 120, normalized proxy objective reaches 0.992, true accuracy falls to 0.018, expected length rises from 8.49 to 29.49 fixture tokens, and normalized entropy falls to 0.087. This is the canonical signature: measured reward improves, independent utility reverses, and exploration disappears.
+
+::: {.artifact-checkpoint}
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `reason_rl.py` with exact and proxy reward adapters | 14 lines | the same optimizer exposes divergence between optimized reward and independently measured correctness |
+:::
+
+Mitigation begins with separation of measurements. Keep outcome quality, length, format, and verifier score as distinct time series. Evaluate on hidden tests and adversarial candidates not used by the reward. Constrain cheap-to-game shaping terms, inspect top-reward failures, and stop or roll back when reward and independent utility decouple. An ensemble of correlated weak judges is not an independent check.
+
+Sequence-level outcomes also create a credit-assignment problem: every token receives the same $\hat A_i$, although only a few steps caused success or failure. PRMs and executable intermediate checks can densify credit, but they import their own label and verifier errors. Multi-turn agent trajectories add state, tools, and delayed effects; Chapter 23 develops that distinct problem.
+
+## Capability claims require pass@k and proof {#sec-ch08-capability}
+
+When RLVR raises pass@1, two explanations are possible. It may shift probability toward reasoning paths already present in the base policy, or it may make previously inaccessible strategies reachable. A pass@1 score cannot distinguish them.
+
+Compare full pass@$k$ curves before and after training. If the tuned model wins at small $k$ but the base model catches up or exceeds it at large $k$, RL has sharpened sampling while possibly reducing coverage. One 2025 study reported this pattern across its settings. ProRL reported counter-evidence that prolonged RL can uncover strategies its sampled base models did not reach. These results use finite budgets, particular base models, prompts, and verifiers; neither establishes a universal theorem about capability creation.
+
+A defensible claim reports pass@$k$ over a wide disclosed range, semantic diversity of successful traces, held-out task families, and whether a purportedly novel strategy can be elicited from the base under matched search. Pretraining and post-training data lineage matter: an “emergent” behavior may already be latent in a base model or template. Capability is not established by a longer trace or an “aha” phrase.
+
+Final-answer exact matching is also insufficient for proof tasks. A correct numeric destination can follow invalid reasoning. **Proof-graded evaluation** has three increasingly strict forms:
+
+1. expert grading against a problem-specific marking scheme, with partial credit and identified invalid steps;
+2. a validated proof grader calibrated against expert judgments;
+3. formal verification, where a proof assistant checks a machine-readable certificate against the intended theorem and axioms.
+
+Formal verification has the strongest local correctness contract but requires successful translation into the formal statement. Human and learned grading handle natural-language arguments but need disagreement measurement and adversarial validation. Chapter 22 owns judge calibration and statistical evaluation; the reporting minimum here is to disclose benchmark version, prompt/template, sample count, temperature, generated-token budget, selection rule, verifier, and whether the number is pass@$k$, average sample accuracy, or selected accuracy.
+
+A saturated benchmark can still be a regression test, but it cannot separate frontier systems. Maintain difficulty slices and retire capability claims when ceiling effects or contamination dominate. Never compare a one-sample score to a selected best-of-many score without labeling the compute and selection procedure.
+
+## Landscape 2026 (dated) {#sec-ch08-landscape}
+
+::: {.callout-note .landscape-2026}
+**Verified 2026-07-19.** Reasoning evaluation is moving from short final-answer sets toward continuously refreshed problems, natural-language proof grading, research-level questions, and formal Lean artifacts. MathArena's 2026 platform includes proof-based competitions, research-level arXiv problems, and formal proof generation. FrontierMath released a major v2 update on 2026-06-12 after revising a substantial portion of its items, an unusually sharp reminder that benchmark version is part of every score. AdvancedMathBench appeared in July 2026 with advanced proof-generation and verification tasks. Benchmark contents, model coverage, graders, and leaderboards are volatile; deleting this box leaves the chapter's pass@$k$ and proof-verification mechanisms intact.
+
+**Verify live:** consult the [MathArena platform paper](https://arxiv.org/abs/2605.00674), [MathArena site](https://matharena.ai/), [FrontierMath versioned benchmark page](https://epoch.ai/frontiermath/tiers-1-4), and [AdvancedMathBench paper](https://arxiv.org/abs/2607.11849) before citing task counts, versions, scoring procedures, saturation, or model results. Appendix C owns the annual audit.
+:::
+
+## Build {#sec-ch08-build}
+
+The reasoning-and-RLVR microscope uses 60 synthetic arithmetic tasks split across three difficulty classes. Five discrete strategies stand in for a response distribution: concise correct, verbose correct, concentrated off-by-one, diffuse wrong, and long reward-hacking. The representation is intentionally small enough that policy probabilities, entropy, and expected length can be computed exactly. It does not pretend that five actions reproduce token-level language modeling.
+
+Run the deterministic path from the `newbook` directory:
+
+```powershell
+python code/ch08/reason_rl.py
+python code/ch08/render_metrics.py code/ch08/reasoning_metrics.svg
+python -m unittest discover -s code/ch08 -p "test_*.py" -v
+```
+
+The sampler evaluates six budgets from one to 32 samples. The trainer draws groups of eight, computes exact group-relative advantages, reuses each group for three clipped updates, and retains a small reference KL. Both exact and broken reward modes call the same trainer. The generated figure contains three different questions: what repeated sampling buys, whether objective and true accuracy agree, and how exploration changes.
+
+![How do repeated sampling, exact RLVR, and a misspecified proxy change accuracy and exploration? Exact-verifier coverage reaches 1.000 at about 271 sampled fixture tokens while plurality reaches 0.583 and a noisy verifier reaches 0.732. Exact RLVR reaches 0.982 true accuracy; the proxy objective reaches 0.992 while true accuracy collapses to 0.018.](../code/ch08/reasoning_metrics.svg){#fig-ch08-build-metrics}
+
+Figure @fig-ch08-build-metrics separates three conclusions. In the left panel, more candidate tokens continue to increase coverage, but selection quality limits realized accuracy. In the middle panel, exact reward and true utility agree, while the proxy run crosses from useful shaping into Goodhart failure after step 30. In the right panel, both policies lose entropy; the proxy run collapses almost completely as it concentrates on the exploit.
+
+The exact checkpoints are:
+
+| Measurement | Initial | Final or peak | Interpretation |
+|---|---:|---:|---|
+| exact-RLVR true accuracy | 0.393 | 0.982 final | verified strategies become probable |
+| exact-RLVR normalized entropy | 0.918 | 0.335 final | exploitation rises; some diversity remains |
+| proxy-run true accuracy | 0.393 | 0.670 peak, 0.018 final | reward first helps, then selects an exploit |
+| proxy normalized objective | 0.476 | 0.992 final | optimized measure continues improving |
+| proxy expected length | 8.49 | 29.49 final | length bonus dominates behavior |
+
+Break the fixture deliberately. Change the concentrated wrong answer in `candidate_answer` to a diffuse wrong answer and predict how plurality changes. Set verifier flip rate from 0.18 to zero and confirm noisy best-of-$n$ becomes exact coverage. Reduce the proxy length coefficient until objective and correctness no longer reverse. Every modification tests a causal mechanism rather than merely changing a score.
+
+The optional real-model adapter replaces only candidate generation. With `torch` and `transformers` installed separately, run:
+
+```powershell
+python code/ch08/hf_generate_adapter.py MODEL_ID `
+  "Compute 37 * 14 and put the final integer last." --count 8
+```
+
+It renders a chat template when the tokenizer provides one, samples without vLLM or a rollout engine, returns completion token counts, and extracts each final integer. Model download, network access, and device placement are opt-in. Hardware kernels may remain nondeterministic even with a seed, so live results should be stored as a versioned distribution rather than snapshot-tested prose.
+
+**Honesty note.** The deterministic lab proves objective mechanics, selection ceilings, and a constructed reward failure. It does not establish a benchmark result, the sample efficiency of GRPO on a neural language model, or the universal behavior of any named model. A real run needs held-out tasks, multiple seeds, strict verifier tests, token-level log-probabilities, and independent evaluation.
+
+## What endures, what changes {#sec-ch08-endures}
+
+**What endures.** Serial reasoning extends computation through the autoregressive loop. Parallel samples create coverage, not automatic accuracy. Search needs state, expansion, value, and stopping interfaces. Verifier false positives cap best-of-$n$. External feedback is qualitatively different from unsupported self-revision. GRPO replaces PPO's critic with a group baseline; all-equal groups contain no learning signal. Entropy, objective normalization, credit assignment, and reward misspecification must be measured independently. Pass@1 alone cannot establish new capability.
+
+**What changes.** Search recipes, GRPO-family variants, reasoning curricula, benchmark difficulty, proof graders, model traces, and recommended training stacks will continue to move. Provider inference controls and their economics belong to Chapter 10's dated serving profile. Keep model names, benchmark scores, and trainer defaults outside the durable mechanism.
+
+## Exercises {#sec-ch08-exercises}
+
+1. **Reverse plurality.** Change the fixture so one wrong answer is the unique mode while correct samples still have nonzero probability. Sweep to $k=256$ and show coverage approaching one while plurality approaches the wrong answer. State the violated unique-mode condition.
+
+2. **Verify the ceiling.** For a fixed $p$ and symmetric verifier error $q$, compute $\pi_v$ by hand. Modify the fixture to use a single difficulty and sweep $k$ until empirical noisy best-of-$n$ approaches that precision.
+
+3. **Implement one search.** Add a beam over partial arithmetic operations using one shared expansion function and one exact partial-state checker. Report expansions and verified accuracy against independent sampling at equal expansion count.
+
+4. **Remove zero-signal groups.** Add DAPO-style dynamic sampling that skips all-equal reward groups. Measure the fraction of skipped groups at the beginning and end of exact RLVR, then explain when resampling saves compute and when it biases the prompt distribution.
+
+5. **Repair length normalization.** Extend the fixture to token-level actions and compare per-response normalization with a fixed-budget denominator. Predict which incorrect strategy receives less penalty and test the prediction.
+
+6. **Attack the verifier.** Replace exact integer equality with “gold digits appear anywhere.” Construct the shortest incorrect response that earns reward, train the proxy run, and write the verifier test that would have prevented it.
+
+7. **Defend an allocation.** A proof generator has 20% pass@1, 70% pass@32, and a learned verifier with 75% precision in its selected tail. Choose among longer single traces, parallel best-of-$n$, PRM-guided search, or stopping. Specify the measurement that would reverse your choice.
+
+## Notes and sources {#sec-ch08-sources}
+
+The serial-reasoning and sampling foundations are [Chain-of-Thought Prompting](https://arxiv.org/abs/2201.11903), [Self-Consistency Improves Chain of Thought Reasoning](https://arxiv.org/abs/2203.11171), and [Large Language Monkeys](https://arxiv.org/abs/2407.21787). Difficulty-conditioned allocation follows [Scaling LLM Test-Time Compute Optimally](https://arxiv.org/abs/2408.03314). Search mechanisms are developed in [Tree of Thoughts](https://arxiv.org/abs/2305.10601), [Graph of Thoughts](https://arxiv.org/abs/2308.09687), and the MCTS-based [Reasoning via Planning](https://arxiv.org/abs/2305.14992).
+
+Process supervision and automated process labels are treated in [Let's Verify Step by Step](https://arxiv.org/abs/2305.20050) and [Math-Shepherd](https://arxiv.org/abs/2312.08935). The intrinsic-correction warning comes from [Large Language Models Cannot Self-Correct Reasoning Yet](https://arxiv.org/abs/2310.01798); its claim boundaries should be preserved rather than generalized to every feedback-assisted revision method.
+
+GRPO originated in [DeepSeekMath](https://arxiv.org/abs/2402.03300) and was popularized for RLVR by [DeepSeek-R1](https://arxiv.org/abs/2501.12948). Objective corrections and scaling variants are documented in [Understanding R1-Zero-Like Training / Dr. GRPO](https://arxiv.org/abs/2503.20783), [DAPO](https://arxiv.org/abs/2503.14476), and [The Entropy Mechanism of Reinforcement Learning for Reasoning Language Models](https://arxiv.org/abs/2505.22617). The competing capability interpretations are represented by [Does RL Really Incentivize Reasoning Capacity Beyond the Base Model?](https://arxiv.org/abs/2504.13837) and [ProRL](https://arxiv.org/abs/2505.24864). Current proof-evaluation sources are kept in the dated landscape box.

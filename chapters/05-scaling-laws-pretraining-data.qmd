@@ -1,0 +1,432 @@
+---
+description: "Fit joint parameter-data scaling laws, monitor a base-model run, and engineer a governed pretraining corpus from acquisition through mid-training."
+---
+
+# Scaling Laws and Pretraining Data [F+S] {#sec-ch05}
+
+## What you need going in {#sec-ch05-prerequisites}
+
+> **Assumed:** neural-network fundamentals, gradient-based optimization, basic probability, basic Python, and beginner PyTorch.
+>
+> **From earlier chapters:** [Chapter 2, The Training Objective](02-transformer-first-principles.qmd#sec-ch02-objective) supplies next-token cross-entropy and perplexity; [Chapter 2, Build a Byte-Fallback BPE](02-transformer-first-principles.qmd#sec-ch02-bpe) supplies the frozen tokenizer reused here; [Chapter 2, The Accounting Ledger](02-transformer-first-principles.qmd#sec-ch02-accounting) supplies the toy decoder; and [Chapter 4, Two Curves, One Config](04-moe-efficient-architectures.qmd#sec-ch04-two-curves) separates stored from active parameters.
+>
+> **Not required:** distributed-training collectives, custom accelerator kernels, post-training data construction, RL with verifiable rewards, or legal training. Chapter 6 owns execution of the distributed run; Chapters 7, 8, and 11 own post-training and customization.
+
+## Contents {#sec-ch05-contents}
+
+- [The budget fails before training starts](#sec-ch05-budget-failure)
+- [What you will build](#sec-ch05-will-build)
+- [Power laws you can fit](#sec-ch05-power-laws)
+- [Chinchilla makes size and data a joint decision](#sec-ch05-chinchilla)
+- [Scaling laws are decision tools, not deployment commandments](#sec-ch05-after-chinchilla)
+- [Base-model evaluation while the run is alive](#sec-ch05-base-eval)
+- [Data is a governed supply chain](#sec-ch05-supply-chain)
+- [Filter, deduplicate, and decontaminate](#sec-ch05-curation)
+- [Mixtures, fertility, and curriculum](#sec-ch05-mixtures)
+- [Synthetic data at the data wall](#sec-ch05-synthetic)
+- [Landscape 2026 (dated)](#sec-ch05-landscape)
+- [Build](#sec-ch05-build)
+- [What endures, what changes](#sec-ch05-endures)
+- [Exercises](#sec-ch05-exercises)
+- [Notes and sources](#sec-ch05-notes)
+
+## The Budget Fails Before Training Starts {#sec-ch05-budget-failure}
+
+A team has enough accelerator time for one base-model run. The first proposal is a three-billion-parameter decoder trained on twenty billion tokens. The second doubles the parameters and halves the tokens. Both use roughly the same dense-Transformer training compute. Neither proposal states the expected loss, whether the dataset contains enough unique text, how much of that text survives rights and quality gates, or how the team will notice a bad data mixture before the budget is gone.
+
+This is first a model-and-data allocation problem. Parameter count $N$ controls one source of error; training-token count $D$ controls another; the token distribution determines what loss means. A run can be compute-optimal for one distribution yet commercially poor, repeat low-quality data, or hide a rare-language, code, or factual regression behind smooth aggregate loss.
+
+A **scaling law** is an empirical response surface over model size, data, and sometimes other resource axes. A **pretraining data pipeline** produces the $D$ entering that surface. The fit is conditional on architecture, optimizer, tokenizer, corpus, and measurement protocol; treating it as physics while treating data as file preparation creates false precision.
+
+You will fit a joint law to a proxy ladder, derive the compute-optimal allocation, and attach an interval to a tenfold extrapolation. Then a synthetic WET-style corpus passes extraction, rights and quality gates, near-deduplication, decontamination, and mixture selection before paired Chapter 2 models compare raw with cleaned text. The laptop result is not a frontier forecast; it makes assumptions inspectable before scale makes them expensive.
+
+## What you will build {#sec-ch05-will-build}
+
+::: {.callout-tip}
+**The chapter artifact.** [`scaling_fit.py`](../code/ch05/scaling_fit.py) fits
+
+$$
+L(N,D)=E+A\left(\frac{N}{N_0}\right)^{-\alpha}
+       +B\left(\frac{D}{D_0}\right)^{-\beta}
+$$
+
+to twelve synthetic proxy runs. [`scaling_model.py`](../code/ch05/scaling_model.py) solves the compute-constrained optimum; [`scaling_uncertainty.py`](../code/ch05/scaling_uncertainty.py) residual-bootstraps fit and predictive intervals. The data path separates extraction and policy, deduplication, and mixture logic into [`data_records.py`](../code/ch05/data_records.py), [`deduplication.py`](../code/ch05/deduplication.py), and [`mixture.py`](../code/ch05/mixture.py). The thin [`run_build.py`](../code/ch05/run_build.py) composes them, imports Chapter 2's BPE and TinyGPT, generates about 50 MiB of synthetic text, and writes plotted values to CSV or JSON.
+
+Success means the fit recovers the proxy generator's parameter and data exponents, the optimum satisfies $C=6ND$, every document has a final decision, near duplicates share a cluster, the evaluation needle is absent, exact mixture quotas are inspectable, and the cleaned-data condition has lower loss on an independently worded held-out slice across paired initializations. The frozen tokenizer is calibrated on text independent of both conditions. The experiment is a mechanism test, not a frontier forecast, web-corpus release, or throughput benchmark.
+:::
+
+## Power Laws You Can Fit {#sec-ch05-power-laws}
+
+Language-model loss often improves smoothly with resources. Kaplan and colleagues documented approximate power laws: reducible loss falls as a resource raised to a negative exponent. For one resource $x$,
+
+$$
+L(x)=L_\infty+Kx^{-\gamma},
+$$
+
+where $L_\infty$ is a fitted floor, $K>0$ is a scale coefficient, and $\gamma>0$ is an exponent. Subtract the floor and take logarithms:
+
+$$
+\log\bigl(L(x)-L_\infty\bigr)=\log K-\gamma\log x.
+$$
+
+This is linear in log-log coordinates only when the floor and regime fit. The slope is $-\gamma$; a small exponent means multiplying resources yields modest improvement.
+
+Three qualifications matter. Omitting a nonzero floor bends the slope. A law is local to its architecture, tokenizer, data, optimizer, and regime. Resource axes interact: a parameter-only law fitted to varying token budgets confounds capacity with exposure. The build therefore fits
+
+$$
+L(N,D)=E+A\left(\frac{N}{N_0}\right)^{-\alpha}
+       +B\left(\frac{D}{D_0}\right)^{-\beta}.
+$$
+
+$E$ is a fitted floor; $A,B$ and $\alpha,\beta$ are positive coefficients and exponents; $N_0,D_0$ are fixed reference units for numerical conditioning and do not change predictions.
+
+The artifact constrains positive quantities in log space and constrains $E$ below the smallest observed loss. Its public fit is deliberately small:
+
+```python
+rows = load_observations(Path("fixtures/proxy_ladder.csv"))
+law = fit_scaling_law(rows)
+
+for row in rows:
+    predicted = law.loss(row.parameters, row.tokens)
+    residual = row.loss - predicted
+```
+
+Twelve observations are enough to exercise the mechanics, not enough to license a production budget. The proxy points were generated around $\alpha=0.34$ and $\beta=0.28$ with small deterministic perturbations. The fitted values are ${0.332}$ and ${0.287}$. That agreement verifies the implementation against a known generator. It says nothing about the exponents of an unmeasured architecture or corpus.
+
+Inspect residuals by model size and data ratio. Structure or growth at one end signals misspecification or regime change; low average error can still overstate larger models. Reserve whole ladder points for validation.
+
+The artifact keeps the ladder fixed, resamples centered residuals, refits, and recomputes the optimum. Fitted-optimum quantiles form a fit interval; one additional sampled residual forms a predictive interval under an i.i.d. residual model. Neither covers distribution shift, failures, optimizer changes, or wrong functional form. Report uncertainty **inside** the law and scenarios **about** it.
+
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `scaling_model.py` | 173 lines | positive coefficients and exponents fit both resource axes |
+| `scaling_uncertainty.py` | 64 lines | the 10× forecast carries a finite-ladder interval |
+
+The fitted surface is a compact summary of experiments. Its authority cannot exceed the ladder, controls, and held-out checks from which it was estimated.
+
+## Chinchilla Makes Size and Data a Joint Decision {#sec-ch05-chinchilla}
+
+Hoffmann and colleagues revisited allocation under fixed compute and found parameters and data should grow together more nearly than earlier work implied. The durable contribution is the **IsoFLOP experiment**, not one token ratio: hold compute fixed, vary $N,D$, and find minimum loss.
+
+For a dense decoder-only Transformer, a useful first-order training estimate is
+
+$$
+C\approx 6ND,
+$$
+
+where $C$ is floating-point operations, $N$ is non-embedding trainable parameters used per token, and $D$ is training tokens seen. The factor six approximates a forward pass plus gradients with respect to weights and activations. It is not a device invoice. Attention terms, embeddings, sparsity, sequence length, recomputation, padding, optimizer work, and kernel efficiency produce deviations. Use measured step FLOPs when available and state which parameter ledger an MoE uses; [Chapter 4](04-moe-efficient-architectures.qmd#sec-ch04-two-curves) explains why total stored parameters are not the correct active-compute count.
+
+The Chinchilla paper used three complementary approaches:
+
+1. Train several fixed model sizes for different durations, then infer the lower envelope of loss over compute.
+2. At several fixed compute budgets, fit the IsoFLOP curve over model size and locate its minimum.
+3. Fit the global parametric surface $L(N,D)$ across all runs, then solve its compute-constrained optimum.
+
+Agreement reduces dependence on one fit; disagreement is diagnostic. Because finite-run noise and fitting procedure bias the apparent optimum, reproduce at least a global surface and held-out IsoFLOP profiles.
+
+The optimum of the joint form can be derived. Define normalized variables $n=N/N_0$, $d=D/D_0$, and normalized compute $c=C/(6N_0D_0)$. The constraint is $nd=c$, so $d=c/n$. Ignoring the constant floor, minimize
+
+$$
+f(n)=An^{-\alpha}+Bc^{-\beta}n^{\beta}.
+$$
+
+Set the derivative to zero:
+
+$$
+-\alpha A n^{-\alpha-1}
++\beta Bc^{-\beta}n^{\beta-1}=0.
+$$
+
+Therefore
+
+$$
+n^*=\left(\frac{\alpha A}{\beta B}c^\beta\right)^{1/(\alpha+\beta)},
+\qquad
+d^*=\frac{c}{n^*}.
+$$
+
+Model size scales with compute as $C^{\beta/(\alpha+\beta)}$ and tokens as $C^{\alpha/(\alpha+\beta)}$. With similarly sized exponents, both grow approximately as the square root of compute. The build's tenfold extrapolation chooses approximately ${2.21}$ billion parameters and ${79.2}$ billion tokens, satisfying ${6ND=1.05\times10^{21}}$ FLOPs. Its predicted synthetic loss is ${2.223}$, with a 5th-to-95th percentile residual-bootstrap predictive interval of $[2.220,2.225]$. Again, this tight conditional interval reflects a clean synthetic generator; a real planning interval should include broader scenarios.
+
+Compute must become wall time before it becomes a schedule. If $P_\text{peak}$ is peak FLOP/s per accelerator, $G$ is accelerator count, and $u$ is measured model FLOP utilization (MFU), then
+
+$$
+t_\text{wall}\approx\frac{C}{G\,u\,P_\text{peak}}.
+$$
+
+MFU is configuration-specific. Using peak throughput silently assumes $u=1$. Record the FLOP convention, measured MFU range, checkpoint and retry overhead, and a sensitivity table; Chapter 6 handles execution mechanics.
+
+![The left panel checks fitted versus observed loss for twelve synthetic proxy runs. The right panel holds compute at ten times the largest proxy run, varies model size, and marks the fitted optimum with a 90 percent residual-bootstrap predictive interval. Data are synthetic and generated locally.](../code/ch05/generated/scaling-law-fit.svg){#fig-ch05-scaling-fit fig-alt="Two-panel plot. Synthetic fitted losses closely follow observed losses. A U-shaped fixed-compute profile has an optimum near 2.2 billion parameters with a narrow conditional predictive interval."}
+
+The curve's U shape is the decision. Too small a model spends the budget repeatedly exposing insufficient capacity; too large a model spends it on parameters that do not receive enough data. The minimum belongs to a training objective and budget, not automatically to deployment.
+
+## Scaling Laws Are Decision Tools, Not Deployment Commandments {#sec-ch05-after-chinchilla}
+
+“Chinchilla-optimal” asks which $N,D$ allocation minimizes fitted loss under fixed training compute; it does not minimize an agent product's lifetime cost. With large serving demand, a smaller model trained longer can cost more once and save on every request. Inference-aware scaling therefore adds deployment demand, latency, batch shape, hardware, quantization, caching, and quality value to the objective.
+
+Intentional **overtraining** means using more tokens than a chosen loss-optimal baseline, not necessarily harmful optimization. A small, long-lived model may justify extra training because weight and memory costs recur during serving. Yet ordinary-regime ratios may extrapolate poorly to thousands of tokens per parameter. Run overtraining ladders rather than promoting a ratio to law.
+
+Other constraints change the response surface:
+
+| Constraint or method | Additional axis | Durable planning implication |
+|---|---|---|
+| Limited unique data | reuse count and source diversity | several repeats can be useful, but marginal value falls; track unique and tokens-seen separately |
+| Lower numerical precision | training precision and post-training quantization | precision can change effective capacity and optimization; an overtrained checkpoint may be more quantization-sensitive |
+| Distillation | teacher quality, teacher cost, student count | an existing teacher or many students can justify distillation; training one teacher solely for one student changes the comparison |
+| Mixture of experts | active parameters, total experts, selected experts | active compute and stored capacity need separate laws; gains from adding experts can saturate |
+| Inference demand | lifetime served tokens and latency | the training-loss optimum can differ from the deployment-economic optimum |
+
+These laws are empirical families, not algebraic add-ons to Chinchilla. A precision law fitted to one bit-width schedule or a distillation law fitted to one teacher family is a prior for experiment design. It is not a transferable constant. For MoE, fit active compute and expert count as separate variables if the program needs that decision; this chapter does not hide a second MoE fit inside the dense artifact.
+
+### Apparent emergence
+
+Some benchmark curves appear flat and then jump at a model scale, producing claims of emergent capability. A genuine phase change is possible, but the metric can manufacture one. Suppose the underlying probability assigned to a correct answer rises smoothly. Exact-match accuracy remains zero until the correct string becomes the top choice; multiple-choice accuracy changes only when a ranking flips; pass/fail thresholds discretize a continuous score. Schaeffer and colleagues demonstrated that changing to continuous metrics can turn apparent discontinuities into smooth improvement.
+
+The operational response is not to deny every threshold. Preserve continuous observables—answer log likelihood, margin over alternatives, calibration, partial credit, verifier score, and task success by difficulty—alongside headline accuracy. Then a launch threshold can remain discrete while the learning curve stays diagnosable. If a capability matters for safety, do not assume that a flat thresholded metric proves absence below the observed jump.
+
+### New resource axes
+
+Pretraining compute is no longer the sole scaling axis. Reinforcement-learning compute can improve a policy after base pretraining, and test-time compute can trade more sampled or deliberative work for better answers. [Chapter 8](08-reasoning-test-time-compute.qmd#sec-ch08) derives reasoning and test-time allocation; [Chapter 23](23-training-agents-rl.qmd#sec-ch23) owns agent-policy RL. In a full product budget, the axes interact: pretraining creates representations, post-training shapes behavior, inference-time search extracts more performance, and serving demand prices every extra token. Keep their ledgers separate before optimizing the portfolio.
+
+A scaling fit earns trust through interventions: change one axis, hold the comparison contract stable, predict a withheld point, and inspect residuals. The law is useful when it can reject a bad allocation before the expensive run—not when it merely explains completed runs.
+
+## Base-Model Evaluation While the Run Is Alive {#sec-ch05-base-eval}
+
+A base model is a next-token predictor, not an instruction-following product. A chat wrapper confounds pretraining quality with templates, post-training, sampling, and defaults. Pretraining measurements must be repeatable, checkpoint-comparable, and sliced to expose distribution failures.
+
+Cross-entropy is the first instrument. For target tokens $x_1,\ldots,x_T$ and model probabilities $p_\theta$, the mean negative log likelihood is
+
+$$
+\mathcal{L}=-\frac{1}{T}\sum_{t=1}^{T}\log p_\theta(x_t\mid x_{<t}),
+\qquad
+\operatorname{PPL}=e^{\mathcal{L}}.
+$$
+
+Perplexity is exponentiated token-average surprise. Compare it only under the same tokenizer, normalization, context and document-boundary policy, and corpus: changing segmentation changes the averaging unit. Across tokenizers, add a byte or character denominator such as bits per byte and document normalization.
+
+Aggregate loss can hide incidents. Maintain immutable slices for web prose, code, mathematics, target languages, long documents, sensitive tails, and trusted sources; report token-weighted and per-slice values. **In-flight evaluation** runs while training continues and asks whether optimization is healthy, the mixture produces intended capabilities, and checkpoints remain inside the fitted learning curve's uncertainty.
+
+A useful checkpoint contract includes:
+
+- training and held-out cross-entropy with exact token counts;
+- per-domain and per-language losses on versioned, contamination-audited slices;
+- gradient norm, update norm, learning rate, token throughput, and non-finite-event counters;
+- a compact set of conditional-likelihood tasks, with prompt text and few-shot examples pinned;
+- the residual between observed loss and the scaling-law prediction at actual $N,D,C$;
+- a checkpoint, tokenizer, data-manifest, code, and evaluator version that reconstructs every number.
+
+The few-shot harness should score candidates by conditional log likelihood rather than sample one answer and hope decoding noise is representative. For prompt $q$ and candidate completion $a$, compute
+
+$$
+s(a\mid q)=\frac{1}{|a|}\sum_{t\in a}\log p_\theta(a_t\mid q,a_{<t}).
+$$
+
+Length normalization prevents shorter candidates from winning automatically, but can change rankings. Pin separators, whitespace, labels, demonstrations and order, and continuation punctuation. MMLU- or HellaSwag-class names do not make a harness reproducible; documented setup sensitivity makes raw scores without configuration weak evidence.
+
+The build's five cloze items use two demonstrations, rotate answers across three positions, save first-seed completions, and report constant-position and shortest-candidate baselines. They cannot estimate general capability; they verify prompt construction, continuation scoring, baselines, and qualitative inspection. Chapter 22 supplies statistical evaluation; this section supplies its base-model telemetry.
+
+Alert on trajectories, not one loss threshold. A mixture-boundary spike differs from a residual growing across checkpoints; a code gain with language forgetting is acceptable only if planned and recovered. Preserve the checkpoint and data window before changing controls. Exact token-interval replay is part of observability.
+
+## Data Is a Governed Supply Chain {#sec-ch05-supply-chain}
+
+$D$ is not the size of a folder. It is the number of tokens the optimizer consumes after acquisition, extraction, eligibility policy, filtering, deduplication, mixture sampling, and repetition. A corpus ledger should distinguish at least **raw bytes**, **extracted documents**, **eligible documents**, **near-unique tokens**, **mixture tokens**, and **tokens seen during training**. Reporting “three trillion tokens” without the stage and tokenizer prevents comparison.
+
+Common Crawl illustrates the transition. WARC stores responses and metadata, WAT computed metadata, and WET extracted plaintext. WET is convenient but has discarded structure and embedded extraction decisions. Retain WARC coordinates or equivalent locators for later quality, rights, and deletion work. Boilerplate removal, decoding, segmentation, language identification, and metadata preservation all alter the training distribution.
+
+The reference `Document` keeps six fields because policy needs them:
+
+```python
+@dataclass(frozen=True)
+class Document:
+    doc_id: str
+    url: str
+    source: str
+    language: str
+    rights: str
+    text: str
+```
+
+A production record also needs crawl and extraction versions, retrieval time, hash, jurisdiction, declared license, contractual basis, robots and opt-out observations, PII class, transformations, parents, and deletion status. Do not collapse these into `safe`: crawler directives are not copyright licenses, public accessibility is not permission for every use, and an open-dataset wrapper does not guarantee uniform rights.
+
+Rights policy varies by jurisdiction and contract. Store raw evidence, apply a versioned eligibility policy, record decision and reason, and keep descendants discoverable so removal can identify dependent extracts, synthetic transforms, mixtures, checkpoints, and adapters. Chapter 18 owns agent-memory deletion; the lineage principle begins here.
+
+Privacy is connected to duplication: rare repeated strings receive more gradient exposure, and extraction risk grows with capacity, duplication, and context. Deduplication reduces waste and one memorization pressure, not all privacy risk. Apply explicit PII policy, restrict raw access, audit samples and exceptions, and measure extraction and redaction. A hashed email is still a stable identifier.
+
+Acquisition creates representation errors: language ID rejects short or code-switched text, HTML tables become nonsense, PDF columns interleave, and deduplication clusters boilerplate. Audit every stage by source and language and preserve rejections. Counts show that a gate acted; samples show what it did.
+
+The invariant is end-to-end lineage: every token admitted to a mixture has a source record, transformation history, policy decision, and reproducible text hash. This does not settle a legal question. It makes the organization's decision inspectable and correctable.
+
+## Filter, Deduplicate, and Decontaminate {#sec-ch05-curation}
+
+Extraction maximizes recall; curation chooses what should train the model. A **filter** scores or rejects individual documents. **Deduplication** finds repeated or near-repeated content within or across sources. **Decontamination** checks training candidates against evaluation material. They solve different problems and should write different reason codes.
+
+Early corpora such as C4 and Gopher used transparent heuristics for language, length, character ratios, punctuation, repetition, stop words, and blocked terms. They are cheap and debuggable but encode cultural assumptions. The C4 audit found identity-term blocklists disproportionately removed minority-associated documents; a mainstream-English quality score can erase dialect, community discussion, or rare languages.
+
+Model filters rank documents using a learned quality concept. DCLM and FineWeb-Edu showed strong controlled results, but label source is policy: “encyclopedic” differs from “educational,” “reliable code,” or “serves target users.” Evaluator preferences can hide behind a score. Retain distributions, threshold sweeps, source-language curves, and reviewed false positives. The artifact intentionally implements only transparent features.
+
+### Near-duplicate mechanics
+
+Exact hashes catch byte-identical records. Web duplicates often differ by a menu, timestamp, punctuation, or one inserted paragraph. Convert normalized text into a set of word shingles—overlapping sequences of, say, five words. For shingle sets $A$ and $B$, Jaccard similarity is
+
+$$
+J(A,B)=\frac{|A\cap B|}{|A\cup B|}.
+$$
+
+Comparing every document pair is quadratic. MinHash builds a compact signature whose agreement probability estimates Jaccard similarity. For each random permutation-like hash $h_k$, record the minimum hashed shingle. Two documents with similarity $s$ match one MinHash component with probability $s$. Locality-sensitive hashing (LSH) divides a signature into $b$ bands of $r$ rows. A pair becomes a candidate if any band matches, with approximate probability
+
+$$
+P(\text{candidate}\mid s)=1-(1-s^r)^b.
+$$
+
+More bands raise recall and candidate count; more rows sharpen the threshold and can miss paraphrases. The artifact samples bottom-$k$ stable shingle hashes, uses LSH only for candidates, then confirms Jaccard before unioning clusters. At web scale, stream shingles, control bucket skew, and measure false positives and negatives. Semantic methods such as SemDeDup catch lexical misses but can collapse legitimate viewpoints; review by language and source.
+
+Exemplar choice matters: first can be truncated and longest can preserve boilerplate. The lab selects the highest transparent quality score and records membership, similarity, and cluster size. Production may add trust, recency, rights, extraction quality, and canonical URL. Redundancy never justifies deleting lineage.
+
+Dedup changes learning. Lee and colleagues found that duplicated sequences contribute to memorized generations and train-test overlap; deduplication can improve efficiency and evaluation validity. It also changes domain weights. If a reference paragraph appears on a thousand sites, raw frequency makes it a thousand times more influential. Removing copies changes the empirical distribution, not only the bill.
+
+### Evaluation decontamination
+
+The lab normalizes whitespace and case, then removes long exact evaluation substrings. Production combines hashes, substrings or n-grams, canaries, and cautious semantic matching; keeps prompts, answers, rationales, and mirrors separate; and rechecks transformed and synthetic descendants. Paraphrases evade exact matching, while broad semantic detection can delete legitimate knowledge.
+
+Do not tune on the only clean set. Maintain a private final slice, date-bounded or source-bounded holdouts, and contamination controls where deliberate leakage quantifies score inflation. Public benchmark performance is useful only with a contamination statement. If a benchmark is discovered in the training corpus after a run, label the score; do not retroactively call the data clean.
+
+![The left panel counts synthetic documents after extraction, rights and quality filters, near-deduplication, exact evaluation decontamination, and mixture selection. The right panel shows the number of singleton and two-document near-duplicate clusters. Values come from a deterministic 50 MiB WET-style fixture, not scraped web data.](../code/ch05/generated/data-pipeline.svg){#fig-ch05-data-pipeline fig-alt="Two-panel plot. Document counts fall at policy, deduplication, and mixture gates. There are more singleton clusters than two-document near-duplicate clusters."}
+
+The count drop is not proof of quality. The evidence is the paired ledger: stage counts, per-reason rejections, reviewed samples, cluster membership, and downstream equal-compute evaluation.
+
+| Artifact state | New code | Invariant now verified |
+|---|---:|---|
+| `data_records.py` | 141 lines | every rejected record has a policy or quality reason |
+| `deduplication.py` | 109 lines | candidate generation and exact confirmation are separate |
+| `mixture.py` | 66 lines | benchmark matches are removed before deterministic source quotas |
+
+## Mixtures, Fertility, and Curriculum {#sec-ch05-mixtures}
+
+A curated corpus is still not a training distribution until source weights are chosen. Let domain $i$ contain eligible documents and let $p_i$ be its sampling probability, with $\sum_i p_i=1$. Sampling proportional to available tokens reproduces corpus volume. That is rarely the desired objective: crawl abundance overweights repeated commercial pages; high-quality books or code may be scarce; low-resource languages may disappear. Mixture weights are model hyperparameters with governance consequences. The lab converts weights to exact document quotas and raises when a source cannot supply its quota; it never silently fills a zero-weight or missing source from leftovers.
+
+The corpus lineage shows changing experimental styles:
+
+| Release | Historical contribution | Comparison caution |
+|---|---|---|
+| C4 | roughly 750 GB of cleaned English text from one Common Crawl snapshot for T5 | bytes after one recipe; English-only and audited for filter bias |
+| The Pile | 825 GiB across 22 named English components | explicit heterogeneous domains and weights, not one web dump |
+| RedPajama | V1 reproduced a seven-domain recipe; V2 exposed a much larger web pool plus quality and duplicate signals | distinguish the raw annotated pool from a selected training mixture |
+| Dolma | a three-trillion-token English mixture with curation toolkit and intermediate analyses | released recipe and tools make ablations reconstructible |
+| FineWeb / FineWeb-Edu | multi-snapshot web curation and a learned educational subset | exact token counts depend on tokenizer; classifier creates a specialized view |
+| DCLM | a controlled testbed separating a huge raw pool, fixed training scales, evaluations, and selected baselines | distinguish pool size, filtered dataset, added domains, and tokens actually seen |
+| Nemotron-CC | a 6.3-trillion-token release combining globally deduplicated original and synthetic tokens | quality and unique-token yield are a frontier; synthetic provenance remains part of the count |
+
+These sizes are not a leaderboard. Some report bytes, some tokenizer-specific tokens; some are raw pools, others deduplicated selections; training tokens can include repeats. The durable progress is methodological: named sources, reproducible transformations, quality signals, controlled ablations, and explicit mixtures.
+
+DoReMi treats mixture selection as a group-robust optimization problem. A small proxy model learns domain weights that reduce excess loss relative to reference losses, then a larger model trains on the resulting mixture. RegMix trains many small proxy models on sampled mixtures and fits a regression from mixture weights to downstream performance. Both replace intuition-only weighting with experiments. Neither removes the transfer question: proxy rankings can change with model size, token budget, or evaluation target. Validate candidate weights at several budgets and on the integrated mixture.
+
+Mixture objectives need a target. Minimize token-weighted validation loss and large web domains dominate. Minimize worst-domain excess loss and small difficult domains receive more weight. Optimize a downstream suite and benchmark selection becomes the objective. A production proposal should show a Pareto table: aggregate loss, critical-domain losses, language coverage, unique tokens, rights cost, and expected serving value. One scalar score hides who pays for the compromise.
+
+### Fertility is a compute allocation
+
+Chapter 2's byte-fallback BPE can encode every Unicode string, but coverage does not imply equal efficiency. **Tokenizer fertility** is the number of tokens used per word or per character. If language $\ell$ has character count $Q_\ell$ and fertility $f_\ell$ tokens per character, its token allocation is
+
+$$
+D_\ell=f_\ell Q_\ell.
+$$
+
+Training and serving cost scale with tokens. A tokenizer trained mostly on English may require more byte-level pieces for Arabic or Hindi, giving those users less semantic content per context window and a higher cost per character. Word-based fertility is linguistically confounded because languages segment and inflect differently; report both tokens per Unicode character and tokens per whitespace word, plus task-relevant units such as code characters or document pages.
+
+Do not “correct” high fertility only by reducing a language's sampling probability. That saves tokens by withholding content. Options include retraining the shared tokenizer with representative text, allocating more training tokens, using byte- or character-aware architectures, and evaluating quality per unit of source content. Tokenizer changes break direct perplexity comparisons and checkpoint compatibility, so make this decision before the major run when possible.
+
+### Mid-training is staged base-model work
+
+Broad pretraining need not flow directly into instruction tuning. **Mid-training** is a base-model stage that keeps a language-model objective while changing data quality, domains, formats, sequence lengths, or learning-rate schedule. **Continued pretraining** resumes from a checkpoint on a new or updated distribution. **Annealing** or **cooldown** is the optimizer intervention, usually lowering learning rate toward zero; it is not a synonym for high-quality data. A stage may combine both, but its controls should separate them.
+
+A common program has broad pretraining, a high-quality or capability-targeted mixture, then a long-context stage that includes genuinely long documents while retaining shorter high-quality material. Simply changing a RoPE configuration does not teach long-document use; [Chapter 3](03-attention-position-long-context.qmd#sec-ch03-scaling) owns positional extension. Long-context training needs length distribution, domain balance, and evaluations beyond a single needle task. [Chapter 11](11-customization.qmd#sec-ch11) owns domain customization after a base model exists.
+
+A **microanneal** branches a small, compute-matched run from a shared checkpoint: candidate source or mixture versus control, followed by targeted base-model evaluations. It is a screening experiment, not a miniature proof. Data-source utility can change rank with scale. Test promising sources at more than one small budget, include a web-only or incumbent-mixture control, and confirm winners inside the final mixture. Log both the data change and the learning-rate path so a gain is not attributed to the wrong intervention.
+
+![The left panel compares paired-seed TinyGPT training means on raw and cleaned synthetic text; shaded ranges span three seeds and horizontal lines mark mean loss on a disjoint clean-domain holdout. Dashed lines are raw and solid lines are cleaned, so condition survives grayscale. The right panel measures tokens per Unicode character for five short language samples under one independently calibrated English-leaning Chapter 2 BPE. These are local CPU toy measurements, not model or language benchmarks.](../code/ch05/generated/data-quality-training.svg){#fig-ch05-training fig-alt="Two-panel plot. Across three paired seeds, the cleaned-text toy condition has lower mean clean-domain held-out loss than raw. Token counts per character differ substantially across five language samples."}
+
+The two panels expose one shared rule: “one token” is not a content-neutral unit. Cleaning changes which examples a token represents; fertility changes how much source content fits in the token budget.
+
+## Synthetic Data at the Data Wall {#sec-ch05-synthetic}
+
+“Synthetic data” combines mechanisms with different failure modes. Separate at least four:
+
+1. A grounded transformation of an authentic document, such as reformatting, summarization, rephrasing, or question generation while retaining the parent.
+2. Fresh generation from prompts, simulations, or procedural environments.
+3. Generated data accepted only after an executable, retrieval, human, or stronger-model verifier.
+4. Recursive self-consumption in which model outputs replace or overwhelm the authentic distribution across generations.
+
+Shumailov and colleagues studied the fourth case and showed **model collapse**: indiscriminate recursive replacement can lose distribution tails and eventually distort the learned distribution. Rare modes are sampled less often, then appear still less often in the next generation. The feedback loop narrows support. “A model wrote this token” is not by itself the collapse condition. Gerstgrasser and colleagues reproduced collapse under replacement but found that accumulating generated data alongside the original real data avoided it in their studied settings. WRAP showed that purposeful synthetic rephrasing mixed with real web documents can improve efficiency.
+
+The engineering rule is an **authentic anchor**, not a universal synthetic percentage. Preserve an immutable, provenance-tagged corpus from the target distribution and authentic held-out slices. Compare real-only, synthetic-only, and mixed conditions at equal compute. Track tail slices, diversity, duplication, calibration, and general-domain retention. Version generator checkpoint, prompt, sampler, parent document, verifier, acceptance threshold, and generation number. A synthetic descendant inherits rights and deletion questions from its parent; lineage should not stop at the generator.
+
+Verification changes the failure, not necessarily removes it. An executable test can strongly validate code outputs inside its coverage. A learned judge can reward its own stylistic preferences. An ICLR 2026 study found that an external verifier prevented collapse in several experimental settings but pulled long-run behavior toward the verifier's knowledge center. The verifier becomes a ceiling and a bias source. Maintain verifier-disagreement slices and human or environment-grounded checks.
+
+The “data wall” is better treated as a constraint curve than a calendar deadline. Unique, eligible, high-quality tokens in a target distribution are finite; extraction, multilingual sources, multimodal transcription, licensed collections, domain partnerships, repetition, and synthetic transformations change the available supply and its cost. A model can consume more tokens than exist uniquely by repeating data, but tokens seen are not unique information. Track marginal gain per additional unique token and per repeat. When the same documents recur, randomized order does not make them new evidence.
+
+Synthetic data is most defensible when it supplies a known missing intervention—worked examples, rare failure cases, executable programs, counterfactual environments—and when acceptance is measured against an authentic target. It is least defensible when a generator fills a volume quota and average loss is the only guardrail.
+
+## Landscape 2026 (dated) {#sec-ch05-landscape}
+
+The durable spine above remains fitting, controlled data experiments, provenance, and held-out evaluation. The examples below show how those mechanisms are currently composed; they are not universal recipes.
+
+::: {.callout-note .landscape-2026}
+**Verify live: 2026-07-19.** The [OLMo 3 technical report, v2 dated 2026-04-14](https://arxiv.org/abs/2512.13961) describes a staged base-model program with up to 5.9 trillion broad-pretraining tokens, a 100-billion-token mid-training stage, then model-size-dependent long-context stages. Its standard microanneal compares a candidate source plus web text against a compute-matched web-only control, promotes candidates to larger integration tests, retains natural web/PDF anchors to limit distribution shift, and evaluates long context with more than one suite. These are current implementation choices, not constants.
+
+A [2026 analysis of IsoFLOP fitting](https://arxiv.org/abs/2603.22339) reports that a common parabolic fitting approach can be biased by finite observations and noise. The current action is durable: fit multiple ways, hold out runs, report uncertainty, and treat method disagreement as a planning risk.
+
+The moving frontier now treats reinforcement-learning compute and test-time compute as additional scaling axes. Those mechanisms are quarantined to Chapters 8 and 23 rather than mixed into this dense-pretraining fit. Current evidence also contradicts the slogan that “pretraining is over”: staged acquisition, mixture search, mid-training, context extension, and synthetic-data verification remain active base-model engineering programs.
+
+An [ICLR 2026 synthetic-data study](https://arxiv.org/abs/2510.16657) reports that external verification can prevent collapse and produce near-term gains in its regression, VAE, and small-language-model settings, while long-run behavior moves toward verifier bias. Recheck scope before generalizing to frontier training.
+:::
+
+## Build {#sec-ch05-build}
+
+Run the integrated build from the `newbook` directory:
+
+```bash
+python code/ch05/run_build.py
+pytest -q tests/test_ch05_scaling_pretraining.py
+```
+
+The default command creates a temporary WET-style file of at least 50 MiB inside the output directory, processes it, then removes the raw fixture. The committed outputs are small: [`metrics.json`](../code/ch05/generated/metrics.json), six CSV ledgers including [`document-ledger.csv`](../code/ch05/generated/document-ledger.csv), [`samples.txt`](../code/ch05/generated/samples.txt), and three SVG figures. No network or GPU is required.
+
+The scaling side reads [`proxy_ladder.csv`](../code/ch05/fixtures/proxy_ladder.csv), fits the five parameters, checks every residual, and residual-bootstraps the tenfold forecast. The checked-in run recovers $\alpha=0.332$ and $\beta=0.287$. Its normalized coefficients, floor, fit interval, predictive interval, and residual-model limitation are recorded rather than rounded into the code. The experiment contract in `metrics.json` states that the data are synthetic.
+
+The corpus side generated 885 records. Of those, 354 passed rights and quality gates, 265 remained after near-deduplication, 264 remained after removing the planted evaluation substring, and the exact 50/30/20 source mixture selected 60 documents. Inspect [`pipeline-stages.csv`](../code/ch05/generated/pipeline-stages.csv), [`dedup-clusters.csv`](../code/ch05/generated/dedup-clusters.csv), and the document ledger; every extracted ID retains URL, source, language, rights, content hash, policy version, cluster exemplar, final decision, and reason.
+
+Each TinyGPT has 22,640 parameters. Within each of three paired seeds, raw and cleaned conditions share the initial state, optimizer, batch size, context length, and 80 update steps. Their tokenizer is frozen from independent calibration text, and the held-out facts and sentence template do not occur in either sampled training condition. Mean held-out loss is ${3.796}$ for raw and ${3.672}$ for cleaned. Raw-minus-cleaned improvement averages ${0.124}$ nats/token; a paired-seed 90 percent bootstrap interval is $[0.056,0.192]$, and cleaned wins in all three seeds. Both mean cloze accuracies are ${0.60}$ against ${0.40}$ constant-position and shortest-candidate baselines, so the loss result does not establish a qualitative capability difference. Read [`training-curves.csv`](../code/ch05/generated/training-curves.csv), reproducibility hashes and runtime settings in `metrics.json`, and the saved completions. This fixture validates a controlled intervention; it does not estimate the gain from a named public corpus.
+
+Deliberately break the build in three ways. Set all source weights to web volume and watch the curated domains disappear. Lower the LSH candidate recall by using too many rows per band and inspect missed planted duplicates. Add the evaluation needle after decontamination and observe that a one-time gate cannot protect downstream synthetic transforms. Each break should change a ledger or assertion before it changes a headline score.
+
+The focused tests enforce the chapter's claims: exponent recovery, exact compute constraint, ordered forecast interval, extraction metadata, rejection reasons, near-duplicate preservation, decontamination, mixture quotas, multilingual fertility, build outputs, and lower clean-held-out loss for the cleaned condition. This is the minimum evidence required to promote either the scaling surface or data recipe to a larger proxy ladder.
+
+## What Endures, What Changes {#sec-ch05-endures}
+
+The durable ideas are empirical allocation, not a sacred ratio; joint measurement of model and data; multiple fitting views; explicit uncertainty; tokenizer- and corpus-controlled base evaluation; immutable held-out slices; provenance through every transformation; separate filtering, deduplication, and decontamination; mixture weights as optimized policy; fertility as compute allocation; staged mid-training with controls; and authentic anchors for synthetic feedback loops.
+
+The values will change. Fitted exponents and floors change with architecture, optimizer, precision, corpus, and regime. The serving demand that justifies overtraining changes with products and hardware. Quality classifiers, public corpora, licenses, opt-out mechanisms, model reports, context lengths, and synthetic generators change. Current mid-training token counts and mixture ratios are examples, not defaults.
+
+When those values move, rerun the ladder and pipeline rather than editing a constant in prose. The next chapter takes the budget, data manifest, checkpoints, and in-flight evaluation contract produced here and turns them into a training run.
+
+## Exercises {#sec-ch05-exercises}
+
+1. **Stress the extrapolation.** Refit the law after dropping the two largest proxy runs. Predict the original tenfold target, compare it with the full-ladder prediction and interval, and explain how much error came from extrapolation rather than optimizer noise.
+
+2. **Price two allocations.** Compute tokens needed for a three-billion-parameter model under the fitted compute-optimal allocation and under a ten-times-overtrained allocation. Convert both to FLOPs, MFU-adjusted accelerator-hours, and cost using a dated current \$/GPU-hour rate card. State hardware, MFU, and which costs the estimate omits.
+
+3. **Expose filter bias.** Add a rare-language slice to the synthetic WET fixture. Design a filter that raises average quality score while deleting much of that slice; quantify retention, tokens, and held-out loss by language. Then propose a gate that makes the failure visible without forcing every domain to identical statistics.
+
+4. **Measure contamination inflation.** Insert the toy evaluation prompts and answers into a controlled fraction of training documents, bypass decontamination, and retrain under equal steps. Measure cloze and held-out changes as contamination rises. Distinguish memorization from legitimate general-domain improvement.
+
+5. **Design a mid-training curriculum.** Propose three base-model stages for a code-assistant model. Specify source mixture, unique and repeated tokens, sequence-length distribution, learning-rate intervention, control branch, promotion metric, general-domain retention gate, and why each stage belongs before post-training.
+
+6. **Defend a licensed-data purchase.** Use the power-law and Chinchilla math to argue for or against paying for a licensed high-quality corpus instead of acquiring more crawl. Include unique-token yield, expected surface shift, rights and deletion costs, proxy-run design, inference lifetime, and the evidence that would reverse your decision.
+
+## Notes and Sources {#sec-ch05-notes}
+
+The scaling-law spine comes from [Kaplan et al., *Scaling Laws for Neural Language Models*](https://arxiv.org/abs/2001.08361) and [Hoffmann et al., *Training Compute-Optimal Large Language Models*](https://arxiv.org/abs/2203.15556). Extensions and cautions include [inference-aware scaling](https://arxiv.org/abs/2401.00448), [data-constrained scaling](https://arxiv.org/abs/2305.16264), [precision-aware scaling](https://arxiv.org/abs/2411.04330), [distillation scaling](https://arxiv.org/abs/2502.08606), and [MoE scaling](https://arxiv.org/abs/2202.01169). The emergence discussion uses [Wei et al.](https://arxiv.org/abs/2206.07682) and the metric critique by [Schaeffer et al.](https://arxiv.org/abs/2304.15004). Base-evaluation setup sensitivity follows the [Language Model Evaluation Harness lessons](https://arxiv.org/abs/2405.14782).
+
+For acquisition, see the Common Crawl [file-format documentation and FAQ](https://commoncrawl.org/faq) and the [Data Provenance Initiative](https://arxiv.org/abs/2310.16787). Corpus history and curation evidence come from [T5/C4](https://www.jmlr.org/papers/v21/20-074.html), the [C4 audit](https://arxiv.org/abs/2104.08758), [The Pile](https://arxiv.org/abs/2101.00027), [RedPajama](https://proceedings.neurips.cc/paper_files/paper/2024/hash/d34497330b1fd6530f7afd86d0df9f76-Abstract-Datasets_and_Benchmarks_Track.html), [Dolma](https://arxiv.org/abs/2402.00159), [FineWeb](https://arxiv.org/abs/2406.17557), [DCLM](https://arxiv.org/abs/2406.11794), and [Nemotron-CC](https://aclanthology.org/2025.acl-long.123/).
+
+Deduplication and memorization sources are [Lee et al.](https://arxiv.org/abs/2107.06499), [SemDeDup](https://arxiv.org/abs/2303.09540), [Kandpal et al.](https://arxiv.org/abs/2202.06539), and [Carlini et al.](https://arxiv.org/abs/2202.07646). Mixture and fertility evidence comes from [DoReMi](https://arxiv.org/abs/2305.10429), [RegMix](https://arxiv.org/abs/2407.01492), and [Ahia et al. on language tokenization cost](https://arxiv.org/abs/2305.13707).
+
+For staged training, see [domain-adaptive continued pretraining](https://aclanthology.org/2020.acl-main.740/), [OLMo 2](https://arxiv.org/abs/2501.00656), [scaling laws for data-source utility](https://arxiv.org/abs/2507.22250), [long-context data engineering](https://arxiv.org/abs/2402.10171), and [ProLong](https://arxiv.org/abs/2410.02660). Synthetic-data claims are grounded in [Shumailov et al.](https://www.nature.com/articles/s41586-024-07566-y), [Gerstgrasser et al.](https://arxiv.org/abs/2404.01413), and [WRAP](https://arxiv.org/abs/2401.16380). Current examples remain isolated in the dated landscape box.
